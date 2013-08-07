@@ -26,13 +26,16 @@ server = scotty 4000 $ do
     sessionMapRef <- liftIO (newIORef emptySessionMap)
 
     get "/socket.io/1/:transport/:session" $ do
-        sessionKey <- param "session" :: ActionM Text
+        sessionID <- param "session" :: ActionM Text
         modifyHeader 3000
 
-        response <- modifySession sessionMapRef sessionKey
+        response <- modifySession sessionMapRef sessionID
         text . TL.pack . show $ response
 
     post "/socket.io/1/:transport/:session" $ do
+        sessionID <- param "session"
+        modifyHeader 3000
+        removeSession sessionMapRef sessionID
         text "1"
 
     get "/socket.io/1" $ do
@@ -63,6 +66,9 @@ server = scotty 4000 $ do
                 Connected -> do
                     threadDelay (pollingDuration * 1000000)
                     return $ Message Noop Omitted (MessageEndpoint "") MessageDataAbsent
+
+        removeSession :: IORef SessionMap -> SessionID -> ActionM ()
+        removeSession ref sessionID = liftIO $ modifyIORef ref (Map.delete sessionID)
 
         pollingDuration = 20
 
