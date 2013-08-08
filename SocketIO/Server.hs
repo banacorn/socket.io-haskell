@@ -30,7 +30,7 @@ server = scotty 4000 $ do
         modifyHeader 3000
 
         response <- modifySession sessionMapRef sessionID
-        text . TL.pack . show $ response
+        text . encode $ response
 
     post "/socket.io/1/:transport/:session" $ do
         sessionID <- param "session"
@@ -62,10 +62,10 @@ server = scotty 4000 $ do
             case session of
                 Connecting -> do
                     modifyIORef ref (Map.adjust (const Connected) sessionID)
-                    return $ Message Connect Omitted (MessageEndpoint "") MessageDataAbsent
+                    return $ Connect NoEndpoint
                 Connected -> do
                     threadDelay (pollingDuration * 1000000)
-                    return $ Message Noop Omitted (MessageEndpoint "") MessageDataAbsent
+                    return $ Noop
 
         removeSession :: IORef SessionMap -> SessionID -> ActionM ()
         removeSession ref sessionID = liftIO $ modifyIORef ref (Map.delete sessionID)
