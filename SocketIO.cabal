@@ -15,6 +15,6 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  exposed-modules:     SocketIO.Server, SocketIO.Message.Type
+  exposed-modules:     SocketIO.Server
   -- other-modules:       
   build-depends:       base ==4.6.*, mtl ==2.1.*, text ==0.11.*, containers ==0.5.*, random ==1.0.*, scotty ==0.4.*

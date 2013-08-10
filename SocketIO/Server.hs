@@ -14,7 +14,7 @@ import System.Random
 
 import Data.Monoid (mconcat)
 
-import SocketIO.Message.Type
+import SocketIO.Type
 
 
 type Text = TL.Text

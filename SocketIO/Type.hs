@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Message.Type (
+module SocketIO.Type (
     State(..), Message(..), Endpoint(..), ID(..), Data(..),
     Msg(..)
 ) where
