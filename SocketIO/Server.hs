@@ -19,7 +19,7 @@ import SocketIO.Type
 
 type Text = TL.Text
 type SessionID = TL.Text
-type SessionMap = Map.Map SessionID State
+type SessionMap = Map.Map SessionID SocketIOState
 
 server = scotty 4000 $ do
 

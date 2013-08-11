@@ -1,18 +1,35 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module SocketIO.Type (
-    State(..), Message(..), Endpoint(..), ID(..), Data(..),
+    SocketIOState(..), Message(..), Endpoint(..), ID(..), Data(..),
     Msg(..)
 ) where
 
---type Text = TL.Text
+import qualified Data.Map as Map
 import qualified Data.Text.Lazy as TL
-import Data.Text.Lazy (Text, pack)
 import Data.Monoid (mconcat)
+import Control.Monad (mapM_)
+import Control.Monad.State
+import Control.Monad.Writer
+import Control.Monad.Identity
+
+
+type Text = TL.Text
+type Event = Text
+type Handler = Event -> IO ()
+type EventMap = Map.Map Event [Handler]
+
+type Emitter = Event
+
+newtype SocketM a = SocketM { runSocketM :: WriterT [Emitter] (StateT EventMap Identity) a }
+    deriving (Monad, Functor, MonadState EventMap)
+
+--
 
 (+++) = TL.append
 
-data State = Connecting | Connected | Disconnecting | Disconnected deriving Show
+data SocketIOState = Connecting | Connected | Disconnecting | Disconnected deriving Show
 
 data Message    = Disconnect Endpoint
                 | Connect Endpoint
@@ -40,16 +57,16 @@ class Msg m where
     encode :: m -> Text
 
 instance Msg Endpoint where
-    encode (Endpoint s) = pack s
+    encode (Endpoint s) = TL.pack s
     encode NoEndpoint = ""
 
 instance Msg ID where
-    encode (ID i) = pack $ show i
-    encode (IDPlus i) = pack $ show i ++ "+"
+    encode (ID i) = TL.pack $ show i
+    encode (IDPlus i) = TL.pack $ show i ++ "+"
     encode NoID = ""
 
 instance Msg Data where
-    encode (Data s) = pack s
+    encode (Data s) = TL.pack s
     encode NoData = ""
 
 instance Msg Message where
