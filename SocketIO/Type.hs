@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module SocketIO.Type (
+    Socket,
+    Event, Handler, EventMap, Emitter, SocketM(..),
     SocketIOState(..), Message(..), Endpoint(..), ID(..), Data(..),
     Msg(..)
 ) where
@@ -14,13 +16,17 @@ import Control.Monad.State
 import Control.Monad.Writer
 import Control.Monad.Identity
 
+newtype Socket = Socket { socket :: SessionID }
+
+--
 
 type Text = TL.Text
 type Event = Text
+type SessionID = Text
 type Handler = Event -> IO ()
 type EventMap = Map.Map Event [Handler]
 
-type Emitter = Event
+type Emitter = Event 
 
 newtype SocketM a = SocketM { runSocketM :: WriterT [Emitter] (StateT EventMap Identity) a }
     deriving (Monad, Functor, MonadState EventMap)

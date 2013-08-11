@@ -4,6 +4,10 @@ module SocketIO.Event where
 
 import SocketIO.Type
 import qualified Data.Map as Map
+import Control.Monad.State
+import Control.Monad.Writer
+import Control.Monad.Identity
+
 
 on :: Event -> Handler -> SocketM ()
 on event handler = modify $ register event handler
