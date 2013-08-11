@@ -37,6 +37,7 @@ server handler = scotty 4000 $ do
         text . encode $ response
 
     post "/socket.io/1/:transport/:session" $ do
+        body >>= liftIO . print . parseMessage
         sessionID <- param "session"
         let eventMap = extract (handler (Socket sessionID))
         modifyHeader 3000

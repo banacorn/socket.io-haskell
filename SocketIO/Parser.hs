@@ -1,18 +1,21 @@
-module SocketIO.Parser (parser) where
+module SocketIO.Parser (parseMessage) where
 
 import SocketIO.Type
 import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>), (<*>))
 import qualified Data.Text.Lazy as TL
+import qualified Data.ByteString.Char8 as BSC
+import qualified Data.ByteString.Lazy as BS
 
-parser :: TL.Text -> Message
-parser text = case parse parseMessage "" string of
+
+parseMessage :: BS.ByteString -> Message
+parseMessage text = case parse parseMessage' "" string of
     Left _ -> Noop
     Right x -> x
-    where   string = TL.unpack text
+    where   string = BSC.unpack $ BS.toStrict text
 
-parseMessage :: Parser Message
-parseMessage = do
+parseMessage' :: Parser Message
+parseMessage' = do
     n <- digit
     case n of
         '0' ->  (parseEndpoint >>= return . Disconnect)
