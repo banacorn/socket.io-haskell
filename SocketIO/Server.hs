@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Server where
+module SocketIO.Server (server) where
 
 -- web server
 import Web.Scotty
@@ -15,6 +15,8 @@ import System.Random
 import Data.Monoid (mconcat)
 
 import SocketIO.Type
+import SocketIO.Event
+import SocketIO.Parser
 
 
 type Text = TL.Text
@@ -24,6 +26,7 @@ type SessionMap = Map.Map SessionID SocketIOState
 server :: (Socket -> SocketM ()) -> IO ()
 server handler = scotty 4000 $ do
 
+    --eventMapRef <- liftIO (newIORef Map.empty :: IO (IORef EventMap))
     sessionMapRef <- liftIO (newIORef emptySessionMap)
 
     get "/socket.io/1/:transport/:session" $ do
@@ -35,14 +38,16 @@ server handler = scotty 4000 $ do
 
     post "/socket.io/1/:transport/:session" $ do
         sessionID <- param "session"
+        let eventMap = extract (handler (Socket sessionID))
         modifyHeader 3000
         removeSession sessionMapRef sessionID
+        --liftIO $ trigger eventMap 
         text "1"
 
     get "/socket.io/1" $ do
         modifyHeader 3000
-        sessionKey <- issueSession sessionMapRef
-        text $ sessionKey `TL.append` ":60:60:xhr-polling"
+        sessionID <- issueSession sessionMapRef
+        text $ sessionID `TL.append` ":60:60:xhr-polling"
 
 
     where

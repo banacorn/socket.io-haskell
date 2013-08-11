@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module SocketIO.Type (
-    Socket,
+    Socket(..),
     Event, Handler, EventMap, Emitter, SocketM(..),
     SocketIOState(..), Message(..), Endpoint(..), ID(..), Data(..),
     Msg(..)
@@ -40,9 +40,9 @@ data SocketIOState = Connecting | Connected | Disconnecting | Disconnected deriv
 data Message    = Disconnect Endpoint
                 | Connect Endpoint
                 | Heartbeat
-                | Message ID Endpoint Data
-                | JSONMessage ID Endpoint Data
-                | Event ID Endpoint Data
+                | Msg ID Endpoint Data
+                | JSONMsg ID Endpoint Data
+                | EventMsg ID Endpoint Data
                 | ACK ID Data
                 | Error Endpoint Data
                 | Noop
@@ -55,7 +55,7 @@ data ID         = ID Int
                 | IDPlus Int
                 | NoID
                 deriving (Show, Eq)
-data Data       = Data String
+data Data       = Data Text
                 | NoData
                 deriving (Show, Eq)
 
@@ -72,7 +72,7 @@ instance Msg ID where
     encode NoID = ""
 
 instance Msg Data where
-    encode (Data s) = TL.pack s
+    encode (Data s) = s
     encode NoData = ""
 
 instance Msg Message where
@@ -80,13 +80,13 @@ instance Msg Message where
     encode (Disconnect e)           = "0::" +++ encode e
     encode (Connect e)              = "1::" +++ encode e
     encode Heartbeat                = undefined
-    encode (Message i e d)          = "3:" +++ encode i +++
+    encode (Msg i e d)              = "3:" +++ encode i +++
                                       ":" +++ encode e +++
                                       ":" +++ encode d
-    encode (JSONMessage i e d)      = "4:" +++ encode i +++
+    encode (JSONMsg i e d)          = "4:" +++ encode i +++
                                       ":" +++ encode e +++
                                       ":" +++ encode d
-    encode (Event i e d)            = "5:" +++ encode i +++
+    encode (EventMsg i e d)         = "5:" +++ encode i +++
                                       ":" +++ encode e +++
                                       ":" +++ encode d
     encode (ACK i d)                = "6:::" +++ encode i +++ 
