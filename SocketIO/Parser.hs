@@ -45,7 +45,8 @@ parseMessage' = do
                                           <*> parseData
 
 
-text = many1 $ satisfy (/= ':')
+endpoint = many1 $ satisfy (/= ':')
+text = many1 anyChar
 number = many1 digit
 colon = char ':'
 
@@ -56,8 +57,8 @@ parseID  =  try (colon >> number >>= plus >>= return . IDPlus . read)
         where   plus n = char '+' >> return n 
 
 parseEndpoint :: Parser Endpoint
-parseEndpoint    =  try (colon >> text >>= return . Endpoint)
-                <|>     (colon >>          return   NoEndpoint)
+parseEndpoint    =  try (colon >> endpoint >>= return . Endpoint)
+                <|>     (colon >>              return   NoEndpoint)
 
 parseData :: Parser Data
 parseData    =  try (colon >> text >>= return . Data . TL.pack)
