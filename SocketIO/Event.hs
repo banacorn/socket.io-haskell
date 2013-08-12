@@ -18,7 +18,7 @@ register event handler eventMap = Map.insertWith (++) event [handler] eventMap
 extract :: SocketM () -> EventMap
 extract = runIdentity . flip execStateT Map.empty . runWriterT . runSocketM
 
-trigger :: EventMap -> Event -> IO ()
-trigger eventMap event = case Map.lookup event eventMap of
-    Just handlers   -> mapM_ (\h -> h event) handlers
+trigger :: EventMap -> Event -> Reply -> IO ()
+trigger eventMap event reply = case Map.lookup event eventMap of
+    Just handlers   -> mapM_ (\h -> h reply) handlers
     Nothing         -> return ()

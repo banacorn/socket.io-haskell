@@ -2,10 +2,11 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Util (IsString(..), IsByteString(..), IsText(..)) where
+module SocketIO.Util (IsString(..), IsByteString(..), IsLazyByteString(..), IsText(..)) where
 import Data.String
 import qualified Data.Text.Lazy as T
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Char8 as C
 
 class IsByteString a where
@@ -17,6 +18,21 @@ instance IsByteString String where
 instance IsByteString T.Text where
     fromByteString = T.pack . fromByteString
 
+instance IsByteString LB.ByteString where
+    fromByteString = LB.fromStrict
+
+class IsLazyByteString a where
+    fromLazyByteString :: LB.ByteString -> a
+
+instance IsLazyByteString String where
+    fromLazyByteString = fromByteString . LB.toStrict
+
+instance IsLazyByteString T.Text where
+    fromLazyByteString = fromByteString . LB.toStrict
+
+instance IsLazyByteString B.ByteString where
+    fromLazyByteString = LB.toStrict
+
 class IsText a where
     fromText :: T.Text -> a
 
@@ -25,3 +41,6 @@ instance IsText String where
 
 instance IsText B.ByteString where
     fromText = C.pack . fromText
+
+instance IsText LB.ByteString where
+    fromText = LB.fromStrict . C.pack . fromText

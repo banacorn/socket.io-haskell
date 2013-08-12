@@ -1,16 +1,21 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module SocketIO.Type (
     Socket(..),
-    Event, Handler, EventMap, Emitter, SocketM(..),
+    decode, Trigger(..),
+    Event, Handler, EventMap, Emitter, SocketM(..), Reply,
     SocketIOState(..), Message(..), Endpoint(..), ID(..), Data(..),
     Msg(..)
 ) where
 
 import qualified Data.Map as Map
 import qualified Data.Text.Lazy as TL
+import Data.Aeson
 import Data.Monoid (mconcat)
+import GHC.Generics
+import Control.Applicative ((<$>), (<*>))
 import Control.Monad (mapM_)
 import Control.Monad.State
 import Control.Monad.Writer
@@ -23,7 +28,8 @@ newtype Socket = Socket { socket :: SessionID }
 type Text = TL.Text
 type Event = Text
 type SessionID = Text
-type Handler = Event -> IO ()
+type Reply = [Text]
+type Handler = Reply -> IO ()
 type EventMap = Map.Map Event [Handler]
 
 type Emitter = Event 
@@ -37,15 +43,15 @@ newtype SocketM a = SocketM { runSocketM :: WriterT [Emitter] (StateT EventMap I
 
 data SocketIOState = Connecting | Connected | Disconnecting | Disconnected deriving Show
 
-data Message    = Disconnect Endpoint
-                | Connect Endpoint
-                | Heartbeat
+data Message    = MsgDisconnect Endpoint
+                | MsgConnect Endpoint
+                | MsgHeartbeat
                 | Msg ID Endpoint Data
-                | JSONMsg ID Endpoint Data
-                | EventMsg ID Endpoint Data
-                | ACK ID Data
-                | Error Endpoint Data
-                | Noop
+                | MsgJSON ID Endpoint Data
+                | MsgEvent ID Endpoint Data
+                | MsgACK ID Data
+                | MsgError Endpoint Data
+                | MsgNoop
                 deriving (Show, Eq)
 
 data Endpoint   = Endpoint String
@@ -56,41 +62,46 @@ data ID         = ID Int
                 | NoID
                 deriving (Show, Eq)
 data Data       = Data Text
+                | EventData Trigger
                 | NoData
                 deriving (Show, Eq)
 
+data Trigger    = Trigger { name :: Event, args :: Reply } deriving (Show, Eq, Generic)
+
+instance FromJSON Trigger
+
 class Msg m where
-    encode :: m -> Text
+    toMessage :: m -> Text
 
 instance Msg Endpoint where
-    encode (Endpoint s) = TL.pack s
-    encode NoEndpoint = ""
+    toMessage (Endpoint s) = TL.pack s
+    toMessage NoEndpoint = ""
 
 instance Msg ID where
-    encode (ID i) = TL.pack $ show i
-    encode (IDPlus i) = TL.pack $ show i ++ "+"
-    encode NoID = ""
+    toMessage (ID i) = TL.pack $ show i
+    toMessage (IDPlus i) = TL.pack $ show i ++ "+"
+    toMessage NoID = ""
 
 instance Msg Data where
-    encode (Data s) = s
-    encode NoData = ""
+    toMessage (Data s) = s
+    toMessage NoData = ""
 
 instance Msg Message where
-    encode (Disconnect NoEndpoint)  = "0"
-    encode (Disconnect e)           = "0::" +++ encode e
-    encode (Connect e)              = "1::" +++ encode e
-    encode Heartbeat                = undefined
-    encode (Msg i e d)              = "3:" +++ encode i +++
-                                      ":" +++ encode e +++
-                                      ":" +++ encode d
-    encode (JSONMsg i e d)          = "4:" +++ encode i +++
-                                      ":" +++ encode e +++
-                                      ":" +++ encode d
-    encode (EventMsg i e d)         = "5:" +++ encode i +++
-                                      ":" +++ encode e +++
-                                      ":" +++ encode d
-    encode (ACK i d)                = "6:::" +++ encode i +++ 
-                                      "+" +++ encode d
-    encode (Error e d)              = "7::" +++ encode e +++ 
-                                      ":" +++ encode d
-    encode Noop                     = "8:::"
+    toMessage (MsgDisconnect NoEndpoint)    = "0"
+    toMessage (MsgDisconnect e)             = "0::" +++ toMessage e
+    toMessage (MsgConnect e)                = "1::" +++ toMessage e
+    toMessage MsgHeartbeat                  = undefined
+    toMessage (Msg i e d)                   = "3:" +++ toMessage i +++
+                                              ":" +++ toMessage e +++
+                                              ":" +++ toMessage d
+    toMessage (MsgJSON i e d)               = "4:" +++ toMessage i +++
+                                              ":" +++ toMessage e +++
+                                              ":" +++ toMessage d
+    toMessage (MsgEvent i e d)              = "5:" +++ toMessage i +++
+                                              ":" +++ toMessage e +++
+                                              ":" +++ toMessage d
+    toMessage (MsgACK i d)                  = "6:::" +++ toMessage i +++ 
+                                              "+" +++ toMessage d
+    toMessage (MsgError e d)                = "7::" +++ toMessage e +++ 
+                                              ":" +++ toMessage d
+    toMessage MsgNoop                       = "8:::"
