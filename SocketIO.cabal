@@ -17,4 +17,4 @@ cabal-version:       >=1.8
 library
   exposed-modules:     SocketIO.Server
   -- other-modules:       
-  build-depends:       base ==4.6.*, mtl ==2.1.*, text ==0.11.*, containers ==0.5.*, random ==1.0.*, scotty ==0.4.*, parsec ==3.1.*, bytestring ==0.10.0.*
+  build-depends:       base ==4.6.*, mtl ==2.1.*, text ==0.11.*, containers ==0.5.*, random ==1.0.*, scotty ==0.4.*, parsec ==3.1.*, bytestring ==0.10.0.*, aeson ==0.6.1.*
