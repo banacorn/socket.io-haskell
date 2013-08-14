@@ -5,15 +5,19 @@
 module SocketIO.Type where
 
 
+import GHC.Generics
 import Network.HTTP.Types (Method)
+import Network.Wai (Response)
+
+import Control.Monad.Reader       
+import Control.Concurrent.MVar    
 
 import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import Data.IORef
 import Data.Aeson
 import Data.Monoid ((<>))
-import GHC.Generics
-import Control.Monad.Reader       
+
 
 
 --
@@ -34,7 +38,7 @@ data SocketRequest = SocketRequest Method Namespace Protocol Transport SessionID
 
 data Connection = Handshake | Connection SessionID | Disconnection deriving Show 
 
-newtype Env = Env { getSessionTable :: IORef Table }
+data Env = Env { getSessionTable :: IORef Table, getToilet :: MVar Response }
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
     deriving (Monad, Functor, MonadIO, MonadReader Env)

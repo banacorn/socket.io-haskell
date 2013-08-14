@@ -13,6 +13,7 @@ import Network.HTTP.Types           (status200)
 import System.Random                (randomRIO)
 
 import Control.Concurrent           (threadDelay)            
+import Control.Concurrent.MVar   
 import Control.Monad.Trans          (liftIO)
 import Control.Monad.Reader       
 
@@ -68,8 +69,8 @@ lookupSession sessionID = readTable $ \table -> do
         Just status -> return status
         Nothing     -> return Disconnected
 
-
-server ref req = liftIO . runSession ref $ case req of
+server :: Connection -> SessionM Response 
+server req = case req of
 
     Handshake -> do
         sessionID <- createSession
@@ -88,14 +89,8 @@ server ref req = liftIO . runSession ref $ case req of
 
     otherwise -> return $ text "1::"
 
-
-
---server Connection = return $ text "1:::hi"
---server _ = return $ text "1::" 
-
-
 runSession :: Env -> SessionM a -> IO a
-runSession s m = liftIO $ runReaderT (runSessionM m) s
+runSession s m = runReaderT (runSessionM m) s
 
 newTable :: IO (IORef Table)
 newTable = H.new >>= newIORef 
@@ -104,7 +99,8 @@ text = responseLBS status200 header . fromText
 
 main = do
     table <- newTable
-    run 4000 $ server (Env table) . preprocess
+    toilet <- newEmptyMVar
+    run 4000 $ liftIO . runSession (Env table toilet) . server . preprocess
 
 header = [
     ("Content-Type", "text/plain"),
