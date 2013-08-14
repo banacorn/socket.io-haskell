@@ -1,99 +1,62 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Server (server) where
+module SocketIO.Server where
 
--- web server
-import Web.Scotty
-import Control.Monad.Trans (liftIO)
-
-import qualified Data.Text.Lazy as TL
-import Control.Concurrent (forkIO, threadDelay)
-import Data.IORef
-import qualified Data.Map as Map
-import System.Random
-
-import Data.Monoid (mconcat)
-
-import SocketIO.Type
 import SocketIO.Util
-import SocketIO.Event
-import SocketIO.Parser
+
+import Network.Wai
+import Network.Wai.Handler.Warp    (run)
+import Network.HTTP.Types          (status200, Method)
+
+import Control.Monad.Trans         (liftIO)
+
+import qualified Data.Text                   as T
+import Data.Monoid                 (mconcat)
+import Data.List                   (intersperse)
+--import Data.Monoid (mconcat)
+
+type Text = T.Text
+type Namespace = Text
+type Protocol = Text
+type Transport = Text
+type SessionID = Text 
+data SocketRequest = SocketRequest Method Namespace Protocol Transport SessionID deriving (Show)
+
+data Connection = Handshake | Connection | Disconnection deriving Show 
 
 
-type Text = TL.Text
-type SessionID = TL.Text
-type SessionMap = Map.Map SessionID SocketIOState
+processRequest :: Request -> SocketRequest
+processRequest request = case path of
+    [n, p]          -> SocketRequest method n  p  "" ""
+    [n, p, t]       -> SocketRequest method n  p  t  ""
+    [n, p, t, s]    -> SocketRequest method n  p  t  s
+    _               -> SocketRequest method "" "" "" ""
+    where   method  = requestMethod request
+            path    = cleanup $ pathInfo request
+            cleanup = filter (/= "")
 
-server :: (Socket -> SocketM ()) -> IO ()
-server handler = scotty 4000 $ do
+processSocketRequest :: SocketRequest -> Connection
+processSocketRequest (SocketRequest _ "" "" "" "") = Disconnection  
+processSocketRequest (SocketRequest "GET" n p "" "") = Handshake  
+processSocketRequest (SocketRequest "GET" n p t s) = Connection  
+processSocketRequest (SocketRequest _ _ _ _ _) = Disconnection  
 
-    --eventMapRef <- liftIO (newIORef Map.empty :: IO (IORef EventMap))
-    sessionMapRef <- liftIO (newIORef emptySessionMap)
+preprocess = processSocketRequest . processRequest
+server Handshake = return $ string "123:60:60:xhr-polling" 
+server _ = return $ string "1::" 
+string = responseLBS status200 header
 
-    get "/socket.io/1/:transport/:session" $ do
-        sessionID <- param "session" :: ActionM Text
-        modifyHeader 3000
+    --case referer of
+    --    Nothing -> return $ ResponseFile status200 [("Content-Type", "text/html")] "index.html" Nothing
+    --    Just _  -> return $ ResponseFile status200 [] path Nothing
+    --where   path = tail . tail . init . show . rawPathInfo $ request
+    --        referer = lookup "Referer" (requestHeaders request)
+ 
+main = run 4000 $ server . preprocess
 
-        response <- modifySession sessionMapRef sessionID
-        text . toMessage $ response
-
-    post "/socket.io/1/:transport/:session" $ do
-        reply <- fmap parseMessage body 
-        modifyHeader 3000
-        handle sessionMapRef handler reply
-
-    get "/socket.io/1" $ do
-        modifyHeader 3000
-        sessionID <- issueSession sessionMapRef
-        text $ sessionID `TL.append` ":60:60:xhr-polling"
-
-
-emptySessionMap :: SessionMap
-emptySessionMap = Map.empty
-
-issueSession :: IORef SessionMap -> ActionM Text
-issueSession ref = liftIO $ do
-    number <- randomRIO (0, 99999999999999999999) :: IO Integer
-    let sessionID = TL.pack $ show number
-    modifyIORef ref (Map.insert sessionID Connecting)
-    return sessionID
-
-modifySession :: IORef SessionMap -> SessionID -> ActionM Message
-modifySession ref sessionID = liftIO $ do
-    sessionMap <- readIORef ref
-    let session = sessionMap Map.! sessionID
-    case session of
-        Connecting -> do
-            modifyIORef ref (Map.adjust (const Connected) sessionID)
-            return $ MsgConnect NoEndpoint
-        Connected -> do
-            threadDelay (pollingDuration * 1000000)
-            return $ MsgNoop
-
-removeSession :: IORef SessionMap -> SessionID -> ActionM ()
-removeSession ref sessionID = liftIO $ modifyIORef ref (Map.delete sessionID)
-
-pollingDuration = 20
-
-handle ref handler (MsgDisconnect _) = do
-    sessionID <- param "session"
-    removeSession ref sessionID
-    liftIO . putStrLn . fromText . mconcat $ ["[disconnect] ", sessionID]
-    text "1"
-
-handle ref handler (MsgEvent i e @d(EventData (Trigger event args))) = do
-    sessionID <- param "session"
-    let eventMap = extract (handler (Socket sessionID))
-    liftIO $ trigger eventMap event args
-    liftIO . putStrLn . mconcat $ ["[trigger] ", show d]
-    text "1"
-
-handle ref handler rest = do
-    liftIO $ print rest
-    text "1"
-
-
-modifyHeader port = do
-    header "Connection"                         "keep-alive"
-    header "Access-Control-Allow-Credentials"   "true"
-    header "Access-Control-Allow-Origin"    $   "http://localhost:" `TL.append` TL.pack (show port)
+header = [
+    ("Content-Type", "text/plain"),
+    ("Connection", "keep-alive"),
+    ("Access-Control-Allow-Credentials", "true"),
+    ("Access-Control-Allow-Origin", "http://localhost:3000") 
+    ]
