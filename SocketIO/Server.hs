@@ -37,56 +37,37 @@ processSocketRequest :: SocketRequest -> Connection
 processSocketRequest (SocketRequest _ "" "" "" "") = Disconnection  
 processSocketRequest (SocketRequest "GET" n p "" "") = Handshake  
 processSocketRequest (SocketRequest "GET" n p t s) = Connection s
-processSocketRequest (SocketRequest "GET" n p t s) = Connection s
 processSocketRequest (SocketRequest _ _ _ _ _) = Disconnection  
 
 preprocess = processSocketRequest . processRequest
 
 
-readTable :: SessionM Table
-readTable = ask >>= liftIO . readIORef
+readTable :: (Table -> IO a) -> SessionM a
+readTable f = ask >>= liftIO . readIORef >>= liftIO . f
 
 createSession :: SessionM SessionID
-createSession = do
-    table <- readTable
-    sessionID <- liftIO genSessionID
-    liftIO $ H.insert table sessionID Connecting
-    liftIO $ H.toList table >>=  print
-    liftIO $ print "======="
-
+createSession = readTable $ \table -> do
+    sessionID <- genSessionID
+    H.insert table sessionID Connecting
     return sessionID
     where   genSessionID = fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: IO Text
 
 updateSession :: SessionID -> Status -> SessionM ()
-updateSession sessionID status = do
-    table <- readTable
-    liftIO $ do
-        H.delete table sessionID
-        H.insert table sessionID status
+updateSession sessionID status = readTable $ \table -> do
+    H.delete table sessionID
+    H.insert table sessionID status
 
 deleteSession :: SessionID -> SessionM ()
-deleteSession sessionID = do
-    table <- readTable
-    liftIO $ H.delete table sessionID
+deleteSession sessionID = readTable $ \table -> 
+    H.delete table sessionID
 
 lookupSession :: SessionID -> SessionM Status
-lookupSession sessionID = do
-    table <- readTable
-    liftIO $ H.toList table >>=  print
-    result <- liftIO $ H.lookup table sessionID
-    liftIO $ case result of
+lookupSession sessionID = readTable $ \table -> do
+    result <- H.lookup table sessionID
+    case result of
         Just status -> return status
-        Nothing -> return Disconnected
+        Nothing     -> return Disconnected
 
-haha :: SessionM ()
-haha = do
-    t <- readTable
-    liftIO $ (H.toList t) >>= print
-    return ()
-
-foo = do
-    t <- newTable
-    runReaderT (runSessionM haha) t
 
 server ref req = liftIO . runSession ref $ case req of
 
