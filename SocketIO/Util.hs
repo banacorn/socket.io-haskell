@@ -2,12 +2,14 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Util (IsString(..), IsByteString(..), IsLazyByteString(..), IsText(..)) where
+module SocketIO.Util ((<>), IsString(..), IsByteString(..), IsLazyByteString(..), IsText(..)) where
+import Data.Monoid ((<>))
 import Data.String
 import qualified Data.Text.Lazy as T
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Char8 as C
+
 
 class IsByteString a where
     fromByteString :: B.ByteString -> a
