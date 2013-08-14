@@ -2,46 +2,42 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Type (
-    Socket(..),
-    decode, Trigger(..),
-    Event, Handler, EventMap, Emitter, SocketM(..), Reply,
-    SocketIOState(..), Message(..), Endpoint(..), ID(..), Data(..),
-    Msg(..)
-) where
+module SocketIO.Type where
 
-import qualified Data.Map as Map
+
+import Network.HTTP.Types (Method)
+
+import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
+import Data.IORef
 import Data.Aeson
-import Data.Monoid (mconcat)
+import Data.Monoid ((<>))
 import GHC.Generics
-import Control.Applicative ((<$>), (<*>))
-import Control.Monad (mapM_)
-import Control.Monad.State
-import Control.Monad.Writer
-import Control.Monad.Identity
+import Control.Monad.Reader       
 
-newtype Socket = Socket { socket :: SessionID }
 
 --
 
 type Text = TL.Text
 type Event = Text
-type SessionID = Text
-type Reply = [Text]
-type Handler = Reply -> IO ()
-type EventMap = Map.Map Event [Handler]
+type Reply = Text
+type Namespace = Text
+type Protocol = Text
+type Transport = Text
+type SessionID = Text 
 
-type Emitter = Event 
+type HashTable k v = H.LinearHashTable k v
+data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
+type Session = (SessionID, Status)
+type Table = HashTable SessionID Status 
+data SocketRequest = SocketRequest Method Namespace Protocol Transport SessionID deriving (Show)
 
-newtype SocketM a = SocketM { runSocketM :: WriterT [Emitter] (StateT EventMap Identity) a }
-    deriving (Monad, Functor, MonadState EventMap)
+data Connection = Handshake | Connection SessionID | Disconnection deriving Show 
 
---
+newtype SessionRefM b a = SessionRefM { runSessionM :: (ReaderT (IORef b) IO) a }
+    deriving (Monad, Functor, MonadIO, MonadReader (IORef b))
 
-(+++) = TL.append
-
-data SocketIOState = Connecting | Connected | Disconnecting | Disconnected deriving Show
+type SessionM a = SessionRefM Table a
 
 data Message    = MsgDisconnect Endpoint
                 | MsgConnect Endpoint
@@ -88,20 +84,20 @@ instance Msg Data where
 
 instance Msg Message where
     toMessage (MsgDisconnect NoEndpoint)    = "0"
-    toMessage (MsgDisconnect e)             = "0::" +++ toMessage e
-    toMessage (MsgConnect e)                = "1::" +++ toMessage e
+    toMessage (MsgDisconnect e)             = "0::" <> toMessage e
+    toMessage (MsgConnect e)                = "1::" <> toMessage e
     toMessage MsgHeartbeat                  = undefined
-    toMessage (Msg i e d)                   = "3:" +++ toMessage i +++
-                                              ":" +++ toMessage e +++
-                                              ":" +++ toMessage d
-    toMessage (MsgJSON i e d)               = "4:" +++ toMessage i +++
-                                              ":" +++ toMessage e +++
-                                              ":" +++ toMessage d
-    toMessage (MsgEvent i e d)              = "5:" +++ toMessage i +++
-                                              ":" +++ toMessage e +++
-                                              ":" +++ toMessage d
-    toMessage (MsgACK i d)                  = "6:::" +++ toMessage i +++ 
-                                              "+" +++ toMessage d
-    toMessage (MsgError e d)                = "7::" +++ toMessage e +++ 
-                                              ":" +++ toMessage d
+    toMessage (Msg i e d)                   = "3:" <> toMessage i <>
+                                              ":" <> toMessage e <>
+                                              ":" <> toMessage d
+    toMessage (MsgJSON i e d)               = "4:" <> toMessage i <>
+                                              ":" <> toMessage e <>
+                                              ":" <> toMessage d
+    toMessage (MsgEvent i e d)              = "5:" <> toMessage i <>
+                                              ":" <> toMessage e <>
+                                              ":" <> toMessage d
+    toMessage (MsgACK i d)                  = "6:::" <> toMessage i <> 
+                                              "+" <> toMessage d
+    toMessage (MsgError e d)                = "7::" <> toMessage e <> 
+                                              ":" <> toMessage d
     toMessage MsgNoop                       = "8:::"

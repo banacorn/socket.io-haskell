@@ -4,42 +4,24 @@
 module SocketIO.Server where
 
 import SocketIO.Util
+import SocketIO.Type
 
 import Network.Wai
 import Network.Wai.Handler.Warp     (run)
-import Network.HTTP.Types           (status200, Method)
+import Network.HTTP.Types           (status200)
 
 import System.Random                (randomRIO)
 
-import Control.Concurrent (threadDelay)            
-import Control.Monad.ST            
+import Control.Concurrent           (threadDelay)            
 import Control.Monad.Trans          (liftIO)
 import Control.Monad.Reader       
 
+import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
-import Data.Monoid                  (mconcat)
-import Data.List                    (intersperse)
 import Data.IORef
-import qualified Data.HashTable.IO as H
-type HashTable k v = H.LinearHashTable k v
+import Data.List                    (intersperse)
 
-type Text = TL.Text
-type Namespace = Text
-type Protocol = Text
-type Transport = Text
-type SessionID = Text 
-data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
-type Session = (SessionID, Status)
-type Table = HashTable SessionID Status 
-data SocketRequest = SocketRequest Method Namespace Protocol Transport SessionID deriving (Show)
-
-data Connection = Handshake | Connection SessionID | Disconnection deriving Show 
-
-newtype SessionRefM b a = SessionRefM { runSessionM :: (ReaderT (IORef b) IO) a }
-    deriving (Monad, Functor, MonadIO, MonadReader (IORef b))
-
-type SessionM a = SessionRefM Table a
 
 processRequest :: Request -> SocketRequest
 processRequest request = case path of
@@ -54,6 +36,7 @@ processRequest request = case path of
 processSocketRequest :: SocketRequest -> Connection
 processSocketRequest (SocketRequest _ "" "" "" "") = Disconnection  
 processSocketRequest (SocketRequest "GET" n p "" "") = Handshake  
+processSocketRequest (SocketRequest "GET" n p t s) = Connection s
 processSocketRequest (SocketRequest "GET" n p t s) = Connection s
 processSocketRequest (SocketRequest _ _ _ _ _) = Disconnection  
 
