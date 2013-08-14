@@ -43,7 +43,7 @@ preprocess = processSocketRequest . processRequest
 
 
 readTable :: (Table -> IO a) -> SessionM a
-readTable f = ask >>= liftIO . readIORef >>= liftIO . f
+readTable f = ask >>= liftIO . readIORef . getSessionTable >>= liftIO . f
 
 createSession :: SessionM SessionID
 createSession = readTable $ \table -> do
@@ -94,7 +94,7 @@ server ref req = liftIO . runSession ref $ case req of
 --server _ = return $ text "1::" 
 
 
-runSession :: (IORef Table) -> SessionM a -> IO a
+runSession :: Env -> SessionM a -> IO a
 runSession s m = liftIO $ runReaderT (runSessionM m) s
 
 newTable :: IO (IORef Table)
@@ -104,7 +104,7 @@ text = responseLBS status200 header . fromText
 
 main = do
     table <- newTable
-    run 4000 $ server table . preprocess
+    run 4000 $ server (Env table) . preprocess
 
 header = [
     ("Content-Type", "text/plain"),
