@@ -19,15 +19,15 @@ instance FromJSON Trigger where
 decodeTrigger :: BL.ByteString -> Maybe Trigger
 decodeTrigger = decode
 
-parseShit :: Message -> Message
-parseShit (MsgEvent i e (Data d)) = case decodeTrigger bytestring of
-    Just t  -> MsgEvent i e (EventData t)
-    Nothing -> MsgEvent i e NoData
-    where   bytestring = fromText d
-parseShit n = n
+--parseShit :: Message -> Message
+--parseShit (MsgEvent i e (Data d)) = case decodeTrigger bytestring of
+--    Just t  -> MsgEvent i e t
+--    Nothing -> MsgEvent i e (Trigger "", [])
+--    where   bytestring = fromText d
+--parseShit n = n
 
 parseMessage :: BL.ByteString -> Message
-parseMessage text = parseShit $ case parse parseMessage' "" string of
+parseMessage text = case parse parseMessage' "" string of
     Left _  -> MsgNoop
     Right x -> x
     where   string = fromLazyByteString text
@@ -43,7 +43,9 @@ parseMessage' = do
         '2' ->  return MsgHeartbeat
         '3' ->  parseRegularMessage Msg
         '4' ->  parseRegularMessage MsgJSON
-        '5' ->  parseRegularMessage MsgEvent
+        '5' ->  MsgEvent    <$> parseID 
+                            <*> parseEndpoint 
+                            <*> parseTrigger
         '6' ->  try (do 
                 string ":::"
                 n <- read <$> number
@@ -80,4 +82,15 @@ parseEndpoint    =  try (colon >> endpoint >>= return . Endpoint)
 parseData :: Parser Data
 parseData    =  try (colon >> text >>= return . Data . fromString)
             <|>     (colon >>          return   NoData)
+
+
+parseTrigger :: Parser Trigger
+parseTrigger =  try (do
+                colon
+                t <- text
+                case decodeTrigger (fromString t) of
+                    Just e -> return e
+                    Nothing -> return NoTrigger
+            )
+            <|>     (colon >>          return   NoTrigger)
 

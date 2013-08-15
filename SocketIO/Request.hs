@@ -37,8 +37,10 @@ identifyRequest ("GET", _, n, p, "", "") = return Handshake
 identifyRequest ("GET", _, n, p, t, s) = return $ Connect s
 
 identifyRequest ("POST", b, n, p, t, s) = do
-    print message
-    return $ Disconnect s
+    return $ case message of
+        MsgEvent i e t  -> Emit s t
+        MsgDisconnect _ -> Disconnect s 
+        _ -> Disconnect s
     where   message = parseMessage b
 
 

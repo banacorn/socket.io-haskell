@@ -3,6 +3,7 @@
 
 module SocketIO.Type where
 
+import SocketIO.Util
 
 import qualified Network.Wai as Wai
 
@@ -34,7 +35,7 @@ type Session = (SessionID, Status)
 type Table = HashTable SessionID Status 
 --data SocketRequest = SocketRequest Method Body (Namespace, Protocol, Transport, SessionID) deriving (Show)
 
-data Request = Handshake | Disconnect SessionID | Connect SessionID deriving (Show)
+data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Trigger deriving (Show)
 
 
 --data Connection = Handshake | Connection SessionID | Packet SessionID Body | Disconnection deriving Show 
@@ -50,7 +51,7 @@ data Message    = MsgDisconnect Endpoint
                 | MsgHeartbeat
                 | Msg ID Endpoint Data
                 | MsgJSON ID Endpoint Data
-                | MsgEvent ID Endpoint Data
+                | MsgEvent ID Endpoint Trigger
                 | MsgACK ID Data
                 | MsgError Endpoint Data
                 | MsgNoop
@@ -64,11 +65,12 @@ data ID         = ID Int
                 | NoID
                 deriving (Show, Eq)
 data Data       = Data Text
-                | EventData Trigger
                 | NoData
                 deriving (Show, Eq)
 
-data Trigger    = Trigger { name :: Event, args :: Reply } deriving (Show, Eq)
+data Trigger    = Trigger { name :: Event, args :: Reply } 
+                | NoTrigger
+                deriving (Show, Eq)
 
 
 class Msg m where
@@ -87,6 +89,8 @@ instance Msg Data where
     toMessage (Data s) = s
     toMessage NoData = ""
 
+instance Msg Trigger where
+    toMessage = fromString . show
 instance Msg Message where
     toMessage (MsgDisconnect NoEndpoint)    = "0"
     toMessage (MsgDisconnect e)             = "0::" <> toMessage e

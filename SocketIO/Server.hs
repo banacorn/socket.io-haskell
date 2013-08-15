@@ -34,7 +34,10 @@ banana (Connect sessionID) = do
             return (text "7:::Disconnected")
 banana (Disconnect sessionID) = do
     deleteSession sessionID
-    return $ text "1::"
+    return $ text "1"
+banana (Emit sessionID trigger) = do
+    liftIO $ print trigger
+    return $ text "1"
 --banana _ = return $ text "1::"
 
 runSession :: Local -> Env -> SessionM a -> IO a
