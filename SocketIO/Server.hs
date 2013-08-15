@@ -42,7 +42,6 @@ processSocketRequest (SocketRequest _ _ _ _ _) = Disconnection
 
 preprocess = processSocketRequest . processRequest
 
-
 readTable :: (Table -> IO a) -> SessionM a
 readTable f = ask >>= liftIO . readIORef . getSessionTable >>= liftIO . f
 
@@ -70,27 +69,23 @@ lookupSession sessionID = readTable $ \table -> do
         Nothing     -> return Disconnected
 
 server :: Connection -> SessionM Response 
-server req = case req of
+server Handshake = do
+    sessionID <- createSession
+    return $ text (sessionID <> ":60:60:xhr-polling")
+server (Connection sessionID) = do
+    status <- lookupSession sessionID
+    case status of
+        Connecting -> do
+            updateSession sessionID Connected
+            return (text "1::")
+        Connected -> do
+            return (text "8::")
+        _ -> do
+            return (text "7:::Disconnected")
+server _ = return $ text "1::"
 
-    Handshake -> do
-        sessionID <- createSession
-        return $ text (sessionID <> ":60:60:xhr-polling")
-
-    Connection sessionID -> do
-        status <- lookupSession sessionID
-        case status of
-            Connecting -> do
-                updateSession sessionID Connected
-                return (text "1::")
-            Connected -> do
-                return (text "8::")
-            _ -> do
-                return (text "7:::Disconnected")
-
-    otherwise -> return $ text "1::"
-
-runSession :: Env -> SessionM a -> IO a
-runSession s m = runReaderT (runSessionM m) s
+runSession :: Local -> Env -> SessionM a -> IO a
+runSession local env m = runReaderT (runReaderT (runSessionM m) env) local
 
 newTable :: IO (IORef Table)
 newTable = H.new >>= newIORef 
@@ -100,7 +95,7 @@ text = responseLBS status200 header . fromText
 main = do
     table <- newTable
     toilet <- newEmptyMVar
-    run 4000 $ liftIO . runSession (Env table toilet) . server . preprocess
+    run 4000 $ liftIO . runSession (Local toilet) (Env table) . server . preprocess
 
 header = [
     ("Content-Type", "text/plain"),

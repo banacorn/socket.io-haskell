@@ -38,9 +38,10 @@ data SocketRequest = SocketRequest Method Namespace Protocol Transport SessionID
 
 data Connection = Handshake | Connection SessionID | Disconnection deriving Show 
 
-data Env = Env { getSessionTable :: IORef Table, getToilet :: MVar Response }
+data Local = Local { getToilet :: MVar Response }
+data Env = Env { getSessionTable :: IORef Table }
 
-newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
+newtype SessionM a = SessionM { runSessionM :: (ReaderT Env (ReaderT Local IO)) a }
     deriving (Monad, Functor, MonadIO, MonadReader Env)
 
 data Message    = MsgDisconnect Endpoint
