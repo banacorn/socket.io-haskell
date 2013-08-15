@@ -5,18 +5,23 @@ import SocketIO.Type
 import SocketIO.Util
 import SocketIO.Parser
 
-import Control.Applicative ((<$>), (<*>))            
+import Control.Applicative          ((<$>), (<*>))   
+import Control.Monad                ((>=>))         
 import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 
 import qualified Network.Wai as Wai
-import Network.HTTP.Types (Method)
+import Network.HTTP.Types           (Method)
 
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.Conduit.List (consume)
-import Data.Conduit (($$))
-import Data.Monoid (mconcat)
+import Data.Conduit.List            (consume)
+import Data.Conduit                 (($$))
+import Data.Monoid                  (mconcat)
 
+type Namespace = Text
+type Protocol = Text
+type Transport = Text
+type Body = BL.ByteString
 type ProcessedRequest = (Method, Body, Namespace, Protocol, Transport, SessionID)
 
 processHTTPRequest :: Wai.Request -> IO ProcessedRequest
@@ -43,32 +48,10 @@ identifyRequest ("POST", b, n, p, t, s) = do
         _ -> Disconnect s
     where   message = parseMessage b
 
+identifyRequest (_, _, _, _, _, s) = return $ Disconnect s
 
-processRequest r = processHTTPRequest r >>= identifyRequest 
-
+processRequest :: Wai.Request -> IO Request
+processRequest = processHTTPRequest >=> identifyRequest 
 
 parseBody :: Wai.Request -> IO BL.ByteString
 parseBody req = fromByteString . mconcat <$> runResourceT (Wai.requestBody req $$ consume)
-
---createSession :: SessionM SessionID
---createSession = readTable $ \table -> do
---    sessionID <- genSessionID
---    H.insert table sessionID Connecting
---    return sessionID
---    where   genSessionID = fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: IO Text
-
---updateSession :: SessionID -> Status -> SessionM ()
---updateSession sessionID status = readTable $ \table -> do
---    H.delete table sessionID
---    H.insert table sessionID status
-
---deleteSession :: SessionID -> SessionM ()
---deleteSession sessionID = readTable $ \table -> 
---    H.delete table sessionID
-
---lookupSession :: SessionID -> SessionM Status
---lookupSession sessionID = readTable $ \table -> do
---    result <- H.lookup table sessionID
---    case result of
---        Just status -> return status
---        Nothing     -> return Disconnected

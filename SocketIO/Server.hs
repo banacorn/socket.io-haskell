@@ -6,6 +6,7 @@ import SocketIO.Util
 import SocketIO.Type
 import SocketIO.Session
 import SocketIO.Request
+import SocketIO.Event
 
 import qualified Network.Wai as Wai
 import Network.Wai.Handler.Warp     (run)
@@ -13,9 +14,9 @@ import Network.HTTP.Types           (status200)
 
 import Control.Concurrent           (threadDelay)            
 import Control.Concurrent.MVar   
-import Control.Monad                ((>=>))
 import Control.Monad.Trans          (liftIO)
 import Control.Monad.Reader       
+import Control.Monad.Writer       
 
 banana :: Request -> SessionM Wai.Response
 banana Handshake = do
@@ -45,12 +46,16 @@ runSession local env m = runReaderT (runReaderT (runSessionM m) env) local
 
 text = Wai.responseLBS status200 header . fromText
 
-server = do
+server :: SocketM () -> IO ()
+server handler = do
     table <- newTable
     toilet <- newEmptyMVar
+    listeners <- extractListener handler
+    print $ map fst listeners
     run 4000 $ \httpRequest -> do
         req <- liftIO $ processRequest httpRequest
         liftIO $ runSession (Local toilet) (Env table) (banana req)
+
 header = [
     ("Content-Type", "text/plain"),
     ("Connection", "keep-alive"),

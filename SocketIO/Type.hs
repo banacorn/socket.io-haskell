@@ -8,6 +8,7 @@ import SocketIO.Util
 import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
+import Control.Monad.Writer       
 import Control.Concurrent.MVar    
 
 import qualified Data.HashTable.IO as H
@@ -16,29 +17,20 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.IORef
 import Data.Monoid ((<>))
 
-
-
---
-
 type Text = TL.Text
 type Event = Text
 type Reply = [Text]
-type Namespace = Text
-type Protocol = Text
-type Transport = Text
 type SessionID = Text 
-type Body = BL.ByteString
+
+type Listener = (Event, CallbackM ())
+data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
+
 
 type HashTable k v = H.LinearHashTable k v
-data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
-type Session = (SessionID, Status)
 type Table = HashTable SessionID Status 
---data SocketRequest = SocketRequest Method Body (Namespace, Protocol, Transport, SessionID) deriving (Show)
 
-data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Trigger deriving (Show)
-
-
---data Connection = Handshake | Connection SessionID | Packet SessionID Body | Disconnection deriving Show 
+data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
+data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
 
 data Local = Local { getToilet :: MVar Wai.Response }
 data Env = Env { getSessionTable :: IORef Table }
@@ -46,12 +38,20 @@ data Env = Env { getSessionTable :: IORef Table }
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env (ReaderT Local IO)) a }
     deriving (Monad, Functor, MonadIO, MonadReader Env)
 
+newtype SocketM a = SocketM { runSocketM :: (WriterT [Emitter] (WriterT [Listener] IO)) a }
+    deriving (Monad, Functor, MonadIO, MonadWriter [Emitter])
+
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply IO)) a }
+    deriving (Monad, Functor, MonadIO, MonadWriter [Emitter], MonadReader Reply)
+
+
+
 data Message    = MsgDisconnect Endpoint
                 | MsgConnect Endpoint
                 | MsgHeartbeat
                 | Msg ID Endpoint Data
                 | MsgJSON ID Endpoint Data
-                | MsgEvent ID Endpoint Trigger
+                | MsgEvent ID Endpoint Emitter
                 | MsgACK ID Data
                 | MsgError Endpoint Data
                 | MsgNoop
@@ -67,11 +67,6 @@ data ID         = ID Int
 data Data       = Data Text
                 | NoData
                 deriving (Show, Eq)
-
-data Trigger    = Trigger { name :: Event, args :: Reply } 
-                | NoTrigger
-                deriving (Show, Eq)
-
 
 class Msg m where
     toMessage :: m -> Text
@@ -89,7 +84,7 @@ instance Msg Data where
     toMessage (Data s) = s
     toMessage NoData = ""
 
-instance Msg Trigger where
+instance Msg Emitter where
     toMessage = fromString . show
 instance Msg Message where
     toMessage (MsgDisconnect NoEndpoint)    = "0"

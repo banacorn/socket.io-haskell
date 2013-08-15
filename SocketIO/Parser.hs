@@ -10,19 +10,19 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.Aeson
 
-instance FromJSON Trigger where
-    parseJSON (Object v) =  Trigger <$>
+instance FromJSON Emitter where
+    parseJSON (Object v) =  Emitter <$>
                             v .: "name" <*>
                             v .:? "args" .!= ([] :: Reply)
     
 
-decodeTrigger :: BL.ByteString -> Maybe Trigger
-decodeTrigger = decode
+decodeEmitter :: BL.ByteString -> Maybe Emitter
+decodeEmitter = decode
 
 --parseShit :: Message -> Message
---parseShit (MsgEvent i e (Data d)) = case decodeTrigger bytestring of
+--parseShit (MsgEvent i e (Data d)) = case decodeEmitter bytestring of
 --    Just t  -> MsgEvent i e t
---    Nothing -> MsgEvent i e (Trigger "", [])
+--    Nothing -> MsgEvent i e (Emitter "", [])
 --    where   bytestring = fromText d
 --parseShit n = n
 
@@ -45,7 +45,7 @@ parseMessage' = do
         '4' ->  parseRegularMessage MsgJSON
         '5' ->  MsgEvent    <$> parseID 
                             <*> parseEndpoint 
-                            <*> parseTrigger
+                            <*> parseEmitter
         '6' ->  try (do 
                 string ":::"
                 n <- read <$> number
@@ -84,13 +84,13 @@ parseData    =  try (colon >> text >>= return . Data . fromString)
             <|>     (colon >>          return   NoData)
 
 
-parseTrigger :: Parser Trigger
-parseTrigger =  try (do
+parseEmitter :: Parser Emitter
+parseEmitter =  try (do
                 colon
                 t <- text
-                case decodeTrigger (fromString t) of
+                case decodeEmitter (fromString t) of
                     Just e -> return e
-                    Nothing -> return NoTrigger
+                    Nothing -> return NoEmitter
             )
-            <|>     (colon >>          return   NoTrigger)
+            <|>     (colon >>          return   NoEmitter)
 

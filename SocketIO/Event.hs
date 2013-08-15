@@ -3,22 +3,26 @@
 module SocketIO.Event where
 
 import SocketIO.Type
-import qualified Data.Map as Map
-import Control.Monad.State
 import Control.Monad.Writer
-import Control.Monad.Identity
 
+on :: Event -> CallbackM () -> SocketM ()
+on event callback = do
+    SocketM . lift . tell $ [(event, callback)]
 
-on :: Event -> Handler -> SocketM ()
-on event handler = modify $ register event handler
+(>~>) = on
 
-register :: Event -> Handler -> EventMap -> EventMap
-register event handler eventMap = Map.insertWith (++) event [handler] eventMap
+emit :: Event -> Reply -> SocketM ()
+emit event reply = tell [Emitter event reply]
 
-extract :: SocketM () -> EventMap
-extract = runIdentity . flip execStateT Map.empty . runWriterT . runSocketM
+(<~<) = emit
 
-trigger :: EventMap -> Event -> Reply -> IO ()
-trigger eventMap event reply = case Map.lookup event eventMap of
-    Just handlers   -> mapM_ (\h -> h reply) handlers
-    Nothing         -> return ()
+extractListener :: SocketM () -> IO [Listener]
+extractListener = execWriterT . execWriterT . runSocketM
+
+extractEmitter :: SocketM () -> IO [Emitter]
+extractEmitter = fmap fst . runWriterT . execWriterT . runSocketM
+
+--trigger :: EventMap -> Event -> Reply -> IO ()
+--trigger eventMap event reply = case Map.lookup event eventMap of
+--    Just handlers   -> mapM_ (\h -> h reply) handlers
+--    Nothing         -> return ()
