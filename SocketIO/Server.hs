@@ -6,12 +6,12 @@ module SocketIO.Server where
 import SocketIO.Util
 import SocketIO.Type
 import SocketIO.Parser
+import SocketIO.Session
 
 import Network.Wai
 import Network.Wai.Handler.Warp     (run)
 import Network.HTTP.Types           (status200)
 
-import System.Random                (randomRIO)
 
 import Control.Applicative           ((<$>), (<*>))            
 import Control.Concurrent           (threadDelay)            
@@ -23,11 +23,8 @@ import Control.Monad.Reader
 
 
 import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
-import Data.IORef
-import Data.List                    (intersperse)
 import Data.Conduit.List (consume)
 import Data.Conduit (($$))
 import Data.Monoid (mconcat)
@@ -56,31 +53,6 @@ processSocketRequest (SocketRequest _ _ _) = return Disconnection
 preprocess :: Request -> IO Connection
 preprocess = processRequest >=> processSocketRequest
 
-readTable :: (Table -> IO a) -> SessionM a
-readTable f = ask >>= liftIO . readIORef . getSessionTable >>= liftIO . f
-
-createSession :: SessionM SessionID
-createSession = readTable $ \table -> do
-    sessionID <- genSessionID
-    H.insert table sessionID Connecting
-    return sessionID
-    where   genSessionID = fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: IO Text
-
-updateSession :: SessionID -> Status -> SessionM ()
-updateSession sessionID status = readTable $ \table -> do
-    H.delete table sessionID
-    H.insert table sessionID status
-
-deleteSession :: SessionID -> SessionM ()
-deleteSession sessionID = readTable $ \table -> 
-    H.delete table sessionID
-
-lookupSession :: SessionID -> SessionM Status
-lookupSession sessionID = readTable $ \table -> do
-    result <- H.lookup table sessionID
-    case result of
-        Just status -> return status
-        Nothing     -> return Disconnected
 
 server :: Connection -> SessionM Response 
 server Handshake = do
@@ -107,9 +79,6 @@ server _ = return $ text "1::"
 
 runSession :: Local -> Env -> SessionM a -> IO a
 runSession local env m = runReaderT (runReaderT (runSessionM m) env) local
-
-newTable :: IO (IORef Table)
-newTable = H.new >>= newIORef
 
 parseBody :: Request -> IO BL.ByteString
 parseBody req = fromByteString . mconcat <$> runResourceT (requestBody req $$ consume)
