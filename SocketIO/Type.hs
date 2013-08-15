@@ -1,11 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module SocketIO.Type where
 
 
-import GHC.Generics
 import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
@@ -15,7 +13,6 @@ import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.IORef
-import Data.Aeson
 import Data.Monoid ((<>))
 
 
@@ -24,7 +21,7 @@ import Data.Monoid ((<>))
 
 type Text = TL.Text
 type Event = Text
-type Reply = Text
+type Reply = [Text]
 type Namespace = Text
 type Protocol = Text
 type Transport = Text
@@ -71,12 +68,8 @@ data Data       = Data Text
                 | NoData
                 deriving (Show, Eq)
 
-data Trigger    = Trigger { name :: Event, args :: Reply } deriving (Show, Eq, Generic)
+data Trigger    = Trigger { name :: Event, args :: Reply } deriving (Show, Eq)
 
-instance FromJSON Trigger
-
-decodeTrigger :: BL.ByteString -> Maybe Trigger
-decodeTrigger = decode
 
 class Msg m where
     toMessage :: m -> Text

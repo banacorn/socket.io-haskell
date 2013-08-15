@@ -32,9 +32,12 @@ processHTTPRequest request = do
             cleanup = filter (/= "")
 
 identifyRequest  :: ProcessedRequest -> IO Request
+
 identifyRequest ("GET", _, n, p, "", "") = return Handshake
 identifyRequest ("GET", _, n, p, t, s) = return $ Connect s
+
 identifyRequest ("POST", b, n, p, t, s) = do
+    print message
     return $ Disconnect s
     where   message = parseMessage b
 

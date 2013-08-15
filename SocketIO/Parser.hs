@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module SocketIO.Parser (parseMessage) where
 
 import SocketIO.Type
@@ -6,17 +7,27 @@ import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>), (<*>))
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Lazy as BL
+import Data.Aeson
 
-parseJSON :: Message -> Message
-parseJSON (MsgEvent i e (Data d)) = case decodeTrigger bytestring of
+instance FromJSON Trigger where
+    parseJSON (Object v) =  Trigger <$>
+                            v .: "name" <*>
+                            v .:? "args" .!= ([] :: Reply)
+    
+
+decodeTrigger :: BL.ByteString -> Maybe Trigger
+decodeTrigger = decode
+
+parseShit :: Message -> Message
+parseShit (MsgEvent i e (Data d)) = case decodeTrigger bytestring of
     Just t  -> MsgEvent i e (EventData t)
     Nothing -> MsgEvent i e NoData
     where   bytestring = fromText d
-parseJSON n = n
+parseShit n = n
 
-parseMessage :: LB.ByteString -> Message
-parseMessage text = parseJSON $ case parse parseMessage' "" string of
+parseMessage :: BL.ByteString -> Message
+parseMessage text = parseShit $ case parse parseMessage' "" string of
     Left _  -> MsgNoop
     Right x -> x
     where   string = fromLazyByteString text
