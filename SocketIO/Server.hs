@@ -5,6 +5,7 @@ module SocketIO.Server where
 
 import SocketIO.Util
 import SocketIO.Type
+import SocketIO.Parser
 
 import Network.Wai
 import Network.Wai.Handler.Warp     (run)
@@ -12,35 +13,48 @@ import Network.HTTP.Types           (status200)
 
 import System.Random                (randomRIO)
 
+import Control.Applicative           ((<$>), (<*>))            
 import Control.Concurrent           (threadDelay)            
 import Control.Concurrent.MVar   
+import Control.Monad                ((>=>))
 import Control.Monad.Trans          (liftIO)
+import Control.Monad.Trans.Resource (ResourceT, runResourceT)
 import Control.Monad.Reader       
 
+
+import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
 import Data.IORef
 import Data.List                    (intersperse)
+import Data.Conduit.List (consume)
+import Data.Conduit (($$))
+import Data.Monoid (mconcat)
 
 
-processRequest :: Request -> SocketRequest
-processRequest request = case path of
-    [n, p]          -> SocketRequest method n  p  "" ""
-    [n, p, t]       -> SocketRequest method n  p  t  ""
-    [n, p, t, s]    -> SocketRequest method n  p  t  s
-    _               -> SocketRequest method "" "" "" ""
+
+processRequest :: Request -> IO SocketRequest
+processRequest request = do
+    b <- parseBody request
+    return $ case path of
+        [n, p]          -> SocketRequest method b (n,  p,  "", "")
+        [n, p, t]       -> SocketRequest method b (n,  p,  t,  "")
+        [n, p, t, s]    -> SocketRequest method b (n,  p,  t,  s)
+        _               -> SocketRequest method b ("", "", "", "")
     where   method  = requestMethod request
             path    = map TL.fromStrict . cleanup . pathInfo $ request
             cleanup = filter (/= "")
 
-processSocketRequest :: SocketRequest -> Connection
-processSocketRequest (SocketRequest _ "" "" "" "") = Disconnection  
-processSocketRequest (SocketRequest "GET" n p "" "") = Handshake  
-processSocketRequest (SocketRequest "GET" n p t s) = Connection s
-processSocketRequest (SocketRequest _ _ _ _ _) = Disconnection  
+processSocketRequest :: SocketRequest -> IO Connection
+processSocketRequest (SocketRequest _ _ ("", "", "", "")) = return Disconnection  
+processSocketRequest (SocketRequest "GET" _ (n, p, "", "")) = return Handshake  
+processSocketRequest (SocketRequest "GET" _ (n, p, t, s)) = return (Connection s)  
+processSocketRequest (SocketRequest "POST" b (n, p, t, s)) = return (Packet s b)  
+processSocketRequest (SocketRequest _ _ _) = return Disconnection  
 
-preprocess = processSocketRequest . processRequest
+preprocess :: Request -> IO Connection
+preprocess = processRequest >=> processSocketRequest
 
 readTable :: (Table -> IO a) -> SessionM a
 readTable f = ask >>= liftIO . readIORef . getSessionTable >>= liftIO . f
@@ -82,20 +96,30 @@ server (Connection sessionID) = do
             return (text "8::")
         _ -> do
             return (text "7:::Disconnected")
+server (Packet sessionID body) = do
+    liftIO $ print message
+    case message of
+        _ -> do
+            deleteSession sessionID
+            return (text $ fromString $ show body)
+    where   message = parseMessage body
 server _ = return $ text "1::"
 
 runSession :: Local -> Env -> SessionM a -> IO a
 runSession local env m = runReaderT (runReaderT (runSessionM m) env) local
 
 newTable :: IO (IORef Table)
-newTable = H.new >>= newIORef 
+newTable = H.new >>= newIORef
+
+parseBody :: Request -> IO BL.ByteString
+parseBody req = fromByteString . mconcat <$> runResourceT (requestBody req $$ consume)
 
 text = responseLBS status200 header . fromText
 
 main = do
     table <- newTable
     toilet <- newEmptyMVar
-    run 4000 $ liftIO . runSession (Local toilet) (Env table) . server . preprocess
+    run 4000 $ liftIO . preprocess >=> liftIO . runSession (Local toilet) (Env table) . server
 
 header = [
     ("Content-Type", "text/plain"),

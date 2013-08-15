@@ -9,7 +9,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
 
 parseJSON :: Message -> Message
-parseJSON (MsgEvent i e (Data d)) = case decode bytestring of
+parseJSON (MsgEvent i e (Data d)) = case decodeTrigger bytestring of
     Just t  -> MsgEvent i e (EventData t)
     Nothing -> MsgEvent i e NoData
     where   bytestring = fromText d

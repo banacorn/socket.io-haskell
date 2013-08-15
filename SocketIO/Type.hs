@@ -14,6 +14,7 @@ import Control.Concurrent.MVar
 
 import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.IORef
 import Data.Aeson
 import Data.Monoid ((<>))
@@ -29,14 +30,15 @@ type Namespace = Text
 type Protocol = Text
 type Transport = Text
 type SessionID = Text 
+type Body = BL.ByteString
 
 type HashTable k v = H.LinearHashTable k v
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
 type Session = (SessionID, Status)
 type Table = HashTable SessionID Status 
-data SocketRequest = SocketRequest Method Namespace Protocol Transport SessionID deriving (Show)
+data SocketRequest = SocketRequest Method Body (Namespace, Protocol, Transport, SessionID) deriving (Show)
 
-data Connection = Handshake | Connection SessionID | Disconnection deriving Show 
+data Connection = Handshake | Connection SessionID | Packet SessionID Body | Disconnection deriving Show 
 
 data Local = Local { getToilet :: MVar Response }
 data Env = Env { getSessionTable :: IORef Table }
@@ -70,6 +72,9 @@ data Data       = Data Text
 data Trigger    = Trigger { name :: Event, args :: Reply } deriving (Show, Eq, Generic)
 
 instance FromJSON Trigger
+
+decodeTrigger :: BL.ByteString -> Maybe Trigger
+decodeTrigger = decode
 
 class Msg m where
     toMessage :: m -> Text
