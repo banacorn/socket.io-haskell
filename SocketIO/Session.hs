@@ -1,9 +1,9 @@
 module SocketIO.Session (
-	createSession, 
-	updateSession, 
-	deleteSession, 
-	lookupSession,
-	newTable
+    createSession, 
+    updateSession, 
+    deleteSession, 
+    lookupSession,
+    newTable
 ) where
 
 import SocketIO.Type

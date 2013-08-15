@@ -6,8 +6,7 @@ module SocketIO.Type where
 
 
 import GHC.Generics
-import Network.HTTP.Types (Method)
-import Network.Wai (Response)
+import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
 import Control.Concurrent.MVar    
@@ -36,11 +35,14 @@ type HashTable k v = H.LinearHashTable k v
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
 type Session = (SessionID, Status)
 type Table = HashTable SessionID Status 
-data SocketRequest = SocketRequest Method Body (Namespace, Protocol, Transport, SessionID) deriving (Show)
+--data SocketRequest = SocketRequest Method Body (Namespace, Protocol, Transport, SessionID) deriving (Show)
 
-data Connection = Handshake | Connection SessionID | Packet SessionID Body | Disconnection deriving Show 
+data Request = Handshake | Disconnect SessionID | Connect SessionID deriving (Show)
 
-data Local = Local { getToilet :: MVar Response }
+
+--data Connection = Handshake | Connection SessionID | Packet SessionID Body | Disconnection deriving Show 
+
+data Local = Local { getToilet :: MVar Wai.Response }
 data Env = Env { getSessionTable :: IORef Table }
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env (ReaderT Local IO)) a }
