@@ -41,20 +41,19 @@ banana (Emit sessionID trigger) = do
     return $ text "1"
 --banana _ = return $ text "1::"
 
-runSession :: Local -> Env -> SessionM a -> IO a
-runSession local env m = runReaderT (runReaderT (runSessionM m) env) local
+runSession :: Env -> SessionM a -> IO a
+runSession env m = runReaderT (runSessionM m) env
 
 text = Wai.responseLBS status200 header . fromText
 
 server :: SocketM () -> IO ()
 server handler = do
     table <- newTable
-    toilet <- newEmptyMVar
     listeners <- extractListener handler
     print $ map fst listeners
     run 4000 $ \httpRequest -> do
         req <- liftIO $ processRequest httpRequest
-        liftIO $ runSession (Local toilet) (Env table) (banana req)
+        liftIO $ runSession (Env table) (banana req)
 
 header = [
     ("Content-Type", "text/plain"),

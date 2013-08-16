@@ -32,10 +32,10 @@ type Table = HashTable SessionID Status
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
 data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
 
-data Local = Local { getToilet :: MVar Wai.Response }
+--data Local = Local { getToilet :: MVar Wai.Response }
 data Env = Env { getSessionTable :: IORef Table }
 
-newtype SessionM a = SessionM { runSessionM :: (ReaderT Env (ReaderT Local IO)) a }
+newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
     deriving (Monad, Functor, MonadIO, MonadReader Env)
 
 newtype SocketM a = SocketM { runSocketM :: (WriterT [Emitter] (WriterT [Listener] IO)) a }
