@@ -23,16 +23,17 @@ banana Handshake = do
     sessionID <- createSession
     return $ text (sessionID <> ":60:60:xhr-polling")
 banana (Connect sessionID) = do
-    status <- lookupSession sessionID
+    Session status _ <- lookupSession sessionID
     case status of
         Connecting -> do
-            updateSession sessionID Connected
+            updateSession sessionID updateStatus
             return (text "1::")
         Connected -> do
             liftIO $ threadDelay $ 5 * 1000000
             return (text "8::")
         _ -> do
             return (text "7:::Disconnected")
+    where   updateStatus (Session _ b) = Session Connected b
 banana (Disconnect sessionID) = do
     deleteSession sessionID
     return $ text "1"

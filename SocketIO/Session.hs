@@ -11,6 +11,7 @@ import SocketIO.Util
 
 import System.Random (randomRIO)
 import Control.Monad.Reader       
+import Control.Concurrent.MVar       
 import Data.IORef
 import qualified Data.HashTable.IO as H
 
@@ -23,22 +24,26 @@ readTable f = ask >>= liftIO . readIORef . getSessionTable >>= liftIO . f
 createSession :: SessionM SessionID
 createSession = readTable $ \table -> do
     sessionID <- genSessionID
-    H.insert table sessionID Connecting
+    buffer <- newEmptyMVar
+    H.insert table sessionID $ Session Connecting buffer
     return sessionID
     where   genSessionID = fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: IO Text
 
-updateSession :: SessionID -> Status -> SessionM ()
-updateSession sessionID status = readTable $ \table -> do
+updateSession :: SessionID -> (Session -> Session) -> SessionM ()
+updateSession sessionID f = readTable $ \table -> do
+    result <- H.lookup table sessionID
     H.delete table sessionID
-    H.insert table sessionID status
+    case result of
+        Just session -> H.insert table sessionID (f session)
+        Nothing      -> return ()
 
 deleteSession :: SessionID -> SessionM ()
 deleteSession sessionID = readTable $ \table -> 
     H.delete table sessionID
 
-lookupSession :: SessionID -> SessionM Status
+lookupSession :: SessionID -> SessionM Session
 lookupSession sessionID = readTable $ \table -> do
     result <- H.lookup table sessionID
     case result of
-        Just status -> return status
-        Nothing     -> return Disconnected
+        Just session -> return session
+        Nothing      -> return NoSession

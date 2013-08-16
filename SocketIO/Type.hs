@@ -27,9 +27,12 @@ data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 
 
 type HashTable k v = H.LinearHashTable k v
-type Table = HashTable SessionID Status 
-
+type Table = HashTable SessionID Session 
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
+type Buffer = MVar [Emitter]
+data Session = Session { status :: Status, buffer :: Buffer } | NoSession
+
+
 data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
 
 --data Local = Local { getToilet :: MVar Wai.Response }
