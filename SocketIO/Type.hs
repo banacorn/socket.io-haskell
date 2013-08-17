@@ -29,7 +29,7 @@ data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 type HashTable k v = H.LinearHashTable k v
 type Table = HashTable SessionID Session 
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
-type Buffer = MVar [Emitter]
+type Buffer = MVar Text
 data Session = Session { status :: Status, buffer :: Buffer } | NoSession
 
 

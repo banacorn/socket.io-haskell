@@ -29,11 +29,15 @@ banana (Connect sessionID) = do
             updateSession sessionID updateStatus
             return (text "1::")
         Connected -> do
+            
+
             liftIO $ threadDelay $ 5 * 1000000
             return (text "8::")
+
+
         _ -> do
             return (text "7:::Disconnected")
-    where   updateStatus (Session _ b) = Session Connected b
+    where   updateStatus (Session _ b) = return $ Session Connected b
 banana (Disconnect sessionID) = do
     deleteSession sessionID
     return $ text "1"

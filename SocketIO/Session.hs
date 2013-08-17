@@ -1,8 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 module SocketIO.Session (
     createSession, 
     updateSession, 
     deleteSession, 
     lookupSession,
+    writeBuffer,
+    flushBuffer,
     newTable
 ) where
 
@@ -29,12 +32,12 @@ createSession = readTable $ \table -> do
     return sessionID
     where   genSessionID = fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: IO Text
 
-updateSession :: SessionID -> (Session -> Session) -> SessionM ()
+updateSession :: SessionID -> (Session -> IO Session) -> SessionM ()
 updateSession sessionID f = readTable $ \table -> do
     result <- H.lookup table sessionID
     H.delete table sessionID
     case result of
-        Just session -> H.insert table sessionID (f session)
+        Just session -> H.insert table sessionID =<< f session
         Nothing      -> return ()
 
 deleteSession :: SessionID -> SessionM ()
@@ -47,3 +50,17 @@ lookupSession sessionID = readTable $ \table -> do
     case result of
         Just session -> return session
         Nothing      -> return NoSession
+
+writeBuffer :: SessionID -> Text -> SessionM ()
+writeBuffer sessionID text = readTable $ \table -> do
+    result <- H.lookup table sessionID
+    case result of
+        Just (Session _ bufferRef)  -> modifyMVar_ bufferRef (\buffer -> return text)
+        Nothing                     -> return ()
+
+flushBuffer :: SessionID -> SessionM Text
+flushBuffer sessionID = readTable $ \table -> do
+    result <- H.lookup table sessionID
+    case result of
+        Just (Session _ bufferRef)  -> readMVar bufferRef
+        Nothing                     -> return ""
