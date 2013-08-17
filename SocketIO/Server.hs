@@ -8,12 +8,13 @@ import SocketIO.Session
 import SocketIO.Request
 import SocketIO.Event
 
+import System.Timeout.Lifted
+
 import qualified Network.Wai as Wai
 import Network.Wai.Handler.Warp     (run)
 import Network.HTTP.Types           (status200)
 
 import Control.Concurrent           (threadDelay)            
-import Control.Concurrent.MVar   
 import Control.Monad.Trans          (liftIO)
 import Control.Monad.Reader       
 import Control.Monad.Writer       
@@ -29,12 +30,8 @@ banana (Connect sessionID) = do
             updateSession sessionID updateStatus
             return (text "1::")
         Connected -> do
-            
-
             liftIO $ threadDelay $ 5 * 1000000
             return (text "8::")
-
-
         _ -> do
             return (text "7:::Disconnected")
     where   updateStatus (Session _ b) = return $ Session Connected b

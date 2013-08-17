@@ -11,7 +11,7 @@ import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
 import Control.Monad.Writer       
-import Control.Concurrent.MVar    
+import Control.Concurrent.MVar.Lifted
 import Control.Monad.Trans.Control
 import Control.Monad.Base
 import Control.Applicative
@@ -19,7 +19,7 @@ import Control.Applicative
 import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.IORef
+import Data.IORef.Lifted
 import Data.Monoid ((<>))
 
 type Text = TL.Text
