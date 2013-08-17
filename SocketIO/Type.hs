@@ -1,5 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module SocketIO.Type where
 
@@ -10,6 +12,9 @@ import qualified Network.Wai as Wai
 import Control.Monad.Reader       
 import Control.Monad.Writer       
 import Control.Concurrent.MVar    
+import Control.Monad.Trans.Control
+import Control.Monad.Base
+import Control.Applicative
 
 import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
@@ -39,7 +44,12 @@ data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit Sessi
 data Env = Env { getSessionTable :: IORef Table }
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
-    deriving (Monad, Functor, MonadIO, MonadReader Env)
+    deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
+
+instance (MonadBaseControl IO) SessionM where
+    newtype StM SessionM a = StMEnv { unStMEnv :: StM (ReaderT Env IO) a }
+    liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMEnv . run . runSessionM)))
+    restoreM = SessionM . restoreM . unStMEnv
 
 newtype SocketM a = SocketM { runSocketM :: (WriterT [Emitter] (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, MonadIO, MonadWriter [Emitter])
