@@ -21,7 +21,14 @@ import Control.Monad.Writer
 
 banana :: Request -> SessionM Wai.Response
 banana Handshake = do
-    sessionID <- createSession
+
+    (sessionID, Session _ channel) <- createSession
+    handler <- fmap getHandler ask
+
+    -- execute the handler
+    liftIO $ runWriterT (runReaderT (runSocketM handler) channel)
+
+
     return $ text (sessionID <> ":60:60:xhr-polling")
 banana (Connect sessionID) = do
     Session status _ <- lookupSession sessionID
@@ -32,7 +39,7 @@ banana (Connect sessionID) = do
         Connected -> do
             result <- timeout (5 * 1000000) (flushBuffer sessionID)
             case result of
-                Just r  -> return (text r)
+                Just r  -> return (text $ toMessage (MsgEvent NoID NoEndpoint r))
                 Nothing -> return (text "8::")
         _ -> do
             return (text "7:::Disconnected")
@@ -53,11 +60,11 @@ text = Wai.responseLBS status200 header . fromText
 server :: SocketM () -> IO ()
 server handler = do
     table <- newTable
-    listeners <- extractListener handler
-    print $ map fst listeners
+    --listeners <- extractListener handler
+    --print $ map fst listeners
     run 4000 $ \httpRequest -> do
         req <- liftIO $ processRequest httpRequest
-        liftIO $ runSession (Env table) (banana req)
+        liftIO $ runSession (Env table handler) (banana req)
 
 header = [
     ("Content-Type", "text/plain"),

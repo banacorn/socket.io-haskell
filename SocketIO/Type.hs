@@ -11,7 +11,7 @@ import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
 import Control.Monad.Writer       
-import Control.Concurrent.MVar.Lifted
+import Control.Concurrent.Chan.Lifted
 import Control.Monad.Trans.Control
 import Control.Monad.Base
 import Control.Applicative
@@ -19,6 +19,7 @@ import Control.Applicative
 import qualified Data.HashTable.IO as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.Aeson as Aeson
 import Data.IORef.Lifted
 import Data.Monoid ((<>))
 
@@ -30,18 +31,21 @@ type SessionID = Text
 type Listener = (Event, CallbackM ())
 data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 
+instance Aeson.ToJSON Emitter where
+   toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
+
+
 
 type HashTable k v = H.LinearHashTable k v
 type Table = HashTable SessionID Session 
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
-type Buffer = MVar Text
+type Buffer = Chan Emitter
 data Session = Session { status :: Status, buffer :: Buffer } | NoSession
 
 
 data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
 
---data Local = Local { getToilet :: MVar Wai.Response }
-data Env = Env { getSessionTable :: IORef Table }
+data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
@@ -51,12 +55,11 @@ instance (MonadBaseControl IO) SessionM where
     liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMEnv . run . runSessionM)))
     restoreM = SessionM . restoreM . unStMEnv
 
-newtype SocketM a = SocketM { runSocketM :: (WriterT [Emitter] (WriterT [Listener] IO)) a }
-    deriving (Monad, Functor, MonadIO, MonadWriter [Emitter])
+newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
 
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply IO)) a }
     deriving (Monad, Functor, MonadIO, MonadWriter [Emitter], MonadReader Reply)
-
 
 
 data Message    = MsgDisconnect Endpoint
@@ -98,7 +101,8 @@ instance Msg Data where
     toMessage NoData = ""
 
 instance Msg Emitter where
-    toMessage = fromString . show
+    toMessage = fromLazyByteString . Aeson.encode 
+
 instance Msg Message where
     toMessage (MsgDisconnect NoEndpoint)    = "0"
     toMessage (MsgDisconnect e)             = "0::" <> toMessage e
