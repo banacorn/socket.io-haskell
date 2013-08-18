@@ -58,7 +58,7 @@ banana (Emit sessionID emitter) = do
     session <- lookupSession sessionID
     case session of
         Session status channel  -> do
-            triggerListener emitter
+            triggerListener emitter channel
         NoSession               -> do
             return ()
     return $ text "1"
