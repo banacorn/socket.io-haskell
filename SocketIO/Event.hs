@@ -16,6 +16,9 @@ on event callback = do
 
 (>~>) = on
 
+reply :: CallbackM Reply
+reply = ask
+
 class Emittable m where
     emit :: Event -> Reply -> m ()
     (<~<) :: Event -> Reply -> m ()
@@ -28,9 +31,9 @@ instance Emittable SocketM where
 
 instance Emittable CallbackM where
     emit event reply = do
-        channel <- fmap getBuffer ask
+        channel <- CallbackM . lift . lift $ ask
         writeChan channel (Emitter event reply)
-        
+
 
 --(<~<) = emit
 
@@ -48,4 +51,4 @@ triggerListener (Emitter event reply) channel = do
     let correspondingCallbacks = filter ((==) event . fst) listeners
     -- trigger them all
     forM_ correspondingCallbacks $ \(_, callback) -> do
-        liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv reply channel)
+        liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel

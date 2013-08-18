@@ -46,8 +46,7 @@ data Session = Session { status :: Status, buffer :: Buffer } | NoSession
 data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
 
 data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM (), getListener :: IORef [Listener] }
-data CallbackEnv = CallbackEnv { getReply :: Reply, getBuffer :: Buffer }
-
+--data CallbackEnv = CallbackEnv { getReply :: Reply, getBuffer :: Buffer }
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
@@ -60,8 +59,8 @@ instance (MonadBaseControl IO) SessionM where
 newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
 
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT CallbackEnv IO)) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader CallbackEnv, MonadBase IO)
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply (ReaderT Buffer IO))) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader Reply, MonadBase IO)
 
 
 data Message    = MsgDisconnect Endpoint
