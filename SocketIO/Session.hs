@@ -6,7 +6,8 @@ module SocketIO.Session (
     lookupSession,
     writeBuffer,
     flushBuffer,
-    newTable
+    newTable,
+    newListenerList
 ) where
 
 import SocketIO.Type
@@ -20,6 +21,9 @@ import qualified Data.HashTable.IO as H
 
 newTable :: IO (IORef Table)
 newTable = H.new >>= newIORef
+
+newListenerList :: IO (IORef [Listener])
+newListenerList = newIORef []
 
 readTable :: (Table -> SessionM a) -> SessionM a
 readTable f = ask >>= readIORef . getSessionTable >>= f

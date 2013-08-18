@@ -5,7 +5,9 @@ module SocketIO.Event where
 import SocketIO.Type
 import Control.Monad.Writer
 import Control.Monad.Reader
+import Control.Monad.Trans (liftIO)
 import Control.Concurrent.Chan.Lifted
+import Data.IORef.Lifted
 
 on :: Event -> CallbackM () -> SocketM ()
 on event callback = do
@@ -20,13 +22,18 @@ emit event reply = do
 
 (<~<) = emit
 
---extractListener :: SocketM () -> IO [Listener]
---extractListener = execWriterT . runReaderT  . runSocketM
+executeHandler :: SocketM () -> Buffer -> SessionM [Listener]
+executeHandler handler channel = liftIO $ execWriterT (runReaderT (runSocketM handler) channel)
 
---extractEmitter :: SocketM () -> IO [Emitter]
---extractEmitter = fmap fst . runWriterT . execWriterT . runSocketM
+registerListener :: [Listener] -> SessionM ()
+registerListener listeners = ask >>= flip writeIORef listeners . getListener
 
---trigger :: EventMap -> Event -> Reply -> IO ()
---trigger eventMap event reply = case Map.lookup event eventMap of
---    Just handlers   -> mapM_ (\h -> h reply) handlers
---    Nothing         -> return ()
+triggerListener :: Emitter -> SessionM ()
+triggerListener (Emitter event reply) = do
+    -- read
+    listeners <- ask >>= readIORef . getListener
+    -- filter out callbacks to be triggered
+    let correspondingCallbacks = filter ((==) event . fst) listeners
+    -- trigger them all
+    forM_ correspondingCallbacks $ \(_, callback) -> do
+        liftIO $ runReaderT (execWriterT (runCallbackM callback)) reply

@@ -45,7 +45,7 @@ data Session = Session { status :: Status, buffer :: Buffer } | NoSession
 
 data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
 
-data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
+data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM (), getListener :: IORef [Listener] }
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
