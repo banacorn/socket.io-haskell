@@ -38,9 +38,8 @@ instance Aeson.ToJSON Emitter where
 
 type HashTable k v = H.LinearHashTable k v
 type Table = HashTable SessionID Session 
-data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
+data Status = Connecting | Connected | Disconnecting deriving Show
 type Buffer = Chan Emitter
-
 
 data Request    = RHandshake
                 | RDisconnect SessionID
@@ -48,15 +47,14 @@ data Request    = RHandshake
                 | REmit SessionID Emitter
                 deriving (Show)
 
-data SessionStatus  = Syn
-                    | Ack
-                    | Polling
-                    | Emit
-                    | Disconnect
+data SessionState   = Syn Session
+                    | Ack Session
+                    | Polling Session
+                    | Emit Session
+                    | Disconnect Session
                     | Error
 
 data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
-
 newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
 
