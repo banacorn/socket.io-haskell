@@ -33,22 +33,3 @@ instance Emittable CallbackM where
     emit event reply = do
         channel <- CallbackM . lift . lift $ ask
         writeChan channel (Emitter event reply)
-
-
---(<~<) = emit
-
-executeHandler :: SocketM () -> Buffer -> SessionM [Listener]
-executeHandler handler channel = liftIO $ execWriterT (runReaderT (runSocketM handler) channel)
-
-registerListener :: [Listener] -> SessionM ()
-registerListener listeners = ask >>= flip writeIORef listeners . getListener
-
-triggerListener :: Emitter -> Buffer -> SessionM ()
-triggerListener (Emitter event reply) channel = do
-    -- read
-    listeners <- ask >>= readIORef . getListener
-    -- filter out callbacks to be triggered
-    let correspondingCallbacks = filter ((==) event . fst) listeners
-    -- trigger them all
-    forM_ correspondingCallbacks $ \(_, callback) -> do
-        liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel

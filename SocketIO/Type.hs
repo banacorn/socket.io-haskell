@@ -40,21 +40,42 @@ type HashTable k v = H.LinearHashTable k v
 type Table = HashTable SessionID Session 
 data Status = Connecting | Connected | Disconnecting | Disconnected deriving Show
 type Buffer = Chan Emitter
-data Session = Session { status :: Status, buffer :: Buffer } | NoSession
 
 
-data Request = Handshake | Disconnect SessionID | Connect SessionID | Emit SessionID Emitter deriving (Show)
+data Request    = RHandshake
+                | RDisconnect SessionID
+                | RConnect SessionID 
+                | REmit SessionID Emitter
+                deriving (Show)
 
-data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM (), getListener :: IORef [Listener] }
---data CallbackEnv = CallbackEnv { getReply :: Reply, getBuffer :: Buffer }
+data SessionStatus  = Syn
+                    | Ack
+                    | Polling
+                    | Emit
+                    | Disconnect
+                    | Error
 
-newtype SessionM a = SessionM { runSessionM :: (ReaderT Env IO) a }
+data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
+
+newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
 
-instance (MonadBaseControl IO) SessionM where
-    newtype StM SessionM a = StMEnv { unStMEnv :: StM (ReaderT Env IO) a }
-    liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMEnv . run . runSessionM)))
-    restoreM = SessionM . restoreM . unStMEnv
+instance (MonadBaseControl IO) ConnectionM where
+    newtype StM ConnectionM a = StMEnv { unStMEnv :: StM (ReaderT Env IO) a }
+    liftBaseWith f = ConnectionM (liftBaseWith (\run -> f (liftM StMEnv . run . runConnectionM)))
+    restoreM = ConnectionM . restoreM . unStMEnv
+
+data Session = Session { 
+    getSessionID :: SessionID, 
+    getStatus :: Status, 
+    getBuffer :: Buffer, 
+    getListener :: [Listener]
+} | NoSession
+
+
+newtype SessionM a = SessionM { runSessionM :: (ReaderT Session IO) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadReader Session, MonadBase IO)
+
 
 newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)

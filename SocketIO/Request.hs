@@ -38,17 +38,17 @@ processHTTPRequest request = do
 
 identifyRequest  :: ProcessedRequest -> IO Request
 
-identifyRequest ("GET", _, n, p, "", "") = return Handshake
-identifyRequest ("GET", _, n, p, t, s) = return $ Connect s
+identifyRequest ("GET", _, n, p, "", "") = return RHandshake
+identifyRequest ("GET", _, n, p, t, s) = return $ RConnect s
 
 identifyRequest ("POST", b, n, p, t, s) = do
     return $ case message of
-        MsgEvent i e t  -> Emit s t
-        MsgDisconnect _ -> Disconnect s 
-        _ -> Disconnect s
+        MsgEvent i e t  -> REmit s t
+        MsgDisconnect _ -> RDisconnect s 
+        _               -> RDisconnect s
     where   message = parseMessage b
 
-identifyRequest (_, _, _, _, _, s) = return $ Disconnect s
+identifyRequest (_, _, _, _, _, s) = return $ RDisconnect s
 
 processRequest :: Wai.Request -> IO Request
 processRequest = processHTTPRequest >=> identifyRequest 
