@@ -51,5 +51,5 @@ triggerListener (Emitter event reply) channel = do
     forM_ correspondingCallbacks $ \(_, callback) -> do
         liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
 
-
+runSession :: (Monad m, MonadIO m) => SessionState -> Session -> m Text
 runSession state session = liftIO $ runReaderT (runSessionM (handleSession state)) session

@@ -11,6 +11,7 @@ import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
 import Control.Monad.Writer       
+import Control.Concurrent.MVar.Lifted
 import Control.Concurrent.Chan.Lifted
 import Control.Monad.Trans.Control
 import Control.Monad.Base
@@ -64,6 +65,7 @@ data Session = Session {
     getStatus :: Status, 
     getBuffer :: Buffer, 
     getListener :: [Listener]
+    --getTimeout :: MVar Bool
 } | NoSession
 
 

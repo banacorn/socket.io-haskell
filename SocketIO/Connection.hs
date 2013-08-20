@@ -16,6 +16,9 @@ import Control.Applicative          ((<$>), (<*>))
 newSessionTable :: IO (IORef Table)
 newSessionTable = H.new >>= newIORef
 
+getTable :: ConnectionM Table
+getTable = ask >>= readIORef . getSessionTable
+
 executeHandler :: SocketM () -> Buffer -> ConnectionM [Listener]
 executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runSocketM handler) buffer)
 
@@ -67,7 +70,3 @@ handleConnection (REmit sessionID emitter) = do
     case result of
         Just session -> runSession (Emit emitter) session
         Nothing      -> runSession Error NoSession
-
-
-getTable :: ConnectionM Table
-getTable = ask >>= readIORef . getSessionTable
