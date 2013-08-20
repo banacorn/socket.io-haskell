@@ -1,4 +1,4 @@
-module SocketIO.Connection (runConnection)  where
+module SocketIO.Connection (runConnection, newSessionTable)  where
 
 import SocketIO.Type
 import SocketIO.Util
@@ -13,13 +13,15 @@ import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
 import Control.Applicative          ((<$>), (<*>))
 
+newSessionTable :: IO (IORef Table)
+newSessionTable = H.new >>= newIORef
+
 executeHandler :: SocketM () -> Buffer -> ConnectionM [Listener]
 executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runSocketM handler) buffer)
 
-runConnection :: SocketM () -> Request -> IO Text
-runConnection handler req = do
-    table <- H.new >>= newIORef
-    runReaderT (runConnectionM (handleConnection req)) (Env table handler)
+runConnection :: Env -> Request -> IO Text
+runConnection env req = do
+    runReaderT (runConnectionM (handleConnection req)) env
 
 
 handleConnection :: Request -> ConnectionM Text
@@ -33,6 +35,7 @@ handleConnection RHandshake = do
 
     table <- getTable
     liftIO $ H.insert table sessionID session
+    liftIO $ H.toList table >>= print . show . map fst
     runSession Syn session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: ConnectionM Text
 
@@ -49,7 +52,9 @@ handleConnection (RConnect sessionID) = do
                     runSession Ack session
                 Connected ->
                     runSession Polling session
-        Nothing -> runSession Error NoSession
+        Nothing -> do
+            debug $ "[Error]      Unable to find session " ++ fromText sessionID
+            runSession Error NoSession
 
 handleConnection (RDisconnect sessionID) = do
     table <- getTable

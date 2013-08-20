@@ -16,9 +16,11 @@ import Control.Monad.Trans          (liftIO)
 
 server :: SocketM () -> IO ()
 server handler = do
+    table <- newSessionTable
+
     run 4000 $ \httpRequest -> liftIO $ do
         req <- processRequest httpRequest
-        response <- runConnection handler req
+        response <- runConnection (Env table handler) req
         text response
 
 text :: Monad m => Text -> m Wai.Response

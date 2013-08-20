@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module SocketIO.Session (handleSession, runSession) where
+module SocketIO.Session (runSession) where
 
 import SocketIO.Type
 import SocketIO.Util
