@@ -17,7 +17,7 @@ handleSession Syn = do
     return $ sessionID <> ":60:60:xhr-polling"
 handleSession Ack = do
     sessionID <- getSessionID <$> ask
-    debug $ "[Connecting]  " ++ fromText sessionID
+    debug $ "[Connecting]   " ++ fromText sessionID
     return "1::"
 handleSession Polling = do
     sessionID <- getSessionID <$> ask
@@ -25,10 +25,10 @@ handleSession Polling = do
     result <- timeout (20 * 1000000) (readChan buffer)
     case result of
         Just r  -> do
-            debug $ "[Polling]*    " ++ fromText sessionID
+            debug $ "[Polling]*     " ++ fromText sessionID
             return $ toMessage (MsgEvent NoID NoEndpoint r)
         Nothing -> do
-            debug $ "[Polling]     " ++ fromText sessionID
+            debug $ "[Polling]      " ++ fromText sessionID
             return "8::"
 handleSession (Emit emitter) = do
     sessionID <- getSessionID <$> ask
@@ -36,7 +36,9 @@ handleSession (Emit emitter) = do
     debug $ "[Emit]         " ++ fromText sessionID
     triggerListener emitter buffer
     return "1"
-handleSession Disconnect = return "1"
+handleSession Disconnect = do
+    debug $ "[Disconnect]   "
+    return "1"
 handleSession Error = return "7"
 
 triggerListener :: Emitter -> Buffer -> SessionM ()
