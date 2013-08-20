@@ -47,21 +47,17 @@ data Request    = RHandshake
                 | REmit SessionID Emitter
                 deriving (Show)
 
-data SessionState   = Syn Session
-                    | Ack Session
-                    | Polling Session
-                    | Emit Session
-                    | Disconnect Session
+data SessionState   = Syn
+                    | Ack
+                    | Polling
+                    | Emit Emitter
+                    | Disconnect
                     | Error
 
 data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
 newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
 
-instance (MonadBaseControl IO) ConnectionM where
-    newtype StM ConnectionM a = StMEnv { unStMEnv :: StM (ReaderT Env IO) a }
-    liftBaseWith f = ConnectionM (liftBaseWith (\run -> f (liftM StMEnv . run . runConnectionM)))
-    restoreM = ConnectionM . restoreM . unStMEnv
 
 data Session = Session { 
     getSessionID :: SessionID, 
@@ -74,6 +70,10 @@ data Session = Session {
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Session IO) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Session, MonadBase IO)
 
+instance (MonadBaseControl IO) SessionM where
+    newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session IO) a }
+    liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMSession . run . runSessionM)))
+    restoreM = SessionM . restoreM . unStMSession
 
 newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
