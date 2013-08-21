@@ -8,6 +8,7 @@ import Control.Applicative          ((<$>), (<*>))
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
+import Control.Concurrent.Lifted    (fork)
 import System.Timeout.Lifted
 
 handleSession :: SessionState -> SessionM Text
@@ -48,8 +49,9 @@ triggerListener (Emitter event reply) channel = do
     -- filter out callbacks to be triggered
     let correspondingCallbacks = filter ((==) event . fst) listeners
     -- trigger them all
-    forM_ correspondingCallbacks $ \(_, callback) -> do
+    forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
         liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
+        return ()
 
 runSession :: (Monad m, MonadIO m) => SessionState -> Session -> m Text
 runSession state session = liftIO $ runReaderT (runSessionM (handleSession state)) session
