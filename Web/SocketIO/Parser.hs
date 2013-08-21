@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module SocketIO.Parser (parseMessage) where
+module Web.SocketIO.Parser (parseMessage) where
 
-import SocketIO.Type
-import SocketIO.Util
+import Web.SocketIO.Type
+import Web.SocketIO.Util
 import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>), (<*>))
 import qualified Data.Text.Lazy as TL

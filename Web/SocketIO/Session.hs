@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-module SocketIO.Session (runSession) where
+module Web.SocketIO.Session (runSession) where
 
-import SocketIO.Type
-import SocketIO.Util
+import Web.SocketIO.Type
+import Web.SocketIO.Util
 
 import Control.Applicative          ((<$>), (<*>))
 import Control.Monad.Reader       

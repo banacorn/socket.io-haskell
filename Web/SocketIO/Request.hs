@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-module SocketIO.Request (processRequest) where
+module Web.SocketIO.Request (processRequest) where
 
-import SocketIO.Type
-import SocketIO.Util
-import SocketIO.Parser
+import Web.SocketIO.Type
+import Web.SocketIO.Util
+import Web.SocketIO.Parser
 
 import Control.Applicative          ((<$>), (<*>))   
 import Control.Monad                ((>=>))         

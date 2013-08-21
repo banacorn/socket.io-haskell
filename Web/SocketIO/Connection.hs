@@ -1,8 +1,8 @@
-module SocketIO.Connection (runConnection, newSessionTable)  where
+module Web.SocketIO.Connection (runConnection, newSessionTable)  where
 
-import SocketIO.Type
-import SocketIO.Util
-import SocketIO.Session
+import Web.SocketIO.Type
+import Web.SocketIO.Util
+import Web.SocketIO.Session
 
 import Data.IORef.Lifted
 import qualified Data.HashTable.IO as H

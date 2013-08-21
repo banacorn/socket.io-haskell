@@ -3,9 +3,9 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module SocketIO.Type where
+module Web.SocketIO.Type where
 
-import SocketIO.Util
+import Web.SocketIO.Util
 
 import qualified Network.Wai as Wai
 

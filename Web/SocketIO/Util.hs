@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Util ((<>), IsString(..), IsByteString(..), IsLazyByteString(..), IsText(..), debug) where
+module Web.SocketIO.Util ((<>), IsString(..), IsByteString(..), IsLazyByteString(..), IsText(..), debug) where
 
 import Data.Monoid ((<>))
 import Data.String

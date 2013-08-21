@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Server where
+module Web.SocketIO.Server where
 
-import SocketIO.Util
-import SocketIO.Type
-import SocketIO.Session
-import SocketIO.Connection
-import SocketIO.Request
-import SocketIO.Event
+import Web.SocketIO.Util
+import Web.SocketIO.Type
+import Web.SocketIO.Session
+import Web.SocketIO.Connection
+import Web.SocketIO.Request
+import Web.SocketIO.Event
 
 import qualified Network.Wai as Wai
 import Network.Wai.Handler.Warp     (run)

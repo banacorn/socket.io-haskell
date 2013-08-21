@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module SocketIO.Event where
+module Web.SocketIO.Event where
 
-import SocketIO.Type
-import SocketIO.Session
+import Web.SocketIO.Type
+import Web.SocketIO.Session
 import Control.Monad.Writer
 import Control.Monad.Reader
 import Control.Monad.Trans (liftIO)
