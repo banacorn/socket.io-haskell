@@ -59,13 +59,17 @@ data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
 newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
 
+instance (MonadBaseControl IO) ConnectionM where
+    newtype StM ConnectionM a = StMConnection { unStMConnection :: StM (ReaderT Env IO) a }
+    liftBaseWith f = ConnectionM (liftBaseWith (\run -> f (liftM StMConnection . run . runConnectionM)))
+    restoreM = ConnectionM . restoreM . unStMConnection
 
 data Session = Session { 
     getSessionID :: SessionID, 
     getStatus :: Status, 
     getBuffer :: Buffer, 
-    getListener :: [Listener]
-    --getTimeout :: MVar Bool
+    getListener :: [Listener],
+    getTimeout :: MVar ()
 } | NoSession
 
 
