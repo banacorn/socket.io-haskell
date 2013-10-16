@@ -5,11 +5,12 @@ import Web.SocketIO.Util
 import Web.SocketIO.Session
 
 import Data.IORef.Lifted
-import qualified Data.HashTable.IO as H
+import qualified Data.HashMap.Strict as H
 import System.Random (randomRIO)
 import System.Timeout.Lifted
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader       
+import Control.Monad.State       
 import Control.Monad.Writer       
 import Control.Concurrent.Lifted (fork)
 import Control.Concurrent.Chan.Lifted
@@ -17,24 +18,27 @@ import Control.Concurrent.MVar.Lifted
 import Control.Applicative          ((<$>), (<*>))
 
 
-newSessionTable :: IO (IORef Table)
-newSessionTable = H.new >>= newIORef
+newSessionTable :: Table
+newSessionTable = H.empty
 
-getTable :: ConnectionM Table
-getTable = ask >>= readIORef . getSessionTable
+updateSession :: (Table -> Table) -> ConnectionM ()
+updateSession update = do
+    Env table handler <- get
+    let table' = update table
+    put (Env table' handler)
 
 executeHandler :: SocketM () -> Buffer -> ConnectionM [Listener]
 executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runSocketM handler) buffer)
 
 runConnection :: Env -> Request -> IO Text
 runConnection env req = do
-    runReaderT (runConnectionM (handleConnection req)) env
+    evalStateT (runConnectionM (handleConnection req)) env
 
 
 handleConnection :: Request -> ConnectionM Text
 handleConnection RHandshake = do
     buffer <- newChan  
-    handler <- getHandler <$> ask
+    Env table handler <- get
     sessionID <- genSessionID
     listeners <- executeHandler handler buffer
     timeout' <- newEmptyMVar
@@ -43,23 +47,22 @@ handleConnection RHandshake = do
 
     fork $ setTimeout sessionID timeout'
 
-    table <- getTable
-    liftIO $ H.insert table sessionID session
-    liftIO $ H.toList table >>= print . show . map fst
+    updateSession (H.insert sessionID session)
+
     runSession Syn session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: ConnectionM Text
 
 handleConnection (RConnect sessionID) = do
-    table <- getTable
-    result <- liftIO $ H.lookup table sessionID
+
+    Env table _ <- get
+    let result = H.lookup sessionID table
     clearTimeout sessionID
     case result of
         Just (Session sessionID status buffer listeners timeout') -> do
             let session = Session sessionID Connected buffer listeners timeout'
             case status of
                 Connecting -> do
-                    liftIO $ H.delete table sessionID
-                    liftIO $ H.insert table sessionID session
+                    updateSession (H.insert sessionID session)
                     runSession Ack session
                 Connected ->
                     runSession Polling session
@@ -68,16 +71,15 @@ handleConnection (RConnect sessionID) = do
             runSession Error NoSession
 
 handleConnection (RDisconnect sessionID) = do
-    table <- getTable
     clearTimeout sessionID
 
-    liftIO $ H.delete table sessionID
+    updateSession (H.delete sessionID)
+
     runSession Disconnect NoSession
 
 handleConnection (REmit sessionID emitter) = do
     clearTimeout sessionID
-    table <- getTable
-    result <- liftIO $ H.lookup table sessionID
+    result <- H.lookup sessionID . getSessionTable <$> get
     case result of
         Just session -> runSession (Emit emitter) session
         Nothing      -> runSession Error NoSession
@@ -90,14 +92,12 @@ setTimeout sessionID timeout' = do
         Just r  -> setTimeout sessionID timeout'
         Nothing -> do
             debug $ "[Close Session]" ++ fromText sessionID
-            table <- getTable
-            liftIO $ H.delete table sessionID
+            updateSession (H.delete sessionID)
     where   duration = 60 * 1000000
 
 clearTimeout :: SessionID -> ConnectionM ()
 clearTimeout sessionID = do
-    table <- getTable
-    result <- liftIO $ H.lookup table sessionID
+    result <- H.lookup sessionID . getSessionTable <$> get
     case result of
         Just (Session _ _ _ _ timeout') -> do
             debug $ "[Clear Timeout] " ++ fromText sessionID

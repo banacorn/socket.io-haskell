@@ -1,4 +1,4 @@
-module Web.SocketIO (server, on, emit, reply) where
+module Web.SocketIO where
 
 import Web.SocketIO.Server
 import Web.SocketIO.Event
