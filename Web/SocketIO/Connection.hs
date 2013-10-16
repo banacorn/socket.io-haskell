@@ -18,27 +18,32 @@ import Control.Concurrent.MVar.Lifted
 import Control.Applicative          ((<$>), (<*>))
 
 
-newSessionTable :: Table
-newSessionTable = H.empty
+newSessionTable :: IO (IORef Table)
+newSessionTable = newIORef H.empty
 
 updateSession :: (Table -> Table) -> ConnectionM ()
 updateSession update = do
-    Env table handler <- get
-    let table' = update table
-    put (Env table' handler)
+    Env tableRef handler <- ask
+    liftIO (modifyIORef tableRef update)
+
+lookupSession :: SessionID -> ConnectionM (Maybe Session)
+lookupSession sessionID = do
+    Env tableRef _ <- ask
+    table <- liftIO (readIORef tableRef)
+    return (H.lookup sessionID table)
 
 executeHandler :: SocketM () -> Buffer -> ConnectionM [Listener]
 executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runSocketM handler) buffer)
 
 runConnection :: Env -> Request -> IO Text
 runConnection env req = do
-    evalStateT (runConnectionM (handleConnection req)) env
+    runReaderT (runConnectionM (handleConnection req)) env
 
 
 handleConnection :: Request -> ConnectionM Text
 handleConnection RHandshake = do
     buffer <- newChan  
-    Env table handler <- get
+    Env _ handler <- ask
     sessionID <- genSessionID
     listeners <- executeHandler handler buffer
     timeout' <- newEmptyMVar
@@ -54,8 +59,8 @@ handleConnection RHandshake = do
 
 handleConnection (RConnect sessionID) = do
 
-    Env table _ <- get
-    let result = H.lookup sessionID table
+    result <- lookupSession sessionID
+
     clearTimeout sessionID
     case result of
         Just (Session sessionID status buffer listeners timeout') -> do
@@ -79,7 +84,8 @@ handleConnection (RDisconnect sessionID) = do
 
 handleConnection (REmit sessionID emitter) = do
     clearTimeout sessionID
-    result <- H.lookup sessionID . getSessionTable <$> get
+
+    result <- lookupSession sessionID
     case result of
         Just session -> runSession (Emit emitter) session
         Nothing      -> runSession Error NoSession
@@ -97,7 +103,7 @@ setTimeout sessionID timeout' = do
 
 clearTimeout :: SessionID -> ConnectionM ()
 clearTimeout sessionID = do
-    result <- H.lookup sessionID . getSessionTable <$> get
+    result <- lookupSession sessionID
     case result of
         Just (Session _ _ _ _ timeout') -> do
             debug $ "[Clear Timeout] " ++ fromText sessionID

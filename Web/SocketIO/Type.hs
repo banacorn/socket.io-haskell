@@ -11,7 +11,6 @@ import qualified Network.Wai as Wai
 
 import Control.Monad.Reader       
 import Control.Monad.Writer       
-import Control.Monad.State       
 import Control.Concurrent.MVar.Lifted
 import Control.Concurrent.Chan.Lifted
 import Control.Monad.Trans.Control
@@ -38,8 +37,7 @@ instance Aeson.ToJSON Emitter where
 
 
 
-type HashMap k v = H.HashMap k v
-type Table = HashMap SessionID Session 
+type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
 type Buffer = Chan Emitter
 
@@ -56,13 +54,13 @@ data SessionState   = Syn
                     | Disconnect
                     | Error
 
-data Env = Env { getSessionTable :: Table, getHandler :: SocketM () }
+data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
 
-newtype ConnectionM a = ConnectionM { runConnectionM :: StateT Env IO a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadState Env, MonadBase IO)
+newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
 
 instance (MonadBaseControl IO) ConnectionM where
-    newtype StM ConnectionM a = StMConnection { unStMConnection :: StM (StateT Env IO) a }
+    newtype StM ConnectionM a = StMConnection { unStMConnection :: StM (ReaderT Env IO) a }
     liftBaseWith f = ConnectionM (liftBaseWith (\run -> f (liftM StMConnection . run . runConnectionM)))
     restoreM = ConnectionM . restoreM . unStMConnection
 
