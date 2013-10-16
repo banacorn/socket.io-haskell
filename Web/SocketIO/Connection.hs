@@ -17,7 +17,6 @@ import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.MVar.Lifted
 import Control.Applicative          ((<$>), (<*>))
 
-
 newSessionTable :: IO (IORef Table)
 newSessionTable = newIORef H.empty
 

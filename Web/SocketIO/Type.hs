@@ -29,6 +29,8 @@ type Event = Text
 type Reply = [Text]
 type SessionID = Text 
 
+type Port = Int
+
 type Listener = (Event, CallbackM ())
 data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 

@@ -14,11 +14,11 @@ import Network.Wai.Handler.Warp     (run)
 import Network.HTTP.Types           (status200)
 import Control.Monad.Trans          (liftIO)
 
-server :: SocketM () -> IO ()
-server handler = do
+server :: Port -> SocketM () -> IO ()
+server port handler = do
     tableRef <- newSessionTable
 
-    run 4000 $ \httpRequest -> liftIO $ do
+    run port $ \httpRequest -> liftIO $ do
         req <- processRequest httpRequest
         response <- runConnection (Env tableRef handler) req
         text response
