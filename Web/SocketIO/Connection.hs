@@ -22,13 +22,13 @@ newSessionTable = newIORef H.empty
 
 updateSession :: (Table -> Table) -> ConnectionM ()
 updateSession update = do
-    Env tableRef _ _ <- ask
-    liftIO (modifyIORef tableRef update)
+    table <- getSessionTable
+    liftIO (modifyIORef table update)
 
 lookupSession :: SessionID -> ConnectionM (Maybe Session)
 lookupSession sessionID = do
-    Env tableRef _ _ <- ask
-    table <- liftIO (readIORef tableRef)
+    table <- getSessionTable
+    table <- liftIO (readIORef table)
     return (H.lookup sessionID table)
 
 executeHandler :: SocketM () -> Buffer -> ConnectionM [Listener]
@@ -41,8 +41,8 @@ runConnection env req = do
 
 handleConnection :: Request -> ConnectionM Text
 handleConnection RHandshake = do
-    buffer <- newChan  
-    Env _ handler _ <- ask
+    buffer <- newChan
+    handler <- getHandler
     sessionID <- genSessionID
     listeners <- executeHandler handler buffer
     timeout' <- newEmptyMVar

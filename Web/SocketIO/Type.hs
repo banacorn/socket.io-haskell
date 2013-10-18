@@ -37,6 +37,10 @@ data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 instance Aeson.ToJSON Emitter where
    toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
 
+
+
+
+
 -- options
 
 data Configuration = Configuration {
@@ -48,6 +52,15 @@ data Transport = WebSocket | XHRPolling | NoTransport deriving Show
 instance Msg Transport where
     toMessage WebSocket = "websocket"
     toMessage XHRPolling = "xhr-polling"
+
+
+
+
+
+
+
+
+
 
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
@@ -67,13 +80,36 @@ data SessionState   = Syn
                     | Error
 
 data Env = Env { 
-    getSessionTable :: IORef Table, 
-    getHandler :: SocketM (), 
-    getConfiguration :: Configuration 
+    sessionTable :: IORef Table, 
+    handler :: SocketM (), 
+    configuration :: Configuration 
 }
+
+class ConnectionLayer m where
+    getEnv :: m Env
+    getSessionTable :: m (IORef Table)
+    getHandler :: m (SocketM ())
+    getConfiguration :: m Configuration
+
+
+class SessionLayer m where
+    getSession :: m Session
+    getSessionID :: m SessionID
+    getStatus :: m Status
+    getBuffer :: m Buffer
+    getListener :: m [Listener]
+    getTimeoutVar :: m (MVar ())
+
+
 
 newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
+
+instance ConnectionLayer ConnectionM where
+    getEnv = ask
+    getSessionTable = sessionTable <$> ask
+    getHandler = handler <$> ask
+    getConfiguration = configuration <$> ask
 
 instance (MonadBaseControl IO) ConnectionM where
     newtype StM ConnectionM a = StMConnection { unStMConnection :: StM (ReaderT Env IO) a }
@@ -81,16 +117,32 @@ instance (MonadBaseControl IO) ConnectionM where
     restoreM = ConnectionM . restoreM . unStMConnection
 
 data Session = Session { 
-    getSessionID :: SessionID, 
-    getStatus :: Status, 
-    getBuffer :: Buffer, 
-    getListener :: [Listener],
-    getTimeout :: MVar ()
+    sessionID :: SessionID, 
+    status :: Status, 
+    buffer :: Buffer, 
+    listener :: [Listener],
+    timeoutVar :: MVar ()
 } | NoSession
+
 
 
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Session, MonadBase IO)
+
+
+instance ConnectionLayer SessionM where
+    getEnv = SessionM (lift ask)
+    getSessionTable = sessionTable <$> getEnv
+    getHandler = handler <$> getEnv
+    getConfiguration = configuration <$> getEnv
+
+instance SessionLayer SessionM where
+    getSession = ask
+    getSessionID = sessionID <$> ask
+    getStatus = status <$> ask
+    getBuffer = buffer <$> ask
+    getListener = listener <$> ask
+    getTimeoutVar = timeoutVar <$> ask
 
 instance (MonadBaseControl IO) SessionM where
     newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session ConnectionM) a }
