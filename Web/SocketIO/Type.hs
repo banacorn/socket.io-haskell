@@ -85,11 +85,11 @@ data Session = Session {
 } | NoSession
 
 
-newtype SessionM a = SessionM { runSessionM :: (ReaderT Session IO) a }
+newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Session, MonadBase IO)
 
 instance (MonadBaseControl IO) SessionM where
-    newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session IO) a }
+    newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session ConnectionM) a }
     liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMSession . run . runSessionM)))
     restoreM = SessionM . restoreM . unStMSession
 

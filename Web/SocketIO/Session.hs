@@ -7,20 +7,26 @@ import Web.SocketIO.Util
 import Control.Applicative          ((<$>), (<*>))
 import Control.Monad.Reader       
 import Control.Monad.Writer
+import Control.Monad
 import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.Lifted    (fork)
 import System.Timeout.Lifted
 
-handleSession :: Configuration -> SessionState -> SessionM Text
-handleSession config Syn = do
+getConfig = getConfiguration <$> (SessionM $ lift ask)
+
+handleSession :: SessionState -> SessionM Text
+handleSession Syn = do
     sessionID <- getSessionID <$> ask
+    conf <- getConfig
+
+
     debug $ "[Handshake]    " ++ fromText sessionID
     return $ sessionID <> ":60:60:xhr-polling"
-handleSession config Ack = do
+handleSession Ack = do
     sessionID <- getSessionID <$> ask
     debug $ "[Connecting]   " ++ fromText sessionID
     return "1::"
-handleSession config Polling = do
+handleSession Polling = do
     sessionID <- getSessionID <$> ask
     buffer <- getBuffer <$> ask
     result <- timeout (20 * 1000000) (readChan buffer)
@@ -31,16 +37,16 @@ handleSession config Polling = do
         Nothing -> do
             debug $ "[Polling]      " ++ fromText sessionID
             return "8::"
-handleSession config (Emit emitter) = do
+handleSession (Emit emitter) = do
     sessionID <- getSessionID <$> ask
     buffer <- getBuffer <$> ask
     debug $ "[Emit]         " ++ fromText sessionID
     triggerListener emitter buffer
     return "1"
-handleSession config Disconnect = do
+handleSession Disconnect = do
     debug $ "[Disconnect]   "
     return "1"
-handleSession config Error = return "7"
+handleSession Error = return "7"
 
 triggerListener :: Emitter -> Buffer -> SessionM ()
 triggerListener (Emitter event reply) channel = do
@@ -53,5 +59,5 @@ triggerListener (Emitter event reply) channel = do
         liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
         return ()
 
-runSession :: (Monad m, MonadIO m) => Configuration -> SessionState -> Session -> m Text
-runSession config state session = liftIO $ runReaderT (runSessionM (handleSession config state)) session
+runSession :: SessionState -> Session -> ConnectionM Text
+runSession state session = runReaderT (runSessionM (handleSession state)) session
