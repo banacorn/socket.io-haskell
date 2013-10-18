@@ -4,24 +4,26 @@ module Web.SocketIO.Session (runSession) where
 import Web.SocketIO.Type
 import Web.SocketIO.Util
 
+import Data.List (intersperse)
 import Control.Applicative          ((<$>), (<*>))
 import Control.Monad.Reader       
 import Control.Monad.Writer
-import Control.Monad
 import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.Lifted    (fork)
 import System.Timeout.Lifted
 
-getConfig = getConfiguration <$> (SessionM $ lift ask)
+askEnv = SessionM (lift ask)
 
 handleSession :: SessionState -> SessionM Text
 handleSession Syn = do
     sessionID <- getSessionID <$> ask
-    conf <- getConfig
-
-
+    config <- getConfiguration <$> askEnv
+    let transportType = mconcat . intersperse "," . map toMessage $ transports config
+    --debug . show $ transports config
     debug $ "[Handshake]    " ++ fromText sessionID
-    return $ sessionID <> ":60:60:xhr-polling"
+    return $ sessionID <> ":60:60:" <> transportType
+
+
 handleSession Ack = do
     sessionID <- getSessionID <$> ask
     debug $ "[Connecting]   " ++ fromText sessionID

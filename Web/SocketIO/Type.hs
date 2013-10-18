@@ -45,6 +45,10 @@ data Configuration = Configuration {
 
 data Transport = WebSocket | XHRPolling | NoTransport deriving Show
 
+instance Msg Transport where
+    toMessage WebSocket = "websocket"
+    toMessage XHRPolling = "xhr-polling"
+
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
 type Buffer = Chan Emitter
