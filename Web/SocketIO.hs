@@ -1,6 +1,6 @@
 module Web.SocketIO (
-    server, serverOpts, defaultOptions, 
-    Options(..), Transport(..),
+    server, serverConfig, defaultConfig, 
+    Configuration(..), Transport(..),
     on, emit, reply) where
 
 import Web.SocketIO.Type

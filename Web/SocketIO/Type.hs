@@ -39,7 +39,7 @@ instance Aeson.ToJSON Emitter where
 
 -- options
 
-data Options = Options {
+data Configuration = Configuration {
     transports :: [Transport]
 } deriving Show
 

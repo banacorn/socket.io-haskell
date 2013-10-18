@@ -15,10 +15,10 @@ import Network.HTTP.Types           (status200)
 import Control.Monad.Trans          (liftIO)
 
 server :: Port -> SocketM () -> IO ()
-server p h = serverOpts p defaultOptions h
+server p h = serverConfig p defaultConfig h
 
-serverOpts :: Port -> Options -> SocketM () -> IO ()
-serverOpts port options handler = do
+serverConfig :: Port -> Configuration -> SocketM () -> IO ()
+serverConfig port options handler = do
     tableRef <- newSessionTable
 
     run port $ \httpRequest -> liftIO $ do
@@ -27,8 +27,8 @@ serverOpts port options handler = do
         text response
 
 
-defaultOptions :: Options
-defaultOptions = Options {
+defaultConfig :: Configuration
+defaultConfig = Configuration {
     transports = [WebSocket, XHRPolling]
 }
 
