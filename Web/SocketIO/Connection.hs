@@ -42,7 +42,7 @@ runConnection env req = do
 handleConnection :: Request -> ConnectionM Text
 handleConnection RHandshake = do
     buffer <- newChan  
-    Env _ handler _ <- ask
+    Env _ handler config <- ask
     sessionID <- genSessionID
     listeners <- executeHandler handler buffer
     timeout' <- newEmptyMVar
@@ -53,13 +53,13 @@ handleConnection RHandshake = do
 
     updateSession (H.insert sessionID session)
 
-    runSession Syn session
+    runSession config Syn session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: ConnectionM Text
 
 handleConnection (RConnect sessionID) = do
 
     result <- lookupSession sessionID
-
+    Env _ _ config <- ask
     clearTimeout sessionID
     case result of
         Just (Session sessionID status buffer listeners timeout') -> do
@@ -67,27 +67,29 @@ handleConnection (RConnect sessionID) = do
             case status of
                 Connecting -> do
                     updateSession (H.insert sessionID session)
-                    runSession Ack session
+                    runSession config Ack session
                 Connected ->
-                    runSession Polling session
+                    runSession config Polling session
         Nothing -> do
             debug $ "[Error]      Unable to find session " ++ fromText sessionID
-            runSession Error NoSession
+            runSession config Error NoSession
 
 handleConnection (RDisconnect sessionID) = do
+    Env _ _ config <- ask
     clearTimeout sessionID
 
     updateSession (H.delete sessionID)
 
-    runSession Disconnect NoSession
+    runSession config Disconnect NoSession
 
 handleConnection (REmit sessionID emitter) = do
+    Env _ _ config <- ask
     clearTimeout sessionID
 
     result <- lookupSession sessionID
     case result of
-        Just session -> runSession (Emit emitter) session
-        Nothing      -> runSession Error NoSession
+        Just session -> runSession config (Emit emitter) session
+        Nothing      -> runSession config Error NoSession
 
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do

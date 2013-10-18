@@ -11,16 +11,16 @@ import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.Lifted    (fork)
 import System.Timeout.Lifted
 
-handleSession :: SessionState -> SessionM Text
-handleSession Syn = do
+handleSession :: Configuration -> SessionState -> SessionM Text
+handleSession config Syn = do
     sessionID <- getSessionID <$> ask
     debug $ "[Handshake]    " ++ fromText sessionID
     return $ sessionID <> ":60:60:xhr-polling"
-handleSession Ack = do
+handleSession config Ack = do
     sessionID <- getSessionID <$> ask
     debug $ "[Connecting]   " ++ fromText sessionID
     return "1::"
-handleSession Polling = do
+handleSession config Polling = do
     sessionID <- getSessionID <$> ask
     buffer <- getBuffer <$> ask
     result <- timeout (20 * 1000000) (readChan buffer)
@@ -31,16 +31,16 @@ handleSession Polling = do
         Nothing -> do
             debug $ "[Polling]      " ++ fromText sessionID
             return "8::"
-handleSession (Emit emitter) = do
+handleSession config (Emit emitter) = do
     sessionID <- getSessionID <$> ask
     buffer <- getBuffer <$> ask
     debug $ "[Emit]         " ++ fromText sessionID
     triggerListener emitter buffer
     return "1"
-handleSession Disconnect = do
+handleSession config Disconnect = do
     debug $ "[Disconnect]   "
     return "1"
-handleSession Error = return "7"
+handleSession config Error = return "7"
 
 triggerListener :: Emitter -> Buffer -> SessionM ()
 triggerListener (Emitter event reply) channel = do
@@ -53,5 +53,5 @@ triggerListener (Emitter event reply) channel = do
         liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
         return ()
 
-runSession :: (Monad m, MonadIO m) => SessionState -> Session -> m Text
-runSession state session = liftIO $ runReaderT (runSessionM (handleSession state)) session
+runSession :: (Monad m, MonadIO m) => Configuration -> SessionState -> Session -> m Text
+runSession config state session = liftIO $ runReaderT (runSessionM (handleSession config state)) session
