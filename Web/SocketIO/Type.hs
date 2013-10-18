@@ -37,7 +37,13 @@ data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 instance Aeson.ToJSON Emitter where
    toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
 
+-- options
 
+data Options = Options {
+    transports :: [Transport]
+} deriving Show
+
+data Transport = WebSocket | XHRPolling | NoTransport deriving Show
 
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show

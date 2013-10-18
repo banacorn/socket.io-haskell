@@ -15,13 +15,23 @@ import Network.HTTP.Types           (status200)
 import Control.Monad.Trans          (liftIO)
 
 server :: Port -> SocketM () -> IO ()
-server port handler = do
+server p h = serverOpts p defaultOptions h
+
+serverOpts :: Port -> Options -> SocketM () -> IO ()
+serverOpts port options handler = do
     tableRef <- newSessionTable
 
     run port $ \httpRequest -> liftIO $ do
         req <- processRequest httpRequest
         response <- runConnection (Env tableRef handler) req
         text response
+
+
+defaultOptions :: Options
+defaultOptions = Options {
+    transports = [WebSocket, XHRPolling]
+}
+
 
 text :: Monad m => Text -> m Wai.Response
 text = return . Wai.responseLBS status200 header . fromText
