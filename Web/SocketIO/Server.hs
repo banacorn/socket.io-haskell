@@ -18,12 +18,12 @@ server :: Port -> SocketM () -> IO ()
 server p h = serverConfig p defaultConfig h
 
 serverConfig :: Port -> Configuration -> SocketM () -> IO ()
-serverConfig port options handler = do
+serverConfig port config handler = do
     tableRef <- newSessionTable
 
     run port $ \httpRequest -> liftIO $ do
         req <- processRequest httpRequest
-        response <- runConnection (Env tableRef handler) req
+        response <- runConnection (Env tableRef handler config) req
         text response
 
 

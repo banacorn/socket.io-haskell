@@ -62,7 +62,11 @@ data SessionState   = Syn
                     | Disconnect
                     | Error
 
-data Env = Env { getSessionTable :: IORef Table, getHandler :: SocketM () }
+data Env = Env { 
+    getSessionTable :: IORef Table, 
+    getHandler :: SocketM (), 
+    getConfiguration :: Configuration 
+}
 
 newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
