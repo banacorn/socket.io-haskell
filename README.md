@@ -13,5 +13,5 @@ main = server 4000 $ do
     on "echo" $ reply >>= emit "pong"
     
     -- do some IO
-    on "hello" $ liftIO launchMissile
+    on "Kim Jong-Un" $ liftIO launchMissile
 ```
