@@ -44,7 +44,8 @@ instance Aeson.ToJSON Emitter where
 -- options
 
 data Configuration = Configuration {
-    transports :: [Transport]
+    transports :: [Transport],
+    logLevel :: Int
 } deriving Show
 
 data Transport = WebSocket | XHRPolling | NoTransport deriving Show

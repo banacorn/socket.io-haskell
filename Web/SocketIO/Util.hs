@@ -14,8 +14,8 @@ import qualified Data.ByteString.Char8 as C
 import Control.Monad.Trans (liftIO, MonadIO)
 
 debug :: (MonadIO m, Monad m) => String -> m ()
-debug = liftIO . print
-
+--debug = liftIO . print
+debug _ = return ()
 class IsByteString a where
     fromByteString :: B.ByteString -> a
 
