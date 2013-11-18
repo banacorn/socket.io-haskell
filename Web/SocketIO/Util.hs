@@ -6,6 +6,7 @@ module Web.SocketIO.Util ((<>), IsString(..), IsByteString(..), IsLazyByteString
 
 import Data.Monoid ((<>))
 import Data.String
+import System.Console.ANSI
 import qualified Data.Text.Lazy as T
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -14,8 +15,28 @@ import qualified Data.ByteString.Char8 as C
 import Control.Monad.Trans (liftIO, MonadIO)
 
 debug :: (MonadIO m, Monad m) => String -> m ()
+--debug :: (MonadIO m, Monad m) => Log -> m ()
 --debug = liftIO . print
 debug _ = return ()
+
+
+
+
+-- Logger
+data Log = Error String
+         | Warn String
+         | Info String
+         | Debug String
+         deriving (Eq)
+
+instance Show Log where
+    show (Error message) = error message
+    show (Warn  message) = paint Yellow "[warn]  " ++ message
+    show (Info  message) = paint Blue   "[info]  " ++ message
+    show (Debug message) = paint Green  "[debug] " ++ message
+
+paint color s = setSGRCode [SetColor Foreground Vivid color] ++ s ++ setSGRCode []
+
 class IsByteString a where
     fromByteString :: B.ByteString -> a
 
