@@ -1,74 +1,16 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
+
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Util ((<>), IsString(..), IsByteString(..), IsLazyByteString(..), IsText(..), debug) where
+module Web.SocketIO.Util ((<>), debug) where
+
+import Web.SocketIO.Type
+import Web.SocketIO.Type.Log
 
 import Data.Monoid ((<>))
-import Data.String
-import System.Console.ANSI
-import qualified Data.Text.Lazy as T
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.ByteString.Char8 as C
 
 import Control.Monad.Trans (liftIO, MonadIO)
 
-debug :: (MonadIO m, Monad m) => String -> m ()
---debug :: (MonadIO m, Monad m) => Log -> m ()
---debug = liftIO . print
-debug _ = return ()
-
-
-
-
--- Logger
-data Log = Error String
-         | Warn String
-         | Info String
-         | Debug String
-         deriving (Eq)
-
-instance Show Log where
-    show (Error message) = error message
-    show (Warn  message) = paint Yellow "[warn]  " ++ message
-    show (Info  message) = paint Blue   "[info]  " ++ message
-    show (Debug message) = paint Green  "[debug] " ++ message
-
-paint color s = setSGRCode [SetColor Foreground Vivid color] ++ s ++ setSGRCode []
-
-class IsByteString a where
-    fromByteString :: B.ByteString -> a
-
-instance IsByteString String where
-    fromByteString = C.unpack
-
-instance IsByteString T.Text where
-    fromByteString = T.pack . fromByteString
-
-instance IsByteString LB.ByteString where
-    fromByteString = LB.fromStrict
-
-class IsLazyByteString a where
-    fromLazyByteString :: LB.ByteString -> a
-
-instance IsLazyByteString String where
-    fromLazyByteString = fromByteString . LB.toStrict
-
-instance IsLazyByteString T.Text where
-    fromLazyByteString = fromByteString . LB.toStrict
-
-instance IsLazyByteString B.ByteString where
-    fromLazyByteString = LB.toStrict
-
-class IsText a where
-    fromText :: T.Text -> a
-
-instance IsText String where
-    fromText = T.unpack
-
-instance IsText B.ByteString where
-    fromText = C.pack . fromText
-
-instance IsText LB.ByteString where
-    fromText = LB.fromStrict . C.pack . fromText
+debug :: (MonadIO m, ConnectionLayer m) => Log -> m ()
+debug log = do
+    config <- getConfiguration
+    liftIO $ print config

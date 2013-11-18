@@ -5,7 +5,8 @@
 
 module Web.SocketIO.Type where
 
-import Web.SocketIO.Util
+import Web.SocketIO.Type.Log
+import Web.SocketIO.Type.String
 
 import qualified Network.Wai as Wai
 
@@ -17,6 +18,11 @@ import Control.Monad.Trans.Control
 import Control.Monad.Base
 import Control.Applicative
 
+import Data.String
+import qualified Data.Text.Lazy as T
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Char8 as C
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -78,7 +84,7 @@ data SessionState   = Syn
                     | Polling
                     | Emit Emitter
                     | Disconnect
-                    | Error
+                    | Err
 
 data Env = Env { 
     sessionTable :: IORef Table, 
