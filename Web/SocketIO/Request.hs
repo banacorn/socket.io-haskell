@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Request (processRequest) where
+module Web.SocketIO.Request (processHTTPRequest) where
 
 import Web.SocketIO.Type
 import Web.SocketIO.Util
@@ -20,39 +20,48 @@ import Data.Monoid                  (mconcat)
 
 type Namespace = Text
 type Protocol = Text
-type Body = BL.ByteString
-type ProcessedRequest = (Method, Body, Namespace, Protocol, Transport, SessionID)
+--type Body = BL.ByteString
 
-processHTTPRequest :: Wai.Request -> IO ProcessedRequest
-processHTTPRequest request = do
-    b <- parseBody request
-    return $ case path of
-        [n, p]          -> (method, b, n,  p,  NoTransport, "")
-        [n, p, t]       -> (method, b, n,  p,  parseTransport t,  "")
-        [n, p, t, s]    -> (method, b, n,  p,  parseTransport t,  s)
-        _               -> (method, b, "", "", NoTransport, "")
-    where   method  = Wai.requestMethod request
-            path    = map TL.fromStrict . cleanup . Wai.pathInfo $ request
+
+type RequestInfo = (Method, Maybe Namespace, Maybe Protocol, Maybe Transport, Maybe SessionID, Message)
+
+retrieveRequestInfo :: Wai.Request -> IO RequestInfo
+retrieveRequestInfo request = do
+
+    body <- parseBody request
+
+    let path = map TL.fromStrict (Wai.pathInfo request)
+    let transport = case fmap parseTransport (path `elemAt` 2) of
+            Nothing          -> Nothing
+            Just NoTransport -> Nothing
+            Just t           -> Just t
+
+    return 
+        (   Wai.requestMethod request
+        ,   path `elemAt` 0
+        ,   path `elemAt` 1
+        ,   transport
+        ,   path `elemAt` 3
+        ,   parseMessage body
+        )
+
+    where   elemAt :: [a] -> Int -> Maybe a
+            elemAt [] _ = Nothing
+            elemAt (x:xs) 0 = Just x
+            elemAt (x:xs) n = elemAt xs (n-1)
+
             parseTransport "websocket" = WebSocket
             parseTransport "xhr-polling" = XHRPolling
             parseTransport _ = NoTransport
-            cleanup = filter (/= "")
 
-identifyRequest  :: ProcessedRequest -> IO Request
-
-identifyRequest ("GET", _, _, _, NoTransport, "") = return RHandshake
-identifyRequest ("GET", _, _, _, _, s) = return $ RConnect s
-identifyRequest ("POST", b, n, p, t, s) = do
-    return $ case message of
-        MsgEvent i e t  -> REmit s t
-        MsgDisconnect _ -> RDisconnect s 
-        _               -> RDisconnect s
-    where   message = parseMessage b
-
-identifyRequest (_, _, _, _, _, s) = return $ RDisconnect s
-
-processRequest :: Wai.Request -> IO Request
-processRequest = processHTTPRequest >=> identifyRequest 
+processRequestInfo :: RequestInfo -> Request
+processRequestInfo ("GET" , _, _, Nothing, Nothing       , _                   )    = RHandshake 
+processRequestInfo ("GET" , _, _, _      , Just sessionID, _                   )    = RConnect sessionID
+processRequestInfo ("POST", _, _, _      , Just sessionID, MsgEvent _ _ emitter)    = REmit sessionID emitter
+processRequestInfo (_     , _, _, _      , Just sessionID, _                   )    = RDisconnect sessionID
+ 
+processHTTPRequest :: Wai.Request -> IO Request
+processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 
 parseBody :: Wai.Request -> IO BL.ByteString
 parseBody req = fromByteString . mconcat <$> runResourceT (Wai.requestBody req $$ consume)

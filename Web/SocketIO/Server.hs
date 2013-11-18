@@ -31,7 +31,7 @@ serverConfig port config handler = do
                         }
 
     Warp.runSettings settings $ \httpRequest -> liftIO $ do
-        req <- processRequest httpRequest
+        req <- processHTTPRequest httpRequest
         response <- runConnection (Env tableRef handler config) req
         text response
 
@@ -43,7 +43,8 @@ wsApp pending = do
 
 defaultConfig :: Configuration
 defaultConfig = Configuration {
-    transports = [WebSocket, XHRPolling]
+    transports = [WebSocket, XHRPolling],
+    logLevel = 3
 }
 
 text :: Monad m => Text -> m Wai.Response

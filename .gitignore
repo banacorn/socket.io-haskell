@@ -7,3 +7,6 @@ cabal-dev
 .virthualenv
 
 *.DS_Store
+
+socket.sublime-project
+socket.sublime-workspace
