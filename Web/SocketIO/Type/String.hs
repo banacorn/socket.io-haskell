@@ -2,12 +2,17 @@
 {-# LANGUAGE FlexibleInstances #-}
 
 module Web.SocketIO.Type.String where
-	
-import Data.String
-import qualified Data.Text.Lazy as T
+
+import qualified Data.String as S
+import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C
+
+type Text = TL.Text
+
+fromString :: (S.IsString a) => String -> a
+fromString = S.fromString
 
 class IsByteString a where
     fromByteString :: B.ByteString -> a
@@ -15,32 +20,32 @@ class IsByteString a where
 instance IsByteString String where
     fromByteString = C.unpack
 
-instance IsByteString T.Text where
-    fromByteString = T.pack . fromByteString
+instance IsByteString TL.Text where
+    fromByteString = TL.pack . fromByteString
 
-instance IsByteString LB.ByteString where
-    fromByteString = LB.fromStrict
+instance IsByteString BL.ByteString where
+    fromByteString = BL.fromStrict
 
 class IsLazyByteString a where
-    fromLazyByteString :: LB.ByteString -> a
+    fromLazyByteString :: BL.ByteString -> a
 
 instance IsLazyByteString String where
-    fromLazyByteString = fromByteString . LB.toStrict
+    fromLazyByteString = fromByteString . BL.toStrict
 
-instance IsLazyByteString T.Text where
-    fromLazyByteString = fromByteString . LB.toStrict
+instance IsLazyByteString TL.Text where
+    fromLazyByteString = fromByteString . BL.toStrict
 
 instance IsLazyByteString B.ByteString where
-    fromLazyByteString = LB.toStrict
+    fromLazyByteString = BL.toStrict
 
 class IsText a where
-    fromText :: T.Text -> a
+    fromText :: TL.Text -> a
 
 instance IsText String where
-    fromText = T.unpack
+    fromText = TL.unpack
 
 instance IsText B.ByteString where
     fromText = C.pack . fromText
 
-instance IsText LB.ByteString where
-    fromText = LB.fromStrict . C.pack . fromText
+instance IsText BL.ByteString where
+    fromText = BL.fromStrict . C.pack . fromText

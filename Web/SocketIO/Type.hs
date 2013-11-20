@@ -18,11 +18,6 @@ import Control.Monad.Trans.Control
 import Control.Monad.Base
 import Control.Applicative
 
-import Data.String
-import qualified Data.Text.Lazy as T
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as LB
-import qualified Data.ByteString.Char8 as C
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -30,7 +25,6 @@ import qualified Data.Aeson as Aeson
 import Data.IORef.Lifted
 import Data.Monoid ((<>))
 
-type Text = TL.Text
 type Event = Text
 type Reply = [Text]
 type SessionID = Text 

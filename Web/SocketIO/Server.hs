@@ -4,17 +4,25 @@ module Web.SocketIO.Server (server, serverConfig, defaultConfig) where
 
 import              Web.SocketIO.Util
 import              Web.SocketIO.Type
+import              Web.SocketIO.Type.String
 import              Web.SocketIO.Session
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
 import              Web.SocketIO.Event
+import              Web.SocketIO.Parser             (parseMessage)
 
+import              Control.Monad                   (forever)
 import              Control.Monad.Trans             (liftIO)
 import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
 import              Network.Wai.Handler.WebSockets  (intercept)
 import qualified    Network.WebSockets              as WS
+
+import              Data.ByteString.Lazy            (ByteString)
+import qualified    Data.ByteString.Lazy            as BL
+
+
 
 server :: Port -> SocketM () -> IO ()
 server p h = serverConfig p defaultConfig h
@@ -24,23 +32,34 @@ serverConfig port config handler = do
 
     tableRef <- newSessionTable
 
+    let env = Env tableRef handler config
+
     -- intercept websocket stuffs
     let settings = Warp.defaultSettings
                         { Warp.settingsPort = port
-                        , Warp.settingsIntercept = intercept wsApp
+                        , Warp.settingsIntercept = intercept (wsApp (runConnection env))
                         }
 
     Warp.runSettings settings $ \httpRequest -> liftIO $ do
         req <- processHTTPRequest httpRequest
-        response <- runConnection (Env tableRef handler config) req
+        response <- runConnection env req
         text response
 
 -- dummy test ws app
-wsApp :: WS.ServerApp
-wsApp pending = do
+wsApp :: (Request -> IO Text) -> WS.ServerApp
+wsApp runConnection' pending = do
+    let path = WS.requestPath $ WS.pendingRequest pending 
     conn <- WS.acceptRequest pending
-    WS.sendTextData conn ("hello" :: Text)
 
+    --reply <- runConnection' RConnect
+    print path
+
+
+    WS.sendTextData conn ("1::" :: Text)
+    forever $ do
+        raw <- WS.receiveData conn :: IO ByteString
+        let msg = parseMessage raw 
+        print msg
 defaultConfig :: Configuration
 defaultConfig = Configuration {
     transports = [WebSocket, XHRPolling],

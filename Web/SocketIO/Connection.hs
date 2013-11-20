@@ -2,6 +2,8 @@ module Web.SocketIO.Connection (runConnection, newSessionTable)  where
 
 import Web.SocketIO.Type
 import Web.SocketIO.Util
+import Web.SocketIO.Type.String
+import Web.SocketIO.Type.Log
 import Web.SocketIO.Session
 
 import Data.IORef.Lifted
@@ -70,8 +72,8 @@ handleConnection (RConnect sessionID) = do
                 Connected ->
                     runSession Polling session
         Nothing -> do
-            debug $ "[Error]      Unable to find session " ++ fromText sessionID
-            runSession Error NoSession
+            debug . Error $ "[Error]      Unable to find session " ++ fromText sessionID
+            runSession Err NoSession
 
 handleConnection (RDisconnect sessionID) = do
     clearTimeout sessionID
@@ -86,16 +88,16 @@ handleConnection (REmit sessionID emitter) = do
     result <- lookupSession sessionID
     case result of
         Just session -> runSession (Emit emitter) session
-        Nothing      -> runSession Error NoSession
+        Nothing      -> runSession Err NoSession
 
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do
-    debug $ "[Set Timeout] " ++ fromText sessionID
+    debug . Info $ "[Set Timeout] " ++ fromText sessionID
     result <- timeout duration $ takeMVar timeout'
     case result of
         Just r  -> setTimeout sessionID timeout'
         Nothing -> do
-            debug $ "[Close Session]" ++ fromText sessionID
+            debug . Info $ "[Close Session]" ++ fromText sessionID
             updateSession (H.delete sessionID)
     where   duration = 60 * 1000000
 
@@ -104,6 +106,6 @@ clearTimeout sessionID = do
     result <- lookupSession sessionID
     case result of
         Just (Session _ _ _ _ timeout') -> do
-            debug $ "[Clear Timeout] " ++ fromText sessionID
+            debug . Info $ "[Clear Timeout] " ++ fromText sessionID
             putMVar timeout' ()
         Nothing                         -> return ()

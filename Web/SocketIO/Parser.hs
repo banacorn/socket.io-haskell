@@ -2,6 +2,7 @@
 module Web.SocketIO.Parser (parseMessage) where
 
 import Web.SocketIO.Type
+import Web.SocketIO.Type.String
 import Web.SocketIO.Util
 import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>), (<*>))
