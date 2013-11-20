@@ -56,7 +56,7 @@ handleConnection RHandshake = do
     updateSession (H.insert sessionID session)
 
     runSession Syn session
-    where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (0, 99999999999999999999 :: Int)) :: ConnectionM Text
+    where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM Text
 
 handleConnection (RConnect sessionID) = do
 
@@ -72,7 +72,7 @@ handleConnection (RConnect sessionID) = do
                 Connected ->
                     runSession Polling session
         Nothing -> do
-            debug . Error $ "[Error]      Unable to find session " ++ fromText sessionID
+            debug . Error $ fromText sessionID ++ "    Unable to find session" 
             runSession Err NoSession
 
 handleConnection (RDisconnect sessionID) = do
@@ -92,12 +92,12 @@ handleConnection (REmit sessionID emitter) = do
 
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do
-    debug . Info $ "[Set Timeout] " ++ fromText sessionID
+    debug . Debug $ fromText sessionID ++ "    Set Timeout"
     result <- timeout duration $ takeMVar timeout'
     case result of
         Just r  -> setTimeout sessionID timeout'
         Nothing -> do
-            debug . Info $ "[Close Session]" ++ fromText sessionID
+            debug . Debug $ fromText sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
     where   duration = 60 * 1000000
 
@@ -106,6 +106,6 @@ clearTimeout sessionID = do
     result <- lookupSession sessionID
     case result of
         Just (Session _ _ _ _ timeout') -> do
-            debug . Info $ "[Clear Timeout] " ++ fromText sessionID
+            debug . Debug $ fromText sessionID ++ "    Clear Timeout"
             putMVar timeout' ()
         Nothing                         -> return ()

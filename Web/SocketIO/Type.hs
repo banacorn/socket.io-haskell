@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -7,6 +6,9 @@ module Web.SocketIO.Type where
 
 import Web.SocketIO.Type.Log
 import Web.SocketIO.Type.String
+import Web.SocketIO.Type.Message
+import Web.SocketIO.Type.Event
+import Web.SocketIO.Type.SocketIO
 
 import qualified Network.Wai as Wai
 
@@ -21,38 +23,16 @@ import Control.Applicative
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.Aeson as Aeson
 import Data.IORef.Lifted
-import Data.Monoid ((<>))
 
-type Event = Text
-type Reply = [Text]
 type SessionID = Text 
 
-type Port = Int
 
 type Listener = (Event, CallbackM ())
-data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
-
-instance Aeson.ToJSON Emitter where
-   toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
-
-
 
 
 
 -- options
-
-data Configuration = Configuration {
-    transports :: [Transport],
-    logLevel :: Int
-} deriving Show
-
-data Transport = WebSocket | XHRPolling | NoTransport deriving Show
-
-instance Msg Transport where
-    toMessage WebSocket = "websocket"
-    toMessage XHRPolling = "xhr-polling"
 
 
 
@@ -156,67 +136,3 @@ newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] 
 
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply (ReaderT Buffer IO))) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader Reply, MonadBase IO)
-
-
-data Message    = MsgDisconnect Endpoint
-                | MsgConnect Endpoint
-                | MsgHeartbeat
-                | Msg ID Endpoint Data
-                | MsgJSON ID Endpoint Data
-                | MsgEvent ID Endpoint Emitter
-                | MsgACK ID Data
-                | MsgError Endpoint Data
-                | MsgNoop
-                deriving (Show, Eq)
-
-data Endpoint   = Endpoint String
-                | NoEndpoint
-                deriving (Show, Eq)
-data ID         = ID Int
-                | IDPlus Int
-                | NoID
-                deriving (Show, Eq)
-data Data       = Data Text
-                | NoData
-                deriving (Show, Eq)
-
-
-
-class Msg m where
-    toMessage :: m -> Text
-
-instance Msg Endpoint where
-    toMessage (Endpoint s) = TL.pack s
-    toMessage NoEndpoint = ""
-
-instance Msg ID where
-    toMessage (ID i) = TL.pack $ show i
-    toMessage (IDPlus i) = TL.pack $ show i ++ "+"
-    toMessage NoID = ""
-
-instance Msg Data where
-    toMessage (Data s) = s
-    toMessage NoData = ""
-
-instance Msg Emitter where
-    toMessage = fromLazyByteString . Aeson.encode 
-
-instance Msg Message where
-    toMessage (MsgDisconnect NoEndpoint)    = "0"
-    toMessage (MsgDisconnect e)             = "0::" <> toMessage e
-    toMessage (MsgConnect e)                = "1::" <> toMessage e
-    toMessage MsgHeartbeat                  = undefined
-    toMessage (Msg i e d)                   = "3:" <> toMessage i <>
-                                              ":" <> toMessage e <>
-                                              ":" <> toMessage d
-    toMessage (MsgJSON i e d)               = "4:" <> toMessage i <>
-                                              ":" <> toMessage e <>
-                                              ":" <> toMessage d
-    toMessage (MsgEvent i e d)              = "5:" <> toMessage i <>
-                                              ":" <> toMessage e <>
-                                              ":" <> toMessage d
-    toMessage (MsgACK i d)                  = "6:::" <> toMessage i <> 
-                                              "+" <> toMessage d
-    toMessage (MsgError e d)                = "7::" <> toMessage e <> 
-                                              ":" <> toMessage d
-    toMessage MsgNoop                       = "8:::"

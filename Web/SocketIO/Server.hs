@@ -5,6 +5,8 @@ module Web.SocketIO.Server (server, serverConfig, defaultConfig) where
 import              Web.SocketIO.Util
 import              Web.SocketIO.Type
 import              Web.SocketIO.Type.String
+import              Web.SocketIO.Type.Event
+import              Web.SocketIO.Type.SocketIO
 import              Web.SocketIO.Session
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
@@ -23,7 +25,6 @@ import qualified    Network.WebSockets              as WS
 
 import              Data.ByteString.Lazy            (ByteString)
 import qualified    Data.ByteString.Lazy            as BL
-
 
 
 server :: Port -> SocketM () -> IO ()
@@ -66,7 +67,8 @@ wsApp runConnection' pending = do
     forever $ do
         raw <- WS.receiveData conn :: IO ByteString
         let msg = parseMessage raw 
-        print msg
+        --print msg
+        return ()
 defaultConfig :: Configuration
 defaultConfig = Configuration {
     transports = [WebSocket, XHRPolling],

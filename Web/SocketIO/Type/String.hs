@@ -1,18 +1,23 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Web.SocketIO.Type.String where
+module Web.SocketIO.Type.String (
+        S.IsString(..)
+    ,   IsByteString(..)
+    ,   IsLazyByteString(..)
+    ,   IsText(..)
+    ,   Text
+    ,   (<>)
+    ) where
 
 import qualified Data.String as S
 import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as C
+import Data.Monoid ((<>))
 
 type Text = TL.Text
-
-fromString :: (S.IsString a) => String -> a
-fromString = S.fromString
 
 class IsByteString a where
     fromByteString :: B.ByteString -> a

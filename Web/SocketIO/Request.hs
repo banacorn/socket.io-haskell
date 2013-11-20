@@ -3,6 +3,10 @@ module Web.SocketIO.Request (processHTTPRequest) where
 
 import Web.SocketIO.Type
 import Web.SocketIO.Type.String
+import Web.SocketIO.Type.SocketIO
+import Web.SocketIO.Type.Message
+import Web.SocketIO.Type.Event
+
 import Web.SocketIO.Util
 import Web.SocketIO.Parser
 

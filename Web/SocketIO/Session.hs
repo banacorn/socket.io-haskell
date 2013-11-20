@@ -4,6 +4,9 @@ module Web.SocketIO.Session (runSession) where
 import Web.SocketIO.Type
 import Web.SocketIO.Type.String
 import Web.SocketIO.Type.Log
+import Web.SocketIO.Type.Event
+import Web.SocketIO.Type.Message
+import Web.SocketIO.Type.SocketIO
 import Web.SocketIO.Util
 
 import Data.List (intersperse)
@@ -19,13 +22,13 @@ handleSession Syn = do
     sessionID <- getSessionID
     configuration <- getConfiguration
     let transportType = mconcat . intersperse "," . map toMessage $ transports configuration
-    debug . Info $ "[Handshake]    " ++ fromText sessionID
+    debug . Info $ fromText sessionID ++ "    Handshake authorized"
     return $ sessionID <> ":60:60:" <> transportType
 
 
 handleSession Ack = do
     sessionID <- getSessionID
-    debug . Info $ "[Connecting]   " ++ fromText sessionID
+    debug . Info $ fromText sessionID ++ "    Connected"
     return "1::"
 handleSession Polling = do
     sessionID <- getSessionID
@@ -33,19 +36,19 @@ handleSession Polling = do
     result <- timeout (20 * 1000000) (readChan buffer)
     case result of
         Just r  -> do
-            debug . Info $ "[Polling]*     " ++ fromText sessionID
+            debug . Debug $ fromText sessionID ++ "    Polling*"
             return $ toMessage (MsgEvent NoID NoEndpoint r)
         Nothing -> do
-            debug . Info $ "[Polling]      " ++ fromText sessionID
+            debug . Debug $ fromText sessionID ++ "    Polling"
             return "8::"
 handleSession (Emit emitter) = do
     sessionID <- getSessionID
     buffer <- getBuffer
-    debug . Info $ "[Emit]         " ++ fromText sessionID
+    debug . Debug $ fromText sessionID ++ "    Emit"
     triggerListener emitter buffer
     return "1"
 handleSession Disconnect = do
-    debug . Info $ "[Disconnect]   "
+    debug . Info $ "             Disconnected"
     return "1"
 handleSession Err = return "7"
 

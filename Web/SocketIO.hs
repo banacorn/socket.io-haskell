@@ -4,5 +4,6 @@ module Web.SocketIO (
     on, emit, reply) where
 
 import Web.SocketIO.Type
+import Web.SocketIO.Type.SocketIO
 import Web.SocketIO.Server
 import Web.SocketIO.Event
