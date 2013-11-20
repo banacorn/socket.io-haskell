@@ -36,7 +36,7 @@ serverConfig port config handler = do
 
     stdout <- newChan :: IO (Chan String)
 
-    forkIO $ do
+    forkIO . forever $ do
         readChan stdout >>= putStrLn 
 
     let env = Env tableRef handler config stdout
