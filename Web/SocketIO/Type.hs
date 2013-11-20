@@ -83,7 +83,8 @@ data SessionState   = Syn
 data Env = Env { 
     sessionTable :: IORef Table, 
     handler :: SocketM (), 
-    configuration :: Configuration 
+    configuration :: Configuration,
+    stdout :: Chan String
 }
 
 class ConnectionLayer m where

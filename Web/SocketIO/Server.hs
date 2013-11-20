@@ -11,6 +11,8 @@ import              Web.SocketIO.Request
 import              Web.SocketIO.Event
 import              Web.SocketIO.Parser             (parseMessage)
 
+import              Control.Concurrent.Chan
+import              Control.Concurrent              (forkIO)
 import              Control.Monad                   (forever)
 import              Control.Monad.Trans             (liftIO)
 import              Network.HTTP.Types              (status200)
@@ -32,7 +34,12 @@ serverConfig port config handler = do
 
     tableRef <- newSessionTable
 
-    let env = Env tableRef handler config
+    stdout <- newChan :: IO (Chan String)
+
+    forkIO $ do
+        readChan stdout >>= putStrLn 
+
+    let env = Env tableRef handler config stdout
 
     -- intercept websocket stuffs
     let settings = Warp.defaultSettings
