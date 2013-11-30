@@ -3,6 +3,7 @@ module Web.SocketIO.Connection (runConnection, newSessionTable)  where
 import Web.SocketIO.Type
 import Web.SocketIO.Util
 import Web.SocketIO.Type.String
+import Web.SocketIO.Type.SocketIO
 import Web.SocketIO.Type.Log
 import Web.SocketIO.Session
 
@@ -92,14 +93,16 @@ handleConnection (Emit sessionID emitter) = do
 
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do
+    configuration <- getConfiguration
+    let duration = (closeTimeout configuration) * 1000000
     debug . Debug $ fromText sessionID ++ "    Set Timeout"
     result <- timeout duration $ takeMVar timeout'
+
     case result of
         Just r  -> setTimeout sessionID timeout'
         Nothing -> do
             debug . Debug $ fromText sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
-    where   duration = 60 * 1000000
 
 clearTimeout :: SessionID -> ConnectionM ()
 clearTimeout sessionID = do

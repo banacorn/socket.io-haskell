@@ -11,6 +11,8 @@ data Configuration = Configuration
     ,   heartbeats :: Bool
     ,	closeTimeout :: Int
     ,	heartbeatTimeout :: Int
+    ,	heartbeatInterval :: Int
+    ,	pollingDuration :: Int
     } deriving Show
 
 type Port = Int

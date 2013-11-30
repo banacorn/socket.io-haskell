@@ -81,12 +81,12 @@ defaultConfig = Configuration
     ,   heartbeats = True
     ,   closeTimeout = 60
     ,   heartbeatTimeout = 60
+    ,   heartbeatInterval = 25
+    ,   pollingDuration = 20
 }
 
 text :: Monad m => Text -> m Wai.Response
 text = return . Wai.responseLBS status200 header . fromText
-
-pollingDuration = 20
 
 header = [
     ("Content-Type", "text/plain"),

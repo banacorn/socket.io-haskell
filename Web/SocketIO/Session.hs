@@ -38,8 +38,10 @@ handleSession SessionAck = do
     return "1::"
 handleSession SessionPolling = do
     sessionID <- getSessionID
+    configuration <- getConfiguration
     buffer <- getBuffer
-    result <- timeout (20 * 1000000) (readChan buffer)
+    --let pollingDuration' = pollingDuration configuration
+    result <- timeout (pollingDuration configuration * 1000000) (readChan buffer)
     case result of
         Just r  -> do
             debug . Debug $ fromText sessionID ++ "    Polling*"
