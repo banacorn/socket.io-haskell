@@ -16,10 +16,7 @@ debug :: (Functor m, MonadIO m, ConnectionLayer m) => Log -> m ()
 debug log = do
     logLevel <- fmap logLevel getConfiguration
     stdout <- fmap stdout getEnv
-    if level <= logLevel then
-        liftIO $ writeChan stdout (show log)
-    else
-        return ()
+    if level <= logLevel then liftIO $ writeChan stdout (show log) else return ()
     where   levelOf (Error _)   = 0
             levelOf (Warn  _)   = 1
             levelOf (Info  _)   = 2

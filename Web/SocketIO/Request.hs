@@ -70,3 +70,6 @@ processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo reques
 
 parseBody :: Wai.Request -> IO BL.ByteString
 parseBody req = fromByteString . mconcat <$> runResourceT (Wai.requestBody req $$ consume)
+
+--processWSRequest :: ByteString -> ByteString -> IO Request
+--processWSRequest path body = 

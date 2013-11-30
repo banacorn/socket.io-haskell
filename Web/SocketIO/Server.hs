@@ -48,10 +48,13 @@ serverConfig port config handler = do
                         , Warp.settingsIntercept = intercept (wsApp (runConnection env))
                         }
 
-    Warp.runSettings settings $ \httpRequest -> liftIO $ do
-        req <- processHTTPRequest httpRequest
-        response <- runConnection env req
-        text response
+    Warp.runSettings settings (httpApp (runConnection env))
+
+httpApp :: (Request -> IO Text) -> Wai.Application
+httpApp runConnection' httpRequest = liftIO $ do
+    req <- processHTTPRequest httpRequest
+    response <- runConnection' req
+    text response
 
 -- dummy test ws app
 wsApp :: (Request -> IO Text) -> WS.ServerApp
@@ -59,6 +62,7 @@ wsApp runConnection' pending = do
     let path = WS.requestPath $ WS.pendingRequest pending 
     conn <- WS.acceptRequest pending
 
+    --let sessionID = 
     --reply <- runConnection' RConnect
     print path
 
@@ -67,13 +71,14 @@ wsApp runConnection' pending = do
     forever $ do
         raw <- WS.receiveData conn :: IO ByteString
         let msg = parseMessage raw 
-        --print msg
+        print msg
         return ()
 
 defaultConfig :: Configuration
-defaultConfig = Configuration {
-    transports = [WebSocket, XHRPolling],
-    logLevel = 3
+defaultConfig = Configuration
+    {   transports = [WebSocket, XHRPolling]
+    ,   logLevel = 3
+    ,   heartbeats = True
 }
 
 text :: Monad m => Text -> m Wai.Response
