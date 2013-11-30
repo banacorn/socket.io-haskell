@@ -21,9 +21,15 @@ handleSession :: SessionState -> SessionM Text
 handleSession SessionSyn = do
     sessionID <- getSessionID
     configuration <- getConfiguration
+
+    let heartbeatTimeout' = fromString (show (heartbeatTimeout configuration))
+    let closeTimeout' = fromString (show (closeTimeout configuration))
     let transportType = mconcat . intersperse "," . map toMessage $ transports configuration
+
+
+
     debug . Info $ fromText sessionID ++ "    Handshake authorized"
-    return $ sessionID <> ":60:60:" <> transportType
+    return $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
 
 
 handleSession SessionAck = do

@@ -9,6 +9,8 @@ data Configuration = Configuration
     {   transports :: [Transport]
     ,   logLevel :: Int
     ,   heartbeats :: Bool
+    ,	closeTimeout :: Int
+    ,	heartbeatTimeout :: Int
     } deriving Show
 
 type Port = Int

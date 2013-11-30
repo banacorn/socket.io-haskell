@@ -79,6 +79,8 @@ defaultConfig = Configuration
     {   transports = [WebSocket, XHRPolling]
     ,   logLevel = 3
     ,   heartbeats = True
+    ,   closeTimeout = 60
+    ,   heartbeatTimeout = 60
 }
 
 text :: Monad m => Text -> m Wai.Response
