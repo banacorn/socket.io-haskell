@@ -42,7 +42,7 @@ runConnection env req = do
 
 
 handleConnection :: Request -> ConnectionM Text
-handleConnection RHandshake = do
+handleConnection Handshake = do
     buffer <- newChan
     handler <- getHandler
     sessionID <- genSessionID
@@ -55,10 +55,10 @@ handleConnection RHandshake = do
 
     updateSession (H.insert sessionID session)
 
-    runSession Syn session
+    runSession SessionSyn session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM Text
 
-handleConnection (RConnect sessionID) = do
+handleConnection (Connect sessionID) = do
 
     result <- lookupSession sessionID
     clearTimeout sessionID
@@ -68,27 +68,27 @@ handleConnection (RConnect sessionID) = do
             case status of
                 Connecting -> do
                     updateSession (H.insert sessionID session)
-                    runSession Ack session
+                    runSession SessionAck session
                 Connected ->
-                    runSession Polling session
+                    runSession SessionPolling session
         Nothing -> do
             debug . Error $ fromText sessionID ++ "    Unable to find session" 
-            runSession Err NoSession
+            runSession SessionError NoSession
 
-handleConnection (RDisconnect sessionID) = do
+handleConnection (Disconnect sessionID) = do
     clearTimeout sessionID
 
     updateSession (H.delete sessionID)
 
-    runSession Disconnect NoSession
+    runSession SessionDisconnect NoSession
 
-handleConnection (REmit sessionID emitter) = do
+handleConnection (Emit sessionID emitter) = do
     clearTimeout sessionID
 
     result <- lookupSession sessionID
     case result of
-        Just session -> runSession (Emit emitter) session
-        Nothing      -> runSession Err NoSession
+        Just session -> runSession (SessionEmit emitter) session
+        Nothing      -> runSession SessionError NoSession
 
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do

@@ -18,7 +18,7 @@ import Control.Concurrent.Lifted    (fork)
 import System.Timeout.Lifted
 
 handleSession :: SessionState -> SessionM Text
-handleSession Syn = do
+handleSession SessionSyn = do
     sessionID <- getSessionID
     configuration <- getConfiguration
     let transportType = mconcat . intersperse "," . map toMessage $ transports configuration
@@ -26,11 +26,11 @@ handleSession Syn = do
     return $ sessionID <> ":60:60:" <> transportType
 
 
-handleSession Ack = do
+handleSession SessionAck = do
     sessionID <- getSessionID
     debug . Info $ fromText sessionID ++ "    Connected"
     return "1::"
-handleSession Polling = do
+handleSession SessionPolling = do
     sessionID <- getSessionID
     buffer <- getBuffer
     result <- timeout (20 * 1000000) (readChan buffer)
@@ -41,16 +41,16 @@ handleSession Polling = do
         Nothing -> do
             debug . Debug $ fromText sessionID ++ "    Polling"
             return "8::"
-handleSession (Emit emitter) = do
+handleSession (SessionEmit emitter) = do
     sessionID <- getSessionID
     buffer <- getBuffer
     debug . Debug $ fromText sessionID ++ "    Emit"
     triggerListener emitter buffer
     return "1"
-handleSession Disconnect = do
+handleSession SessionDisconnect = do
     debug . Info $ "             Disconnected"
     return "1"
-handleSession Err = return "7"
+handleSession SessionError = return "7"
 
 triggerListener :: Emitter -> Buffer -> SessionM ()
 triggerListener (Emitter event reply) channel = do

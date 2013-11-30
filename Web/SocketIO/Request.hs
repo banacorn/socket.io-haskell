@@ -60,10 +60,10 @@ retrieveRequestInfo request = do
             parseTransport _ = NoTransport
 
 processRequestInfo :: RequestInfo -> Request
-processRequestInfo ("GET" , _, _, Nothing, Nothing       , _                   )    = RHandshake 
-processRequestInfo ("GET" , _, _, _      , Just sessionID, _                   )    = RConnect sessionID
-processRequestInfo ("POST", _, _, _      , Just sessionID, MsgEvent _ _ emitter)    = REmit sessionID emitter
-processRequestInfo (_     , _, _, _      , Just sessionID, _                   )    = RDisconnect sessionID
+processRequestInfo ("GET" , _, _, Nothing, Nothing       , _                   )    = Handshake 
+processRequestInfo ("GET" , _, _, _      , Just sessionID, _                   )    = Connect sessionID
+processRequestInfo ("POST", _, _, _      , Just sessionID, MsgEvent _ _ emitter)    = Emit sessionID emitter
+processRequestInfo (_     , _, _, _      , Just sessionID, _                   )    = Disconnect sessionID
  
 processHTTPRequest :: Wai.Request -> IO Request
 processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)

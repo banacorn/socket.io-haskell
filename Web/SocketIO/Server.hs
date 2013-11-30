@@ -69,6 +69,7 @@ wsApp runConnection' pending = do
         let msg = parseMessage raw 
         --print msg
         return ()
+
 defaultConfig :: Configuration
 defaultConfig = Configuration {
     transports = [WebSocket, XHRPolling],

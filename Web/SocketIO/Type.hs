@@ -47,18 +47,18 @@ type Table = H.HashMap SessionID Session
 data Status = Connecting | Connected | Disconnecting deriving Show
 type Buffer = Chan Emitter
 
-data Request    = RHandshake
-                | RDisconnect SessionID
-                | RConnect SessionID 
-                | REmit SessionID Emitter
+data Request    = Handshake
+                | Disconnect SessionID
+                | Connect SessionID 
+                | Emit SessionID Emitter
                 deriving (Show)
 
-data SessionState   = Syn
-                    | Ack
-                    | Polling
-                    | Emit Emitter
-                    | Disconnect
-                    | Err
+data SessionState   = SessionSyn
+                    | SessionAck
+                    | SessionPolling
+                    | SessionEmit Emitter
+                    | SessionDisconnect
+                    | SessionError
 
 data Env = Env { 
     sessionTable :: IORef Table, 
