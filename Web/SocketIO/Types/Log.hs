@@ -1,6 +1,5 @@
 module Web.SocketIO.Types.Log (Log(..)) where
 
-
 import System.Console.ANSI
 
 -- Logger

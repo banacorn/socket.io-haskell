@@ -5,29 +5,22 @@
 module Web.SocketIO.Types
     (   module Web.SocketIO.Types.Log
     ,   module Web.SocketIO.Types.Request
-    ,   module Web.SocketIO.Types.Event
     ,   module Web.SocketIO.Types.SocketIO
     ,   module Web.SocketIO.Types.String
     ,   ConnectionM(..)
     ,   SessionM(..)
-    ,   SocketM(..)
-    ,   CallbackM(..)
     ,   ConnectionLayer(..)
     ,   SessionLayer(..)
     ,   Env(..)
     ,   Session(..)
     ,   SessionState(..)
-    ,   Buffer
-    ,   Listener
     ,   Status(..)
     ,   Table
-    
     ) where
 
 import Web.SocketIO.Types.Request
 import Web.SocketIO.Types.Log
 import Web.SocketIO.Types.String
-import Web.SocketIO.Types.Event
 import Web.SocketIO.Types.SocketIO
 
 import qualified Network.Wai as Wai
@@ -47,11 +40,10 @@ import Data.IORef.Lifted
 
 
 
-type Listener = (Event, CallbackM ())
+
  
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
-type Buffer = Chan Emitter
 
 
 data SessionState   = SessionSyn
@@ -132,9 +124,3 @@ instance (MonadBaseControl IO) SessionM where
     newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session ConnectionM) a }
     liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMSession . run . runSessionM)))
     restoreM = SessionM . restoreM . unStMSession
-
-newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
-
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply (ReaderT Buffer IO))) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader Reply, MonadBase IO)

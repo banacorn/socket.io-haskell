@@ -11,14 +11,13 @@ import qualified    Data.Text.Lazy                          as TL
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
-import              Web.SocketIO.Types.Event
+import              Web.SocketIO.Types.SocketIO
 
 
 --------------------------------------------------------------------------------
 -- | Path of incoming request
 type Namespace = Text
 type Protocol = Text
-data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
 type SessionID = Text 
 
 data Path   = WithSession    Namespace Protocol Transport SessionID
