@@ -28,42 +28,28 @@ type Protocol = Text
 --type Body = BL.ByteString
 
 
-type RequestInfo = (Method, Maybe Namespace, Maybe Protocol, Maybe Transport, Maybe SessionID, Message)
+type RequestInfo = (Method, Path, Message)
 
 retrieveRequestInfo :: Wai.Request -> IO RequestInfo
 retrieveRequestInfo request = do
 
     body <- parseBody request
 
-    let path = map TL.fromStrict (Wai.pathInfo request)
-    let transport = case fmap parseTransport (path `elemAt` 2) of
-            Nothing          -> Nothing
-            Just NoTransport -> Nothing
-            Just t           -> Just t
+    let path = parsePath (Wai.rawPathInfo request)
+
 
     return 
         (   Wai.requestMethod request
-        ,   path `elemAt` 0
-        ,   path `elemAt` 1
-        ,   transport
-        ,   path `elemAt` 3
+        ,   path 
         ,   parseMessage body
         )
 
-    where   elemAt :: [a] -> Int -> Maybe a
-            elemAt [] _ = Nothing
-            elemAt (x:xs) 0 = Just x
-            elemAt (x:xs) n = elemAt xs (n-1)
-
-            parseTransport "websocket" = WebSocket
-            parseTransport "xhr-polling" = XHRPolling
-            parseTransport _ = NoTransport
 
 processRequestInfo :: RequestInfo -> Request
-processRequestInfo ("GET" , _, _, Nothing, Nothing       , _                   )    = Handshake 
-processRequestInfo ("GET" , _, _, _      , Just sessionID, _                   )    = Connect sessionID
-processRequestInfo ("POST", _, _, _      , Just sessionID, MsgEvent _ _ emitter)    = Emit sessionID emitter
-processRequestInfo (_     , _, _, _      , Just sessionID, _                   )    = Disconnect sessionID
+processRequestInfo ("GET" , (WithoutSession _ _)         , _                   )    = Handshake 
+processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                   )    = Connect sessionID
+processRequestInfo ("POST", (WithSession _ _ _ sessionID), MsgEvent _ _ emitter)    = Emit sessionID emitter
+processRequestInfo (_     , (WithSession _ _ _ sessionID), _                   )    = Disconnect sessionID
  
 processHTTPRequest :: Wai.Request -> IO Request
 processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)

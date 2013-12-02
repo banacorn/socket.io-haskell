@@ -29,14 +29,12 @@ type SessionID = Text
 
 
 type Listener = (Event, CallbackM ())
-
-
-
--- options
-
-
-
-
+ 
+type Namespace = Text
+type Protocol = Text
+data Path   = WithSession    Namespace Protocol Transport SessionID
+            | WithoutSession Namespace Protocol
+ 
 
 
 

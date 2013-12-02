@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Parser (parseMessage) where
+module Web.SocketIO.Parser (parseMessage, parsePath) where
 
 import Web.SocketIO.Type
 import Web.SocketIO.Type.String
@@ -12,6 +12,7 @@ import Web.SocketIO.Util
 import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>), (<*>))
 import qualified Data.Text.Lazy as TL
+import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.Aeson
@@ -24,13 +25,6 @@ instance FromJSON Emitter where
 
 decodeEmitter :: BL.ByteString -> Maybe Emitter
 decodeEmitter = decode
-
---parseShit :: Message -> Message
---parseShit (MsgEvent i e (Data d)) = case decodeEmitter bytestring of
---    Just t  -> MsgEvent i e t
---    Nothing -> MsgEvent i e (Emitter "", [])
---    where   bytestring = fromText d
---parseShit n = n
 
 parseMessage :: BL.ByteString -> Message
 parseMessage text = case parse parseMessage' "" string of
@@ -74,6 +68,8 @@ endpoint = many1 $ satisfy (/= ':')
 text = many1 anyChar
 number = many1 digit
 colon = char ':'
+textWithoutSlash = many1 $ satisfy (/= '/')
+slash = char '/'
 
 parseID :: Parser ID
 parseID  =  try (colon >> number >>= plus >>= return . IDPlus . read)
@@ -100,3 +96,38 @@ parseEmitter =  try (do
             )
             <|>     (colon >>          return   NoEmitter)
 
+-------------------------------------------------------------------------------
+
+
+
+parseTransport :: Parser Transport
+parseTransport = try (string "websocket" >> return WebSocket) 
+        <|> (string "xhr-polling" >> return XHRPolling)
+        <|> return NoTransport
+               
+parsePath :: ByteString -> Path
+parsePath path = case parse parsePath' "" string of
+    Left _  -> WithoutSession "" ""
+    Right x -> x 
+    where   string = fromByteString path
+
+test :: Parser String
+test = do
+    slash
+    textWithoutSlash 
+    slash
+    return ""
+
+parsePath' :: Parser Path
+parsePath' = do
+    slash
+    namespace <- fromString <$> textWithoutSlash
+    slash
+    protocol <- fromString <$> textWithoutSlash
+    slash
+    try (do
+        transport <- parseTransport
+        slash
+        sessionID <- fromString <$> textWithoutSlash
+        return $ WithSession namespace protocol transport sessionID
+        ) <|> (return $ WithoutSession namespace protocol)
