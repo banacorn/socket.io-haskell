@@ -36,6 +36,17 @@ handleSession SessionAck = do
     sessionID <- getSessionID
     debug . Info $ fromText sessionID ++ "    Connected"
     return "1::"
+
+handleSession SessionSocket = do
+    sessionID <- getSessionID
+    configuration <- getConfiguration
+    buffer <- getBuffer
+    
+    debug . Warn $ fromText sessionID ++ "    *SOCKET SHIT*"
+
+    return "1::"
+
+
 handleSession SessionPolling = do
     sessionID <- getSessionID
     configuration <- getConfiguration

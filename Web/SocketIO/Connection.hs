@@ -71,7 +71,10 @@ handleConnection (Connect isSocket sessionID) = do
                     updateSession (H.insert sessionID session)
                     runSession SessionAck session
                 Connected ->
-                    runSession SessionPolling session
+                    if isSocket then
+                        runSession SessionSocket session
+                    else
+                        runSession SessionPolling session
         Nothing -> do
             debug . Error $ fromText sessionID ++ "    Unable to find session" 
             runSession SessionError NoSession

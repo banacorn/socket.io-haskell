@@ -54,6 +54,7 @@ data Request    = Handshake
 
 data SessionState   = SessionSyn
                     | SessionAck
+                    | SessionSocket
                     | SessionPolling
                     | SessionEmit Emitter
                     | SessionDisconnect

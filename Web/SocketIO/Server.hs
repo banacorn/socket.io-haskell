@@ -73,12 +73,17 @@ wsApp runConnection' pending = do
     --WS.sendTextData conn ("1::" :: Text)
     forever $ do
         message <- parseMessage <$> WS.receiveData conn 
+        print message
         case message of
             MsgEvent _ _ emitter -> do
-                runConnection' (Emit sessionID emitter) >>= WS.sendTextData conn
-            _                    -> return ()
+                runConnection' (Emit sessionID emitter)
+                return ()
+            MsgHeartbeat         -> do
+                print "!!!!!!!!! <3"
+                runConnection' (Connect True sessionID) >>= WS.sendTextData conn
+            somethingElse -> do
+                print somethingElse
 
-        print message
         return ()
 
 defaultConfig :: Configuration
