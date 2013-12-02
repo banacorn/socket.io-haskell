@@ -2,9 +2,6 @@ module Web.SocketIO.Connection (runConnection, newSessionTable)  where
 
 import Web.SocketIO.Type
 import Web.SocketIO.Util
-import Web.SocketIO.Type.String
-import Web.SocketIO.Type.SocketIO
-import Web.SocketIO.Type.Log
 import Web.SocketIO.Session
 
 import Data.IORef.Lifted

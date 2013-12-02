@@ -2,7 +2,6 @@
 
 module Web.SocketIO.Type.Event where
 
-
 import Web.SocketIO.Type.String
 
 import qualified Data.Aeson as Aeson

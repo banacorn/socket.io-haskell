@@ -4,8 +4,6 @@
 module Web.SocketIO.Util ((<>), debug) where
 
 import Web.SocketIO.Type
-import Web.SocketIO.Type.Log
-import Web.SocketIO.Type.SocketIO
 import Control.Concurrent.Chan
 
 import Data.Monoid ((<>))

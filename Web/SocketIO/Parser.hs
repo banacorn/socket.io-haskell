@@ -2,11 +2,6 @@
 module Web.SocketIO.Parser (parseMessage, parsePath) where
 
 import Web.SocketIO.Type
-import Web.SocketIO.Type.String
-import Web.SocketIO.Type.Event
-import Web.SocketIO.Type.Message
-import Web.SocketIO.Type.SocketIO
-
 import Web.SocketIO.Util
 
 import Text.ParserCombinators.Parsec

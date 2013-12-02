@@ -2,7 +2,30 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Web.SocketIO.Type where
+module Web.SocketIO.Type
+    (   module Web.SocketIO.Type.Log
+    ,   module Web.SocketIO.Type.Event
+    ,   module Web.SocketIO.Type.Message
+    ,   module Web.SocketIO.Type.SocketIO
+    ,   module Web.SocketIO.Type.String
+    ,   ConnectionM(..)
+    ,   SessionM(..)
+    ,   SocketM(..)
+    ,   CallbackM(..)
+    ,   ConnectionLayer(..)
+    ,   SessionLayer(..)
+    ,   Env(..)
+    ,   Session(..)
+    ,   SessionState(..)
+    ,   Buffer
+    ,   Listener
+    ,   SessionID
+    ,   Path(..)
+    ,   Status(..)
+    ,   Request(..)
+    ,   Table
+    
+    ) where
 
 import Web.SocketIO.Type.Log
 import Web.SocketIO.Type.String
@@ -35,12 +58,6 @@ type Protocol = Text
 data Path   = WithSession    Namespace Protocol Transport SessionID
             | WithoutSession Namespace Protocol
             deriving (Eq, Show)
- 
-
-
-
-
-
 
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
