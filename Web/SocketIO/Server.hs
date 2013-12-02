@@ -22,8 +22,6 @@ import              Control.Monad.Trans             (liftIO)
 import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
-import              Network.Wai.Handler.WebSockets  (intercept)
-import qualified    Network.WebSockets              as WS
 
 import              Data.ByteString.Lazy            (ByteString)
 import qualified    Data.ByteString.Lazy            as BL
@@ -44,13 +42,7 @@ serverConfig port config handler = do
 
     let env = Env tableRef handler config stdout
 
-    -- intercept websocket stuffs
-    let settings = Warp.defaultSettings
-                        { Warp.settingsPort = port
-                        , Warp.settingsIntercept = intercept (wsApp (runConnection env))
-                        }
-
-    Warp.runSettings settings (httpApp (runConnection env))
+    Warp.run port (httpApp (runConnection env))
 
 httpApp :: (Request -> IO Text) -> Wai.Application
 httpApp runConnection' httpRequest = liftIO $ do
@@ -58,37 +50,9 @@ httpApp runConnection' httpRequest = liftIO $ do
     response <- runConnection' req
     text response
 
--- dummy test ws app
-wsApp :: (Request -> IO Text) -> WS.ServerApp
-wsApp runConnection' pending = do
-
-    -- accecpt connection anyway
-    conn <- WS.acceptRequest pending
-
-    -- parse path
-    let WithSession _ _ _ sessionID = parsePath (WS.requestPath (WS.pendingRequest pending))
-
-    -- fire off the first ping
-    runConnection' (Connect True sessionID) >>= WS.sendTextData conn
-    --WS.sendTextData conn ("1::" :: Text)
-    forever $ do
-        message <- parseMessage <$> WS.receiveData conn 
-        print message
-        case message of
-            MsgEvent _ _ emitter -> do
-                runConnection' (Emit sessionID emitter)
-                return ()
-            MsgHeartbeat         -> do
-                print "!!!!!!!!! <3"
-                runConnection' (Connect True sessionID) >>= WS.sendTextData conn
-            somethingElse -> do
-                print somethingElse
-
-        return ()
-
 defaultConfig :: Configuration
 defaultConfig = Configuration
-    {   transports = [WebSocket, XHRPolling]
+    {   transports = [XHRPolling]
     ,   logLevel = 3
     ,   heartbeats = True
     ,   closeTimeout = 60

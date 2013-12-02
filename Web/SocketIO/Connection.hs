@@ -59,7 +59,7 @@ handleConnection Handshake = do
     runSession SessionSyn session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM Text
 
-handleConnection (Connect isSocket sessionID) = do
+handleConnection (Connect sessionID) = do
 
     result <- lookupSession sessionID
     clearTimeout sessionID
@@ -71,10 +71,7 @@ handleConnection (Connect isSocket sessionID) = do
                     updateSession (H.insert sessionID session)
                     runSession SessionAck session
                 Connected ->
-                    if isSocket then
-                        runSession SessionSocket session
-                    else
-                        runSession SessionPolling session
+                    runSession SessionPolling session
         Nothing -> do
             debug . Error $ fromText sessionID ++ "    Unable to find session" 
             runSession SessionError NoSession

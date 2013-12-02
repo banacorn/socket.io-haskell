@@ -48,7 +48,7 @@ type Buffer = Chan Emitter
 
 data Request    = Handshake
                 | Disconnect SessionID
-                | Connect Bool SessionID 
+                | Connect SessionID 
                 | Emit SessionID Emitter
                 deriving (Show)
 

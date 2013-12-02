@@ -23,11 +23,6 @@ import Data.Conduit.List            (consume)
 import Data.Conduit                 (($$))
 import Data.Monoid                  (mconcat)
 
-type Namespace = Text
-type Protocol = Text
---type Body = BL.ByteString
-
-
 type RequestInfo = (Method, Path, Message)
 
 retrieveRequestInfo :: Wai.Request -> IO RequestInfo
@@ -37,17 +32,15 @@ retrieveRequestInfo request = do
 
     let path = parsePath (Wai.rawPathInfo request)
 
-
     return 
         (   Wai.requestMethod request
         ,   path 
         ,   body
         )
 
-
 processRequestInfo :: RequestInfo -> Request
 processRequestInfo ("GET" , (WithoutSession _ _)         , _                   )    = Handshake 
-processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                   )    = Connect False sessionID
+processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                   )    = Connect sessionID
 processRequestInfo ("POST", (WithSession _ _ _ sessionID), MsgEvent _ _ emitter)    = Emit sessionID emitter
 processRequestInfo (_     , (WithSession _ _ _ sessionID), _                   )    = Disconnect sessionID
  
