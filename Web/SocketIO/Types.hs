@@ -20,7 +20,6 @@ module Web.SocketIO.Types
     ,   Buffer
     ,   Listener
     ,   Status(..)
-    ,   Request(..)
     ,   Table
     
     ) where
@@ -54,11 +53,6 @@ type Table = H.HashMap SessionID Session
 data Status = Connecting | Connected | Disconnecting deriving Show
 type Buffer = Chan Emitter
 
-data Request    = Handshake
-                | Disconnect SessionID
-                | Connect SessionID 
-                | Emit SessionID Emitter
-                deriving (Show)
 
 data SessionState   = SessionSyn
                     | SessionAck

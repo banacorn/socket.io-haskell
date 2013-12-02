@@ -26,6 +26,13 @@ data Path   = WithSession    Namespace Protocol Transport SessionID
             deriving (Eq, Show)
 
 
+--------------------------------------------------------------------------------
+-- | Incoming request
+data Request    = Handshake
+                | Disconnect SessionID
+                | Connect SessionID 
+                | Emit SessionID Emitter
+                deriving (Show)
 
 --------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol
