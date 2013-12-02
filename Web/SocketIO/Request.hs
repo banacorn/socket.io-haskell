@@ -33,7 +33,7 @@ type RequestInfo = (Method, Path, Message)
 retrieveRequestInfo :: Wai.Request -> IO RequestInfo
 retrieveRequestInfo request = do
 
-    body <- parseBody request
+    body <- parseHTTPBody request
 
     let path = parsePath (Wai.rawPathInfo request)
 
@@ -41,7 +41,7 @@ retrieveRequestInfo request = do
     return 
         (   Wai.requestMethod request
         ,   path 
-        ,   parseMessage body
+        ,   body
         )
 
 
@@ -54,8 +54,5 @@ processRequestInfo (_     , (WithSession _ _ _ sessionID), _                   )
 processHTTPRequest :: Wai.Request -> IO Request
 processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 
-parseBody :: Wai.Request -> IO BL.ByteString
-parseBody req = fromByteString . mconcat <$> runResourceT (Wai.requestBody req $$ consume)
-
---processWSRequest :: ByteString -> ByteString -> IO Request
---processWSRequest path body = 
+parseHTTPBody :: Wai.Request -> IO Message
+parseHTTPBody req = parseMessage . fromByteString . mconcat <$> runResourceT (Wai.requestBody req $$ consume)

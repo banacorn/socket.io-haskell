@@ -57,7 +57,7 @@ instance Msg Message where
     toMessage (MsgDisconnect NoEndpoint)    = "0"
     toMessage (MsgDisconnect e)             = "0::" <> toMessage e
     toMessage (MsgConnect e)                = "1::" <> toMessage e
-    toMessage MsgHeartbeat                  = undefined
+    toMessage MsgHeartbeat                  = "2::"
     toMessage (Msg i e d)                   = "3:" <> toMessage i <>
                                               ":" <> toMessage e <>
                                               ":" <> toMessage d

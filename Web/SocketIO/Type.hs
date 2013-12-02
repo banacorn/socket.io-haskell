@@ -34,6 +34,7 @@ type Namespace = Text
 type Protocol = Text
 data Path   = WithSession    Namespace Protocol Transport SessionID
             | WithoutSession Namespace Protocol
+            deriving (Eq, Show)
  
 
 

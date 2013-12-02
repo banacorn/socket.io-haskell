@@ -4,6 +4,7 @@ module Web.SocketIO.Server (server, serverConfig, defaultConfig) where
 
 import              Web.SocketIO.Util
 import              Web.SocketIO.Type
+import              Web.SocketIO.Type.Message
 import              Web.SocketIO.Type.String
 import              Web.SocketIO.Type.Event
 import              Web.SocketIO.Type.SocketIO
@@ -11,9 +12,10 @@ import              Web.SocketIO.Session
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
 import              Web.SocketIO.Event
-import              Web.SocketIO.Parser             (parseMessage)
+import              Web.SocketIO.Parser             
 
 import              Control.Concurrent.Chan
+import              Control.Applicative             ((<$>))
 import              Control.Concurrent              (forkIO)
 import              Control.Monad                   (forever)
 import              Control.Monad.Trans             (liftIO)
@@ -59,19 +61,24 @@ httpApp runConnection' httpRequest = liftIO $ do
 -- dummy test ws app
 wsApp :: (Request -> IO Text) -> WS.ServerApp
 wsApp runConnection' pending = do
-    let path = WS.requestPath $ WS.pendingRequest pending 
+
+    -- accecpt connection anyway
     conn <- WS.acceptRequest pending
 
-    --let sessionID = 
-    --reply <- runConnection' RConnect
-    print path
+    -- parse path
+    let WithSession _ _ _ sessionID = parsePath (WS.requestPath (WS.pendingRequest pending))
 
-
-    WS.sendTextData conn ("1::" :: Text)
+    -- fire off the first ping
+    runConnection' (Connect sessionID) >>= WS.sendTextData conn
+    --WS.sendTextData conn ("1::" :: Text)
     forever $ do
-        raw <- WS.receiveData conn :: IO ByteString
-        let msg = parseMessage raw 
-        print msg
+        message <- parseMessage <$> WS.receiveData conn 
+        case message of
+            MsgEvent _ _ emitter -> do
+                runConnection' (Emit sessionID emitter) >>= WS.sendTextData conn
+            _                    -> return ()
+
+        print message
         return ()
 
 defaultConfig :: Configuration

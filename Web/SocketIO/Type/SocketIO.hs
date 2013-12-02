@@ -3,7 +3,7 @@ module Web.SocketIO.Type.SocketIO where
 
 import Web.SocketIO.Type.String
 
-data Transport = WebSocket | XHRPolling | NoTransport deriving Show
+data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
 
 data Configuration = Configuration
     {   transports :: [Transport]
