@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Type.Event where
+module Web.SocketIO.Types.Event where
 
-import Web.SocketIO.Type.String
+import Web.SocketIO.Types.String
 
 import qualified Data.Aeson as Aeson
 

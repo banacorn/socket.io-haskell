@@ -2,7 +2,7 @@
 
 module Web.SocketIO.Event where
 
-import Web.SocketIO.Type
+import Web.SocketIO.Types
 import Web.SocketIO.Session
 
 import Control.Monad.Writer

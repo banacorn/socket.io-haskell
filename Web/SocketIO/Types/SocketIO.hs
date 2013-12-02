@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Type.SocketIO where
+module Web.SocketIO.Types.SocketIO where
 
-import Web.SocketIO.Type.String
+import Web.SocketIO.Types.String
 
 data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
 

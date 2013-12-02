@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Web.SocketIO.Type.String (
+module Web.SocketIO.Types.String (
         S.IsString(..)
     ,   IsByteString(..)
     ,   IsLazyByteString(..)

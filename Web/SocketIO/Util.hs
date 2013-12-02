@@ -3,7 +3,7 @@
 
 module Web.SocketIO.Util ((<>), debug) where
 
-import Web.SocketIO.Type
+import Web.SocketIO.Types
 import Control.Concurrent.Chan
 
 import Data.Monoid ((<>))

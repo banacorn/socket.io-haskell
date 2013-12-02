@@ -2,12 +2,12 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Web.SocketIO.Type
-    (   module Web.SocketIO.Type.Log
-    ,   module Web.SocketIO.Type.Event
-    ,   module Web.SocketIO.Type.Message
-    ,   module Web.SocketIO.Type.SocketIO
-    ,   module Web.SocketIO.Type.String
+module Web.SocketIO.Types
+    (   module Web.SocketIO.Types.Log
+    ,   module Web.SocketIO.Types.Event
+    ,   module Web.SocketIO.Types.Message
+    ,   module Web.SocketIO.Types.SocketIO
+    ,   module Web.SocketIO.Types.String
     ,   ConnectionM(..)
     ,   SessionM(..)
     ,   SocketM(..)
@@ -27,11 +27,11 @@ module Web.SocketIO.Type
     
     ) where
 
-import Web.SocketIO.Type.Log
-import Web.SocketIO.Type.String
-import Web.SocketIO.Type.Message
-import Web.SocketIO.Type.Event
-import Web.SocketIO.Type.SocketIO
+import Web.SocketIO.Types.Log
+import Web.SocketIO.Types.String
+import Web.SocketIO.Types.Message
+import Web.SocketIO.Types.Event
+import Web.SocketIO.Types.SocketIO
 
 import qualified Network.Wai as Wai
 

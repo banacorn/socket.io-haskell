@@ -3,6 +3,6 @@ module Web.SocketIO (
     Configuration(..), Transport(..),
     on, emit, reply) where
 
-import Web.SocketIO.Type
+import Web.SocketIO.Types
 import Web.SocketIO.Server
 import Web.SocketIO.Event

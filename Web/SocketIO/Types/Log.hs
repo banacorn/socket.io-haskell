@@ -1,4 +1,4 @@
-module Web.SocketIO.Type.Log (Log(..)) where
+module Web.SocketIO.Types.Log (Log(..)) where
 
 
 import System.Console.ANSI

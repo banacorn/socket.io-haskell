@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Web.SocketIO.Parser (parseMessage, parsePath) where
 
-import Web.SocketIO.Type
+import Web.SocketIO.Types
 import Web.SocketIO.Util
 
 import Text.ParserCombinators.Parsec

@@ -1,6 +1,6 @@
 module Web.SocketIO.Connection (runConnection, newSessionTable)  where
 
-import Web.SocketIO.Type
+import Web.SocketIO.Types
 import Web.SocketIO.Util
 import Web.SocketIO.Session
 

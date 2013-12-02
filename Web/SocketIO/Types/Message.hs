@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Type.Message where
+module Web.SocketIO.Types.Message where
 
 import qualified Data.Aeson as Aeson
 import qualified Data.Text.Lazy as TL
 
-import Web.SocketIO.Type.String
-import Web.SocketIO.Type.Event
-import Web.SocketIO.Type.SocketIO
+import Web.SocketIO.Types.String
+import Web.SocketIO.Types.Event
+import Web.SocketIO.Types.SocketIO
 
 
 data Message    = MsgDisconnect Endpoint

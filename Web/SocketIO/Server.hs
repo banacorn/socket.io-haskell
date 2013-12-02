@@ -3,7 +3,7 @@
 module Web.SocketIO.Server (server, serverConfig, defaultConfig) where
 
 import              Web.SocketIO.Util
-import              Web.SocketIO.Type
+import              Web.SocketIO.Types
 import              Web.SocketIO.Session
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
