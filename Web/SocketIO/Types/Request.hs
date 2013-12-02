@@ -1,15 +1,34 @@
+--------------------------------------------------------------------------------
+-- | Types for comsuming incoming data
+
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Types.Message where
+module Web.SocketIO.Types.Request where
 
-import qualified Data.Aeson as Aeson
-import qualified Data.Text.Lazy as TL
+--------------------------------------------------------------------------------
+import qualified    Data.Aeson                              as Aeson
+import qualified    Data.Text.Lazy                          as TL
 
-import Web.SocketIO.Types.String
-import Web.SocketIO.Types.Event
-import Web.SocketIO.Types.SocketIO
+--------------------------------------------------------------------------------
+import              Web.SocketIO.Types.String
+import              Web.SocketIO.Types.Event
 
 
+--------------------------------------------------------------------------------
+-- | Path of incoming request
+type Namespace = Text
+type Protocol = Text
+data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
+type SessionID = Text 
+
+data Path   = WithSession    Namespace Protocol Transport SessionID
+            | WithoutSession Namespace Protocol
+            deriving (Eq, Show)
+
+
+
+--------------------------------------------------------------------------------
+-- | This is how data are encoded by Socket.IO Protocol
 data Message    = MsgDisconnect Endpoint
                 | MsgConnect Endpoint
                 | MsgHeartbeat
@@ -33,7 +52,8 @@ data Data       = Data Text
                 deriving (Show, Eq)
 
 
-
+--------------------------------------------------------------------------------
+-- | A typeclass for converting everything to Text for output
 class Msg m where
     toMessage :: m -> Text
 

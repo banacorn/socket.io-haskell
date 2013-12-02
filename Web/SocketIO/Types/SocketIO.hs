@@ -2,8 +2,7 @@
 module Web.SocketIO.Types.SocketIO where
 
 import Web.SocketIO.Types.String
-
-data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
+import Web.SocketIO.Types.Request
 
 data Configuration = Configuration
     {   transports :: [Transport]

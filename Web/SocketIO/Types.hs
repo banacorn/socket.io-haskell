@@ -4,8 +4,8 @@
 
 module Web.SocketIO.Types
     (   module Web.SocketIO.Types.Log
+    ,   module Web.SocketIO.Types.Request
     ,   module Web.SocketIO.Types.Event
-    ,   module Web.SocketIO.Types.Message
     ,   module Web.SocketIO.Types.SocketIO
     ,   module Web.SocketIO.Types.String
     ,   ConnectionM(..)
@@ -19,17 +19,15 @@ module Web.SocketIO.Types
     ,   SessionState(..)
     ,   Buffer
     ,   Listener
-    ,   SessionID
-    ,   Path(..)
     ,   Status(..)
     ,   Request(..)
     ,   Table
     
     ) where
 
+import Web.SocketIO.Types.Request
 import Web.SocketIO.Types.Log
 import Web.SocketIO.Types.String
-import Web.SocketIO.Types.Message
 import Web.SocketIO.Types.Event
 import Web.SocketIO.Types.SocketIO
 
@@ -48,17 +46,10 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.IORef.Lifted
 
-type SessionID = Text 
 
 
 type Listener = (Event, CallbackM ())
  
-type Namespace = Text
-type Protocol = Text
-data Path   = WithSession    Namespace Protocol Transport SessionID
-            | WithoutSession Namespace Protocol
-            deriving (Eq, Show)
-
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
 type Buffer = Chan Emitter
