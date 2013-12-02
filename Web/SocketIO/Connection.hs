@@ -59,7 +59,7 @@ handleConnection Handshake = do
     runSession SessionSyn session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM Text
 
-handleConnection (Connect sessionID) = do
+handleConnection (Connect isSocket sessionID) = do
 
     result <- lookupSession sessionID
     clearTimeout sessionID

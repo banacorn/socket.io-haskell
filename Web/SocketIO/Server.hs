@@ -69,7 +69,7 @@ wsApp runConnection' pending = do
     let WithSession _ _ _ sessionID = parsePath (WS.requestPath (WS.pendingRequest pending))
 
     -- fire off the first ping
-    runConnection' (Connect sessionID) >>= WS.sendTextData conn
+    runConnection' (Connect True sessionID) >>= WS.sendTextData conn
     --WS.sendTextData conn ("1::" :: Text)
     forever $ do
         message <- parseMessage <$> WS.receiveData conn 
