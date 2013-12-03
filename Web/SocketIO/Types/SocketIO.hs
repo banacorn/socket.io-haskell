@@ -7,10 +7,11 @@ module Web.SocketIO.Types.SocketIO where
 
 --------------------------------------------------------------------------------
 import 				Control.Applicative						(Applicative)
-import 				Control.Concurrent.Chan.Lifted			(Chan)
-import 				Control.Monad.Base
-import 				Control.Monad.Reader       
-import 				Control.Monad.Writer       
+import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
+import              Control.Monad.Base
+import              Control.Monad.Reader       
+import              Control.Monad.Writer       
+import              Control.Monad.Trans (liftIO)
 import qualified    Data.Aeson                              as Aeson
 
 --------------------------------------------------------------------------------
@@ -47,3 +48,24 @@ newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] 
 
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply (ReaderT Buffer IO))) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader Reply, MonadBase IO)
+
+
+class Publisher m where
+    emit :: Event -> Reply -> m ()
+
+instance Publisher SocketM where
+    emit event reply = do
+        channel <- ask
+        writeChan channel (Emitter event reply)
+
+instance Publisher CallbackM where
+    emit event reply = do
+        channel <- CallbackM . lift . lift $ ask
+        writeChan channel (Emitter event reply)
+
+class Subscriber m where
+    on :: Event -> CallbackM () -> m ()
+
+instance Subscriber SocketM where
+    on event callback = do
+        SocketM . lift . tell $ [(event, callback)]

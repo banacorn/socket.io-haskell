@@ -30,6 +30,9 @@ module Web.SocketIO
         -- >    ,   logLevel = 3
         -- >    ,   closeTimeout = 60
         -- >    ,   pollingDuration = 20
+        -- >    ,   heartbeats = True
+        -- >    ,   heartbeatTimeout = 60
+        -- >    ,   heartbeatInterval = 25
         -- >    }
         --
     ,   Configuration(..)
@@ -39,7 +42,8 @@ module Web.SocketIO
     ,   emit
     ,   reply
     ,   Event
-    ,   Emittable
+    ,   Publisher(..)
+    ,   Sbuscriber(..)
     ,   Transport(..)
         -- * Types
     ,   SocketM
