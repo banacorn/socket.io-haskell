@@ -3,11 +3,16 @@
 module Web.SocketIO.Event where
 
 import Web.SocketIO.Types
-import Web.SocketIO.Session
 
-import Control.Monad.Writer
 import Control.Monad.Reader
-import Data.IORef.Lifted
 
+--------------------------------------------------------------------------------
+-- | messages carried with the event
+--
+-- @
+-- `on` \"echo\" $ do
+--     messages <- reply
+--     liftIO $ print messages
+-- @
 reply :: CallbackM [Text]
 reply = ask

@@ -31,11 +31,19 @@ module Web.SocketIO
     ,   Port
     ,   Transport(XHRPolling)
         
-        -- * Binding and triggering events
+        -- * Sending and receiving events
     ,   Subscriber(..)
     ,   Publisher(..)
     ,   reply
     ,   Event
+
+        -- ** Special events
+        -- | On disconnection
+        -- 
+        -- @
+        -- 'on' \"disconnect\" $ do
+        --     liftIO $ print \"client disconnected\"
+        -- @
 
         -- * Types
     ,   HandlerM

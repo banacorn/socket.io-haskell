@@ -2,7 +2,8 @@ module Web.SocketIO.Types.Log (Log(..)) where
 
 import System.Console.ANSI
 
--- Logger
+--------------------------------------------------------------------------------
+-- | Logger
 data Log = Error String
          | Warn String
          | Info String
@@ -15,4 +16,6 @@ instance Show Log where
     show (Info  message) = "    " ++ paint Cyan   "[info]  " ++ message
     show (Debug message) = "    " ++ paint Black  "[debug] " ++ message
 
+--------------------------------------------------------------------------------
+paint :: Color -> String -> String
 paint color s = setSGRCode [SetColor Foreground Vivid color] ++ s ++ setSGRCode []

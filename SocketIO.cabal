@@ -3,26 +3,31 @@
 
 name:               socketio
 version:            0.1.0.0
-synopsis:           Socket.IO for Haskell Folks
+synopsis:           Socket.IO server
 description: 
-
-  @
-    &#123;-&#35; LANGUAGE OverloadedStrings &#35;-&#125;
+    Socket.IO for Haskell folks.
     .
-    import Web.SocketIO
+    [Socket.IO] <http://socket.io/>
     .
-    \-\- listens to port 4000
-    main = server 4000 $ do
+    [Protocol] <https://github.com/LearnBoost/socket.io-spec>
     .
-    &#32;&#32;&#32;&#32;\-\- ping pong
-    &#32;&#32;&#32;&#32;on &#34;ping&#34; $ emit &#34;pong&#34; []
-    .
-    &#32;&#32;&#32;&#32;\-\- reply :: CallbackM [Text]
-    &#32;&#32;&#32;&#32;on &#34;echo&#34; $ reply >>= emit &#34;pong&#34;
-    .
-    &#32;&#32;&#32;&#32;\-\- do some IO
-    &#32;&#32;&#32;&#32;on &#34;Kim Jong-Un&#34; $ liftIO launchMissile
-  @        
+    @
+        &#123;-&#35; LANGUAGE OverloadedStrings &#35;-&#125;
+        .
+        import Web.SocketIO
+        .
+        \-\- listens to port 4000
+        main = server 4000 $ do
+        .
+        &#32;&#32;&#32;&#32;\-\- ping pong
+        &#32;&#32;&#32;&#32;on &#34;ping&#34; $ emit &#34;pong&#34; []
+        .
+        &#32;&#32;&#32;&#32;\-\- reply :: CallbackM [Text]
+        &#32;&#32;&#32;&#32;on &#34;echo&#34; $ reply >>= emit &#34;pong&#34;
+        .
+        &#32;&#32;&#32;&#32;\-\- do some IO
+        &#32;&#32;&#32;&#32;on &#34;Kim Jong-Un&#34; $ liftIO launchMissile
+    @        
        
 license:            MIT
 license-file:       LICENSE
@@ -35,11 +40,11 @@ build-type:         Simple
 cabal-version:      >=1.8
 
 library
-  -- Ghc-options:      -Wall
+    Ghc-options:      -Wall
 
-  exposed-modules:  
+    exposed-modules:  
         Web.SocketIO
-  Other-modules:
+    Other-modules:
         Web.SocketIO.Types
         Web.SocketIO.Types.SocketIO
         Web.SocketIO.Types.Log
@@ -53,9 +58,7 @@ library
         Web.SocketIO.Session
         Web.SocketIO.Util
 
-
-  -- other-modules:       
-  build-depends:      base                  ==4.6.*
+    build-depends:    base                  ==4.6.*
                     , mtl                   ==2.1.*
                     , text                  ==0.11.*
                     , ansi-terminal         ==0.6

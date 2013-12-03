@@ -1,13 +1,14 @@
-
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Util ((<>), debug) where
 
-import Web.SocketIO.Types
+--------------------------------------------------------------------------------
 import Control.Concurrent.Chan
+import Control.Monad.Trans 					(liftIO, MonadIO)
+--------------------------------------------------------------------------------
+import Web.SocketIO.Types
 
-import Control.Monad.Trans (liftIO, MonadIO)
-
+--------------------------------------------------------------------------------
 debug :: (Functor m, MonadIO m, ConnectionLayer m) => Log -> m ()
 debug message = do
     logLevel' <- fmap logLevel getConfiguration

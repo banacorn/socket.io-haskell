@@ -1,44 +1,54 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Connection (runConnection, newSessionTable)  where
+module Web.SocketIO.Connection
+    (   runConnection
+    ,   newSessionTable
+    )  where
 
-import Web.SocketIO.Types
-import Web.SocketIO.Util
-import Web.SocketIO.Session
+--------------------------------------------------------------------------------
+import              Web.SocketIO.Types
+import              Web.SocketIO.Util
+import              Web.SocketIO.Session
 
-import Data.IORef.Lifted
-import qualified Data.HashMap.Strict as H
-import System.Random (randomRIO)
-import System.Timeout.Lifted
-import Control.Monad.Reader       
-import Control.Monad.Writer       
-import Control.Applicative ((<$>))
-import Control.Concurrent.Lifted (fork)
-import Control.Concurrent.Chan.Lifted 
-import Control.Concurrent.MVar.Lifted
+--------------------------------------------------------------------------------
+import qualified    Data.HashMap.Strict                     as H
+import              Data.IORef.Lifted
+import              Control.Applicative                     ((<$>))
+import              Control.Concurrent.Lifted               (fork)
+import              Control.Concurrent.Chan.Lifted 
+import              Control.Concurrent.MVar.Lifted
+import              Control.Monad.Reader       
+import              Control.Monad.Writer       
+import              System.Random                           (randomRIO)
+import              System.Timeout.Lifted
 
+--------------------------------------------------------------------------------
 newSessionTable :: IO (IORef Table)
 newSessionTable = newIORef H.empty
 
+--------------------------------------------------------------------------------
 updateSession :: (Table -> Table) -> ConnectionM ()
 updateSession update = do
     table <- getSessionTable
     liftIO (modifyIORef table update)
 
+--------------------------------------------------------------------------------
 lookupSession :: SessionID -> ConnectionM (Maybe Session)
 lookupSession sessionID = do
     table <- getSessionTable
     table <- liftIO (readIORef table)
     return (H.lookup sessionID table)
 
+--------------------------------------------------------------------------------
 executeHandler :: HandlerM () -> BufferHub -> ConnectionM [Listener]
 executeHandler handler bufferHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) bufferHub)
 
+--------------------------------------------------------------------------------
 runConnection :: Env -> Request -> IO Text
 runConnection env req = do
     runReaderT (runConnectionM (handleConnection req)) env
 
-
+--------------------------------------------------------------------------------
 handleConnection :: Request -> ConnectionM Text
 handleConnection Handshake = do
     globalBuffer <- globalBuffer <$> getEnv
@@ -96,6 +106,7 @@ handleConnection (Emit sessionID emitter) = do
         Just session -> runSession (SessionEmit emitter) session
         Nothing      -> runSession SessionError NoSession
 
+--------------------------------------------------------------------------------
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do
     configuration <- getConfiguration
@@ -109,6 +120,7 @@ setTimeout sessionID timeout' = do
             debug . Debug $ fromText sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
 
+--------------------------------------------------------------------------------
 clearTimeout :: SessionID -> ConnectionM ()
 clearTimeout sessionID = do
     result <- lookupSession sessionID

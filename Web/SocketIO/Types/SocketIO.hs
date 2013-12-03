@@ -11,7 +11,6 @@ import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
-import              Control.Monad.Trans (liftIO)
 import qualified    Data.Aeson                              as Aeson
 
 --------------------------------------------------------------------------------
@@ -51,24 +50,51 @@ data BufferHub = BufferHub
     ,   selectGlobalBuffer :: Buffer
     }
    
--- | The outermost layer of context, capable of both subscribing and publishing and doing IO.
+--------------------------------------------------------------------------------
+-- | Capable of both sending and receiving events.
+--
+-- Use 'liftIO' if you wanna do some IO here.
 newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT BufferHub (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader BufferHub, MonadBase IO)
 
--- | Capable of only publishing and doing IO.
+--------------------------------------------------------------------------------
+-- | Capable of only sending events.
+--
+-- Use 'liftIO' if you wanna do some IO here.
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Text] (ReaderT BufferHub IO))) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader [Text], MonadBase IO)
 
+
+--------------------------------------------------------------------------------
+-- | Sending events
 class Publisher m where
-    emit :: Event -> [Text] -> m ()
-    broadcast :: Event -> [Text] -> m ()
+    -- | Sends a message to the socket that starts it.
+    --
+    -- @
+    -- `emit` \"launch\" [\"missile\", \"nuke\"] 
+    -- @
+    emit    :: Event        -- ^ event to trigger
+            -> [Text]       -- ^ message to carry with
+            -> m ()
+
+    -- | Sends a message to everyone else except for the socket that starts it.
+    --
+    -- @
+    -- `broadcast` \"hide\" [\"nukes coming!\"] 
+    -- @
+    broadcast   :: Event    -- ^ event to trigger
+                -> [Text]   -- ^ message to carry with
+                -> m ()
+
+    -- | 
 
 instance Publisher HandlerM where
     emit event reply = do
         channel <- selectLocalBuffer <$> ask
         writeChan channel (Emitter event reply)
     broadcast event reply = do
-        error "yooo"
+        channel <- selectGlobalBuffer <$> ask
+        writeChan channel (Emitter event reply)
 
 instance Publisher CallbackM where
     emit event reply = do
@@ -77,10 +103,17 @@ instance Publisher CallbackM where
     broadcast event reply = do
         channel <- CallbackM . lift . lift $ selectGlobalBuffer <$> ask
         writeChan channel (Emitter event reply)
-        --error "CallbackM "
 
+--------------------------------------------------------------------------------
+-- | Receiving events.
 class Subscriber m where
-    on :: Event -> CallbackM () -> m ()
+    -- @
+    -- 'on' \"ping\" $ do
+    --     'emit' \"pong\" []
+    -- @
+    on  :: Event            -- ^ event to listen to
+        -> CallbackM ()     -- ^ callback
+        -> m ()             
 
 instance Subscriber HandlerM where
     on event callback = do

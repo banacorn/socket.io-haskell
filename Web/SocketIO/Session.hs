@@ -1,17 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Web.SocketIO.Session (runSession) where
 
+--------------------------------------------------------------------------------
 import Web.SocketIO.Types
 import Web.SocketIO.Util
 
-import Data.List (intersperse)
+--------------------------------------------------------------------------------
+import Data.List                        (intersperse)
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.MVar.Lifted
-import Control.Concurrent.Lifted    (fork)
+import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
 
+--------------------------------------------------------------------------------
 handleSession :: SessionState -> SessionM Text
 handleSession SessionSyn = do
     sessionID <- getSessionID
@@ -36,24 +39,7 @@ handleSession SessionPolling = do
     sessionID <- getSessionID
     configuration <- getConfiguration
     bufferHub <- getBufferHub
-    --localBuffer <- getLocalBuffer
-    --globalBuffer <- getGlobalBuffer
-
-    --fork $ do
-    --    result' <- timeout (pollingDuration configuration * 1000000) (readChan globalBuffer)
-    --    case result' of
-    --        Just r  -> do
-    --            let msg = toMessage (MsgEvent NoID NoEndpoint r)
-    --            debug . Warn $ fromText sessionID ++ "    Sending Message: " ++ fromText msg
-    --            return msg
-    --        Nothing -> do
-    --            debug . Warn $ fromText sessionID ++ "    Polling"
-    --            return "8::"
-    --    return ()
-
-
-
-
+  
     result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
     case result of
         Just r  -> do
@@ -64,14 +50,10 @@ handleSession SessionPolling = do
             debug . Debug $ fromText sessionID ++ "    Polling"
             return "8::"
 
-    where   --readBothChannel :: MonadBase IO m => BufferHub -> m Emitter
-            readBothChannel bufferHub = do
-                localBuffer <- getLocalBuffer
-                globalBuffer <- getGlobalBuffer
-
+    where   readBothChannel (BufferHub localBuffer globalBuffer) = do
                 output <- newEmptyMVar
-                fork (readChan localBuffer >>= putMVar output)
-                fork (readChan globalBuffer >>= putMVar output)
+                _ <- fork (readChan localBuffer >>= putMVar output)
+                _ <- fork (readChan globalBuffer >>= putMVar output)
                 
                 takeMVar output
 
@@ -91,6 +73,7 @@ handleSession SessionDisconnect = do
     return "1"
 handleSession SessionError = return "7"
 
+--------------------------------------------------------------------------------
 triggerListener :: Emitter -> BufferHub -> SessionM ()
 triggerListener (Emitter event reply) channelHub = do
     -- read
@@ -103,5 +86,6 @@ triggerListener (Emitter event reply) channelHub = do
         return ()
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
+--------------------------------------------------------------------------------
 runSession :: SessionState -> Session -> ConnectionM Text
 runSession state session = runReaderT (runSessionM (handleSession state)) session
