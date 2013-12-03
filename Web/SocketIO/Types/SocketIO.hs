@@ -39,6 +39,7 @@ data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 
 instance Aeson.ToJSON Emitter where
    toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
+   toJSON NoEmitter = Aeson.object []
 
    
 newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }

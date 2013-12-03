@@ -8,14 +8,11 @@ import Data.IORef.Lifted
 import qualified Data.HashMap.Strict as H
 import System.Random (randomRIO)
 import System.Timeout.Lifted
-import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader       
-import Control.Monad.State       
 import Control.Monad.Writer       
 import Control.Concurrent.Lifted (fork)
 import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.MVar.Lifted
-import Control.Applicative          ((<$>), (<*>))
 
 newSessionTable :: IO (IORef Table)
 newSessionTable = newIORef H.empty
@@ -96,7 +93,7 @@ setTimeout sessionID timeout' = do
     result <- timeout duration $ takeMVar timeout'
 
     case result of
-        Just r  -> setTimeout sessionID timeout'
+        Just _  -> setTimeout sessionID timeout'
         Nothing -> do
             debug . Debug $ fromText sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)

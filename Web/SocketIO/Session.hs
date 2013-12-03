@@ -5,7 +5,6 @@ import Web.SocketIO.Types
 import Web.SocketIO.Util
 
 import Data.List (intersperse)
-import Control.Applicative          ((<$>), (<*>))
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
@@ -63,8 +62,9 @@ triggerListener (Emitter event reply) channel = do
     let correspondingCallbacks = filter ((==) event . fst) listeners
     -- trigger them all
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
-        liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
+        _ <- liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
         return ()
+triggerListener NoEmitter _ = return ()
 
 runSession :: SessionState -> Session -> ConnectionM Text
 runSession state session = runReaderT (runSessionM (handleSession state)) session

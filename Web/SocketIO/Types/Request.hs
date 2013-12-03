@@ -100,5 +100,6 @@ instance Msg Message where
     toMessage MsgNoop                       = "8:::"
 
 instance Msg Transport where
-    toMessage WebSocket = "websocket"
-    toMessage XHRPolling = "xhr-polling"
+    toMessage WebSocket     = "websocket"
+    toMessage XHRPolling    = "xhr-polling"
+    toMessage NoTransport   = ""

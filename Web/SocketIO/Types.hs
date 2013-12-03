@@ -23,10 +23,7 @@ import Web.SocketIO.Types.Log
 import Web.SocketIO.Types.String
 import Web.SocketIO.Types.SocketIO
 
-import qualified Network.Wai as Wai
-
 import Control.Monad.Reader       
-import Control.Monad.Writer       
 import Control.Concurrent.MVar.Lifted
 import Control.Concurrent.Chan.Lifted
 import Control.Monad.Trans.Control
@@ -34,8 +31,6 @@ import Control.Monad.Base
 import Control.Applicative
 
 import qualified Data.HashMap.Strict as H
-import qualified Data.Text.Lazy as TL
-import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.IORef.Lifted
 
 
@@ -48,7 +43,6 @@ data Status = Connecting | Connected | Disconnecting deriving Show
 
 data SessionState   = SessionSyn
                     | SessionAck
-                    | SessionSocket
                     | SessionPolling
                     | SessionEmit Emitter
                     | SessionDisconnect

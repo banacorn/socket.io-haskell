@@ -2,13 +2,10 @@
 module Web.SocketIO.Parser (parseMessage, parsePath) where
 
 import Web.SocketIO.Types
-import Web.SocketIO.Util
 
 import Text.ParserCombinators.Parsec
 import Control.Applicative ((<$>), (<*>))
-import qualified Data.Text.Lazy as TL
 import Data.ByteString (ByteString)
-import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.Aeson
 
@@ -58,7 +55,6 @@ parseMessage' = do
     where   parseRegularMessage ctr = ctr <$> parseID 
                                           <*> parseEndpoint 
                                           <*> parseData
-
 endpoint = many1 $ satisfy (/= ':')
 text = many1 anyChar
 number = many1 digit
