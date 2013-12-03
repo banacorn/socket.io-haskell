@@ -38,15 +38,13 @@ module Web.SocketIO
     ,   Configuration(..)
     ,   Port
         -- * Binding and triggering events
-    ,   on
-    ,   emit
+    ,   Subscriber(..)
+    ,   Publisher(..)
     ,   reply
     ,   Event
-    ,   Publisher(..)
-    ,   Sbuscriber(..)
     ,   Transport(..)
         -- * Types
-    ,   SocketM
+    ,   SocketioM
     ,   CallbackM
     ) where
 

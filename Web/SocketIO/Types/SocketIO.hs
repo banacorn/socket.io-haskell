@@ -41,9 +41,8 @@ data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
 instance Aeson.ToJSON Emitter where
    toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
    toJSON NoEmitter = Aeson.object []
-
    
-newtype SocketM a = SocketM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
+newtype SocketIOM a = SocketIOM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
 
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply (ReaderT Buffer IO))) a }
@@ -53,7 +52,7 @@ newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Re
 class Publisher m where
     emit :: Event -> Reply -> m ()
 
-instance Publisher SocketM where
+instance Publisher SocketIOM where
     emit event reply = do
         channel <- ask
         writeChan channel (Emitter event reply)
@@ -66,6 +65,6 @@ instance Publisher CallbackM where
 class Subscriber m where
     on :: Event -> CallbackM () -> m ()
 
-instance Subscriber SocketM where
+instance Subscriber SocketIOM where
     on event callback = do
-        SocketM . lift . tell $ [(event, callback)]
+        SocketIOM . lift . tell $ [(event, callback)]
