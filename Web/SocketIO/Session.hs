@@ -8,6 +8,7 @@ import Data.List (intersperse)
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
+import Control.Concurrent.MVar.Lifted
 import Control.Concurrent.Lifted    (fork)
 import System.Timeout.Lifted
 
@@ -34,38 +35,71 @@ handleSession SessionAck = do
 handleSession SessionPolling = do
     sessionID <- getSessionID
     configuration <- getConfiguration
-    buffer <- getBuffer
-    result <- timeout (pollingDuration configuration * 1000000) (readChan buffer)
+    bufferHub <- getBufferHub
+    --localBuffer <- getLocalBuffer
+    --globalBuffer <- getGlobalBuffer
+
+    --fork $ do
+    --    result' <- timeout (pollingDuration configuration * 1000000) (readChan globalBuffer)
+    --    case result' of
+    --        Just r  -> do
+    --            let msg = toMessage (MsgEvent NoID NoEndpoint r)
+    --            debug . Warn $ fromText sessionID ++ "    Sending Message: " ++ fromText msg
+    --            return msg
+    --        Nothing -> do
+    --            debug . Warn $ fromText sessionID ++ "    Polling"
+    --            return "8::"
+    --    return ()
+
+
+
+
+    result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
     case result of
         Just r  -> do
-            debug . Debug $ fromText sessionID ++ "    Polling*"
-            return $ toMessage (MsgEvent NoID NoEndpoint r)
+            let msg = toMessage (MsgEvent NoID NoEndpoint r)
+            debug . Debug $ fromText sessionID ++ "    Sending Message: " ++ fromText msg
+            return msg
         Nothing -> do
             debug . Debug $ fromText sessionID ++ "    Polling"
             return "8::"
+
+    where   --readBothChannel :: MonadBase IO m => BufferHub -> m Emitter
+            readBothChannel bufferHub = do
+                localBuffer <- getLocalBuffer
+                globalBuffer <- getGlobalBuffer
+
+                output <- newEmptyMVar
+                fork (readChan localBuffer >>= putMVar output)
+                fork (readChan globalBuffer >>= putMVar output)
+                
+                takeMVar output
+
+
+
 handleSession (SessionEmit emitter) = do
     sessionID <- getSessionID
-    buffer <- getBuffer
+    bufferHub <- getBufferHub
     debug . Info $ fromText sessionID ++ "    Emit"
-    triggerListener emitter buffer
+    triggerListener emitter bufferHub
     return "1"
 handleSession SessionDisconnect = do
     sessionID <- getSessionID
     debug . Info $ fromText sessionID ++ "    Disconnected"
-    buffer <- getBuffer
-    triggerListener (Emitter "disconnect" []) buffer
+    bufferHub <- getBufferHub
+    triggerListener (Emitter "disconnect" []) bufferHub
     return "1"
 handleSession SessionError = return "7"
 
-triggerListener :: Emitter -> Buffer -> SessionM ()
-triggerListener (Emitter event reply) channel = do
+triggerListener :: Emitter -> BufferHub -> SessionM ()
+triggerListener (Emitter event reply) channelHub = do
     -- read
     listeners <- getListener
     -- filter out callbacks to be triggered
     let correspondingCallbacks = filter ((==) event . fst) listeners
     -- trigger them all
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
-        _ <- liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
+        _ <- liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channelHub
         return ()
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 

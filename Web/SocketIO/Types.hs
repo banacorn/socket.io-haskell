@@ -33,10 +33,6 @@ import Control.Applicative
 import qualified Data.HashMap.Strict as H
 import Data.IORef.Lifted
 
-
-
-
- 
 type Table = H.HashMap SessionID Session 
 data Status = Connecting | Connected | Disconnecting deriving Show
 
@@ -52,7 +48,8 @@ data Env = Env {
     sessionTable :: IORef Table, 
     handler :: HandlerM (), 
     configuration :: Configuration,
-    stdout :: Chan String
+    stdout :: Chan String,
+    globalBuffer :: Buffer
 }
 
 class ConnectionLayer m where
@@ -66,7 +63,9 @@ class SessionLayer m where
     getSession :: m Session
     getSessionID :: m SessionID
     getStatus :: m Status
-    getBuffer :: m Buffer
+    getBufferHub :: m BufferHub
+    getLocalBuffer :: m Buffer
+    getGlobalBuffer :: m Buffer
     getListener :: m [Listener]
     getTimeoutVar :: m (MVar ())
 
@@ -89,7 +88,7 @@ instance (MonadBaseControl IO) ConnectionM where
 data Session = Session { 
     sessionID :: SessionID, 
     status :: Status, 
-    buffer :: Buffer, 
+    bufferHub :: BufferHub, 
     listener :: [Listener],
     timeoutVar :: MVar ()
 } | NoSession
@@ -110,7 +109,9 @@ instance SessionLayer SessionM where
     getSession = ask
     getSessionID = sessionID <$> ask
     getStatus = status <$> ask
-    getBuffer = buffer <$> ask
+    getBufferHub = bufferHub <$> ask
+    getLocalBuffer = selectLocalBuffer . bufferHub <$> ask
+    getGlobalBuffer = selectGlobalBuffer . bufferHub <$> ask
     getListener = listener <$> ask
     getTimeoutVar = timeoutVar <$> ask
 

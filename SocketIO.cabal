@@ -23,21 +23,7 @@ description:
     &#32;&#32;&#32;&#32;\-\- do some IO
     &#32;&#32;&#32;&#32;on &#34;Kim Jong-Un&#34; $ liftIO launchMissile
   @        
-        -- >
-        -- >import Web.SocketIO
-        -- >
-        -- >-- listens to port 4000
-        -- >main = server 4000 $ do
-        -- >
-        -- >    -- send something to the client
-        -- >    emit "some event" ["hey"]
-        -- >
-        -- >    -- ping-pong
-        -- >    on "ping" $ do
-        -- >        emit "pong" []
-        -- >
-        -- >    -- do some IO
-        -- >    on "Kim Jong-Un" $ liftIO launchMissile
+       
 license:            MIT
 license-file:       LICENSE
 author:             Ting-Yen Lai

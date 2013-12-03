@@ -33,10 +33,12 @@ serverConfig port config handler = do
 
     stdout <- newChan :: IO (Chan String)
 
+    globalChannel <- newChan :: IO (Buffer)
+
     forkIO . forever $ do
         readChan stdout >>= putStrLn 
 
-    let env = Env tableRef handler config stdout
+    let env = Env tableRef handler config stdout globalChannel
 
     Warp.run port (httpApp (runConnection env))
 

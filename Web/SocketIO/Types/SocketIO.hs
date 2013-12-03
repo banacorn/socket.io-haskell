@@ -6,7 +6,7 @@
 module Web.SocketIO.Types.SocketIO where
 
 --------------------------------------------------------------------------------
-import 				Control.Applicative						(Applicative)
+import 				Control.Applicative						(Applicative, (<$>))
 import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
@@ -45,27 +45,39 @@ data Emitter  = Emitter Event [Text] | NoEmitter deriving (Show, Eq)
 instance Aeson.ToJSON Emitter where
    toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
    toJSON NoEmitter = Aeson.object []
+
+data BufferHub = BufferHub
+    {   selectLocalBuffer :: Buffer
+    ,   selectGlobalBuffer :: Buffer
+    }
    
 -- | The outermost layer of context, capable of both subscribing and publishing and doing IO.
-newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
+newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT BufferHub (WriterT [Listener] IO)) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader BufferHub, MonadBase IO)
 
 -- | Capable of only publishing and doing IO.
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Text] (ReaderT Buffer IO))) a }
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Text] (ReaderT BufferHub IO))) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader [Text], MonadBase IO)
 
 class Publisher m where
     emit :: Event -> [Text] -> m ()
+    broadcast :: Event -> [Text] -> m ()
 
 instance Publisher HandlerM where
     emit event reply = do
-        channel <- ask
+        channel <- selectLocalBuffer <$> ask
         writeChan channel (Emitter event reply)
+    broadcast event reply = do
+        error "yooo"
 
 instance Publisher CallbackM where
     emit event reply = do
-        channel <- CallbackM . lift . lift $ ask
+        channel <- CallbackM . lift . lift $ selectLocalBuffer <$> ask
         writeChan channel (Emitter event reply)
+    broadcast event reply = do
+        channel <- CallbackM . lift . lift $ selectGlobalBuffer <$> ask
+        writeChan channel (Emitter event reply)
+        --error "CallbackM "
 
 class Subscriber m where
     on :: Event -> CallbackM () -> m ()

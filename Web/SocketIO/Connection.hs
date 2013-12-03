@@ -12,8 +12,9 @@ import System.Random (randomRIO)
 import System.Timeout.Lifted
 import Control.Monad.Reader       
 import Control.Monad.Writer       
+import Control.Applicative ((<$>))
 import Control.Concurrent.Lifted (fork)
-import Control.Concurrent.Chan.Lifted
+import Control.Concurrent.Chan.Lifted 
 import Control.Concurrent.MVar.Lifted
 
 newSessionTable :: IO (IORef Table)
@@ -30,8 +31,8 @@ lookupSession sessionID = do
     table <- liftIO (readIORef table)
     return (H.lookup sessionID table)
 
-executeHandler :: HandlerM () -> Buffer -> ConnectionM [Listener]
-executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runHandlerM handler) buffer)
+executeHandler :: HandlerM () -> BufferHub -> ConnectionM [Listener]
+executeHandler handler bufferHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) bufferHub)
 
 runConnection :: Env -> Request -> IO Text
 runConnection env req = do
@@ -40,13 +41,16 @@ runConnection env req = do
 
 handleConnection :: Request -> ConnectionM Text
 handleConnection Handshake = do
-    buffer <- newChan
+    globalBuffer <- globalBuffer <$> getEnv
+    globalBufferClone <- dupChan globalBuffer
+    localBuffer <- newChan
+    let bufferHub = BufferHub localBuffer globalBufferClone
     handler <- getHandler
     sessionID <- genSessionID
-    listeners <- executeHandler handler buffer
+    listeners <- executeHandler handler bufferHub
     timeout' <- newEmptyMVar
 
-    let session = Session sessionID Connecting buffer listeners timeout'
+    let session = Session sessionID Connecting bufferHub listeners timeout'
 
     fork $ setTimeout sessionID timeout'
 
