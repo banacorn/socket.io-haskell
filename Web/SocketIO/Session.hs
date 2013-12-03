@@ -46,11 +46,14 @@ handleSession SessionPolling = do
 handleSession (SessionEmit emitter) = do
     sessionID <- getSessionID
     buffer <- getBuffer
-    debug . Debug $ fromText sessionID ++ "    Emit"
+    debug . Info $ fromText sessionID ++ "    Emit"
     triggerListener emitter buffer
     return "1"
 handleSession SessionDisconnect = do
-    debug . Info $ "             Disconnected"
+    sessionID <- getSessionID
+    debug . Info $ fromText sessionID ++ "    Disconnected"
+    buffer <- getBuffer
+    triggerListener (Emitter "disconnect" []) buffer
     return "1"
 handleSession SessionError = return "7"
 
@@ -64,7 +67,7 @@ triggerListener (Emitter event reply) channel = do
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
         _ <- liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channel
         return ()
-triggerListener NoEmitter _ = return ()
+triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
 runSession :: SessionState -> Session -> ConnectionM Text
 runSession state session = runReaderT (runSessionM (handleSession state)) session

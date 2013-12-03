@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Web.SocketIO.Connection (runConnection, newSessionTable)  where
 
 import Web.SocketIO.Types
@@ -71,11 +73,16 @@ handleConnection (Connect sessionID) = do
             runSession SessionError NoSession
 
 handleConnection (Disconnect sessionID) = do
-    clearTimeout sessionID
 
+    result <- lookupSession sessionID
+    response <- case result of
+        Just session -> runSession SessionDisconnect session
+        Nothing -> return ""
+
+    clearTimeout sessionID
     updateSession (H.delete sessionID)
 
-    runSession SessionDisconnect NoSession
+    return response
 
 handleConnection (Emit sessionID emitter) = do
     clearTimeout sessionID

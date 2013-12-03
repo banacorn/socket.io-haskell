@@ -6,16 +6,11 @@ module Web.SocketIO.Server
     ,   defaultConfig
     ) where
 
-import              Web.SocketIO.Util
 import              Web.SocketIO.Types
-import              Web.SocketIO.Session
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
-import              Web.SocketIO.Event
-import              Web.SocketIO.Parser             
 
 import              Control.Concurrent.Chan
-import              Control.Applicative             ((<$>))
 import              Control.Concurrent              (forkIO)
 import              Control.Monad                   (forever)
 import              Control.Monad.Trans             (liftIO)
@@ -23,8 +18,6 @@ import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
 
-import              Data.ByteString.Lazy            (ByteString)
-import qualified    Data.ByteString.Lazy            as BL
 
 --------------------------------------------------------------------------------
 -- | Run a socket.io application, build on top of Warp.
