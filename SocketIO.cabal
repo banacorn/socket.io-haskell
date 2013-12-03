@@ -39,9 +39,12 @@ category:           Web
 build-type:         Simple
 cabal-version:      >=1.8
 
-library
-    Ghc-options:      -Wall
 
+source-repository head
+  type:     git
+  location: https://github.com/banacorn/socket.io-haskell
+
+library
     exposed-modules:  
         Web.SocketIO
     Other-modules:
