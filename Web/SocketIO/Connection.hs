@@ -28,8 +28,8 @@ lookupSession sessionID = do
     table <- liftIO (readIORef table)
     return (H.lookup sessionID table)
 
-executeHandler :: SocketM () -> Buffer -> ConnectionM [Listener]
-executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runSocketM handler) buffer)
+executeHandler :: HandlerM () -> Buffer -> ConnectionM [Listener]
+executeHandler handler buffer = liftIO $ execWriterT (runReaderT (runHandlerM handler) buffer)
 
 runConnection :: Env -> Request -> IO Text
 runConnection env req = do

@@ -23,10 +23,10 @@ import              Data.ByteString.Lazy            (ByteString)
 import qualified    Data.ByteString.Lazy            as BL
 
 
-server :: Port -> SocketM () -> IO ()
+server :: Port -> HandlerM () -> IO ()
 server p h = serverConfig p defaultConfig h
 
-serverConfig :: Port -> Configuration -> SocketM () -> IO ()
+serverConfig :: Port -> Configuration -> HandlerM () -> IO ()
 serverConfig port config handler = do
 
     tableRef <- newSessionTable

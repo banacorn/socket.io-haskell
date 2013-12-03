@@ -50,7 +50,7 @@ data SessionState   = SessionSyn
 
 data Env = Env { 
     sessionTable :: IORef Table, 
-    handler :: SocketIOM (), 
+    handler :: HandlerM (), 
     configuration :: Configuration,
     stdout :: Chan String
 }
@@ -58,7 +58,7 @@ data Env = Env {
 class ConnectionLayer m where
     getEnv :: m Env
     getSessionTable :: m (IORef Table)
-    getHandler :: m (SocketIOM ())
+    getHandler :: m (HandlerM ())
     getConfiguration :: m Configuration
 
 

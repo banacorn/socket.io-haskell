@@ -32,27 +32,26 @@ data Configuration = Configuration
 type Port = Int
 
 type Event = Text
-type Reply = [Text]
 type Buffer = Chan Emitter
 type Listener = (Event, CallbackM ())
 
-data Emitter  = Emitter Event Reply | NoEmitter deriving (Show, Eq)
+data Emitter  = Emitter Event [Text] | NoEmitter deriving (Show, Eq)
 
 instance Aeson.ToJSON Emitter where
    toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
    toJSON NoEmitter = Aeson.object []
    
-newtype SocketIOM a = SocketIOM { runSocketM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
+newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT Buffer (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader Buffer, MonadBase IO)
 
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT Reply (ReaderT Buffer IO))) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader Reply, MonadBase IO)
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Text] (ReaderT Buffer IO))) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader [Text], MonadBase IO)
 
 
 class Publisher m where
-    emit :: Event -> Reply -> m ()
+    emit :: Event -> [Text] -> m ()
 
-instance Publisher SocketIOM where
+instance Publisher HandlerM where
     emit event reply = do
         channel <- ask
         writeChan channel (Emitter event reply)
@@ -65,6 +64,6 @@ instance Publisher CallbackM where
 class Subscriber m where
     on :: Event -> CallbackM () -> m ()
 
-instance Subscriber SocketIOM where
+instance Subscriber HandlerM where
     on event callback = do
-        SocketIOM . lift . tell $ [(event, callback)]
+        HandlerM . lift . tell $ [(event, callback)]

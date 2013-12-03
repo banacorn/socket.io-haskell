@@ -12,7 +12,7 @@ import Data.Aeson
 instance FromJSON Emitter where
     parseJSON (Object v) =  Emitter <$>
                             v .: "name" <*>
-                            v .:? "args" .!= ([] :: Reply)
+                            v .:? "args" .!= ([] :: [Text])
     
 
 decodeEmitter :: BL.ByteString -> Maybe Emitter

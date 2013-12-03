@@ -9,5 +9,5 @@ import Control.Monad.Writer
 import Control.Monad.Reader
 import Data.IORef.Lifted
 
-reply :: CallbackM Reply
+reply :: CallbackM [Text]
 reply = ask

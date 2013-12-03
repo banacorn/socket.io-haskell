@@ -44,7 +44,7 @@ module Web.SocketIO
     ,   Event
     ,   Transport(..)
         -- * Types
-    ,   SocketioM
+    ,   HandlerM
     ,   CallbackM
     ) where
 
