@@ -9,43 +9,38 @@ module Web.SocketIO
         -- >
         -- >import Web.SocketIO
         -- >
+        -- >-- listens to port 4000
         -- >main = server 4000 $ do
         -- >
+        -- >    -- send something to the client
         -- >    emit "some event" ["hey"]
         -- >
+        -- >    -- ping-pong
         -- >    on "ping" $ do
         -- >        emit "pong" []
+        -- >
+        -- >    -- do some IO
+        -- >    on "Kim Jong-Un" $ liftIO launchMissile
+        -- >        
 
         -- * Running a standalone server
         server
-        -- | Run a socket.io application, build on top of Warp.
     ,   serverConfig
-        -- | Run a socket.io application with configurations applied.
     ,   defaultConfig
-        -- | Default configurations to be overridden.
-        --
-        -- > defaultConfig :: Configuration
-        -- > defaultConfig = Configuration
-        -- >    {   transports = [XHRPolling]
-        -- >    ,   logLevel = 3
-        -- >    ,   closeTimeout = 60
-        -- >    ,   pollingDuration = 20
-        -- >    ,   heartbeats = True
-        -- >    ,   heartbeatTimeout = 60
-        -- >    ,   heartbeatInterval = 25
-        -- >    }
-        --
     ,   Configuration(..)
     ,   Port
+    ,   Transport(XHRPolling)
+        
         -- * Binding and triggering events
     ,   Subscriber(..)
     ,   Publisher(..)
     ,   reply
     ,   Event
-    ,   Transport(..)
+
         -- * Types
     ,   HandlerM
     ,   CallbackM
+    
     ) where
 
 import Web.SocketIO.Types

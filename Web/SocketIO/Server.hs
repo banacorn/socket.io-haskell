@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Server (server, serverConfig, defaultConfig) where
+module Web.SocketIO.Server
+    (   server
+    ,   serverConfig
+    ,   defaultConfig
+    ) where
 
 import              Web.SocketIO.Util
 import              Web.SocketIO.Types
@@ -22,10 +26,13 @@ import qualified    Network.Wai.Handler.Warp        as Warp
 import              Data.ByteString.Lazy            (ByteString)
 import qualified    Data.ByteString.Lazy            as BL
 
-
+--------------------------------------------------------------------------------
+-- | Run a socket.io application, build on top of Warp.
 server :: Port -> HandlerM () -> IO ()
 server p h = serverConfig p defaultConfig h
 
+--------------------------------------------------------------------------------
+-- | Run a socket.io application with configurations applied.
 serverConfig :: Port -> Configuration -> HandlerM () -> IO ()
 serverConfig port config handler = do
 
@@ -40,12 +47,27 @@ serverConfig port config handler = do
 
     Warp.run port (httpApp (runConnection env))
 
+--------------------------------------------------------------------------------
 httpApp :: (Request -> IO Text) -> Wai.Application
 httpApp runConnection' httpRequest = liftIO $ do
     req <- processHTTPRequest httpRequest
     response <- runConnection' req
     text response
 
+--------------------------------------------------------------------------------
+-- | Default configurations to be overridden.
+        --
+        -- > defaultConfig :: Configuration
+        -- > defaultConfig = Configuration
+        -- >    {   transports = [XHRPolling]
+        -- >    ,   logLevel = 3                
+        -- >    ,   closeTimeout = 60
+        -- >    ,   pollingDuration = 20
+        -- >    ,   heartbeats = True
+        -- >    ,   heartbeatTimeout = 60
+        -- >    ,   heartbeatInterval = 25
+        -- >    }
+        --
 defaultConfig :: Configuration
 defaultConfig = Configuration
     {   transports = [XHRPolling]
@@ -57,12 +79,13 @@ defaultConfig = Configuration
     ,   pollingDuration = 20
 }
 
+--------------------------------------------------------------------------------
 text :: Monad m => Text -> m Wai.Response
 text = return . Wai.responseLBS status200 header . fromText
-
-header = [
-    ("Content-Type", "text/plain"),
-    ("Connection", "keep-alive"),
-    ("Access-Control-Allow-Credentials", "true"),
-    ("Access-Control-Allow-Origin", "http://localhost:3000") 
-    ]
+    where
+            header = [
+                ("Content-Type", "text/plain"),
+                ("Connection", "keep-alive"),
+                ("Access-Control-Allow-Credentials", "true"),
+                ("Access-Control-Allow-Origin", "http://localhost:3000") 
+                ]
