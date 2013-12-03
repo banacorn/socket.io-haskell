@@ -3,8 +3,41 @@
 
 name:               socketio
 version:            0.1.0.0
-synopsis:           haskell version of socket.io
--- description:         
+synopsis:           Socket.IO for Haskell Folks
+description: 
+
+  @
+    &#123;-&#35; LANGUAGE OverloadedStrings &#35;-&#125;
+    .
+    import Web.SocketIO
+    .
+    \-\- listens to port 4000
+    main = server 4000 $ do
+    .
+    &#32;&#32;&#32;&#32;\-\- ping pong
+    &#32;&#32;&#32;&#32;on &#34;ping&#34; $ emit &#34;pong&#34; []
+    .
+    &#32;&#32;&#32;&#32;\-\- reply :: CallbackM [Text]
+    &#32;&#32;&#32;&#32;on &#34;echo&#34; $ reply >>= emit &#34;pong&#34;
+    .
+    &#32;&#32;&#32;&#32;\-\- do some IO
+    &#32;&#32;&#32;&#32;on &#34;Kim Jong-Un&#34; $ liftIO launchMissile
+  @        
+        -- >
+        -- >import Web.SocketIO
+        -- >
+        -- >-- listens to port 4000
+        -- >main = server 4000 $ do
+        -- >
+        -- >    -- send something to the client
+        -- >    emit "some event" ["hey"]
+        -- >
+        -- >    -- ping-pong
+        -- >    on "ping" $ do
+        -- >        emit "pong" []
+        -- >
+        -- >    -- do some IO
+        -- >    on "Kim Jong-Un" $ liftIO launchMissile
 license:            MIT
 license-file:       LICENSE
 author:             Ting-Yen Lai
@@ -16,7 +49,7 @@ build-type:         Simple
 cabal-version:      >=1.8
 
 library
-  Ghc-options:      -Wall
+  -- Ghc-options:      -Wall
 
   exposed-modules:  
         Web.SocketIO
