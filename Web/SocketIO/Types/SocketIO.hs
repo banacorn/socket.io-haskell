@@ -12,7 +12,14 @@ import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
 import              Data.ByteString                         (ByteString)
+import qualified    Data.ByteString.Lazy                    as BL
+import qualified    Data.Text.Lazy                          as TL
+import              Data.Text.Lazy.Builder                  (toLazyText)
+import              Data.Vector                             (toList)
 import              Data.Aeson                              
+import              Data.Aeson.Types                        (Parser)
+import              Data.Aeson.Encode                       (fromValue)
+import qualified    Data.HashMap.Strict                     as H
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
@@ -48,7 +55,16 @@ data Emitter  = Emitter Event [Payload] | NoEmitter deriving (Show, Eq)
 instance FromJSON Emitter where
     parseJSON (Object v) =  Emitter <$>
                             v .: "name" <*>
-                            v .:? "args" .!= ([] :: [Payload])
+                            parsePayload v
+
+--------------------------------------------------------------------------------
+-- | parse payload as a list of bytestrings and no further
+parsePayload :: Object -> Parser [Payload]
+parsePayload v = do
+    case H.lookup "args" v of
+        Just (Array v) -> return $ map (fromText . toLazyText . fromValue) (toList v)  -- return [fromString $ fromValue v]
+        Just _  -> return []
+        Nothing -> return []
 
 --------------------------------------------------------------------------------
 instance ToJSON Emitter where
