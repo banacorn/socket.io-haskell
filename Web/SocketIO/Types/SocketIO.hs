@@ -62,7 +62,7 @@ instance FromJSON Emitter where
 parsePayload :: Object -> Parser [Payload]
 parsePayload v = do
     case H.lookup "args" v of
-        Just (Array v) -> return $ map (fromText . toLazyText . fromValue) (toList v)  -- return [fromString $ fromValue v]
+        Just (Array v) -> return $ map (fromLazyText . toLazyText . fromValue) (toList v)  -- return [fromString $ fromValue v]
         Just _  -> return []
         Nothing -> return []
 

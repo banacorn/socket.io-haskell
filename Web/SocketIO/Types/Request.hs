@@ -7,7 +7,7 @@ module Web.SocketIO.Types.Request where
 
 --------------------------------------------------------------------------------
 import qualified    Data.Aeson                              as Aeson
-import qualified    Data.Text.Lazy                          as TL
+import qualified    Data.Text                               as T
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
@@ -64,12 +64,12 @@ class Msg m where
     toMessage :: m -> Text
 
 instance Msg Endpoint where
-    toMessage (Endpoint s) = TL.pack s
+    toMessage (Endpoint s) = T.pack s
     toMessage NoEndpoint = ""
 
 instance Msg ID where
-    toMessage (ID i) = TL.pack $ show i
-    toMessage (IDPlus i) = TL.pack $ show i ++ "+"
+    toMessage (ID i) = T.pack $ show i
+    toMessage (IDPlus i) = T.pack $ show i ++ "+"
     toMessage NoID = ""
 
 instance Msg Data where
