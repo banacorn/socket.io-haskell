@@ -87,8 +87,8 @@ newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT BufferHub (WriterT [List
 -- | Capable of only sending events.
 --
 -- Use 'liftIO' if you wanna do some IO here.
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Text] (ReaderT BufferHub IO))) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader [Text], MonadBase IO)
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Payload] (ReaderT BufferHub IO))) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader [Payload], MonadBase IO)
 
 
 --------------------------------------------------------------------------------

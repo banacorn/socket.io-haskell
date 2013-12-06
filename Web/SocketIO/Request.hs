@@ -3,10 +3,9 @@ module Web.SocketIO.Request (processHTTPRequest) where
 
 import Web.SocketIO.Types
 
-import Web.SocketIO.Parser
+import Web.SocketIO.Protocol
 
 import Control.Applicative          ((<$>))   
-import Control.Monad.Trans.Resource (runResourceT)
 
 import qualified Network.Wai as Wai
 import Network.HTTP.Types           (Method)
@@ -41,4 +40,4 @@ processHTTPRequest :: Wai.Request -> IO Request
 processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 
 parseHTTPBody :: Wai.Request -> IO Message
-parseHTTPBody req = parseMessage . fromByteString . mconcat <$> runResourceT (Wai.requestBody req $$ consume)
+parseHTTPBody req = parseMessage . fromByteString . mconcat <$> (Wai.requestBody req $$ consume)

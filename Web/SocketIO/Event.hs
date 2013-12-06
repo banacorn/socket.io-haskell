@@ -14,5 +14,5 @@ import Control.Monad.Reader
 --     messages <- reply
 --     liftIO $ print messages
 -- @
-reply :: CallbackM [Text]
+reply :: CallbackM [Payload]
 reply = ask
