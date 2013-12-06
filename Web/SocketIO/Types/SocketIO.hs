@@ -6,12 +6,12 @@
 module Web.SocketIO.Types.SocketIO where
 
 --------------------------------------------------------------------------------
-import 				Control.Applicative						(Applicative, (<$>))
+import 				Control.Applicative						(Applicative, (<$>), (<*>))
 import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
-import qualified    Data.Aeson                              as Aeson
+import              Data.Aeson                              
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
@@ -41,9 +41,17 @@ type Buffer = Chan Emitter
 type Listener = (Event, CallbackM ())
 data Emitter  = Emitter Event [Text] | NoEmitter deriving (Show, Eq)
 
-instance Aeson.ToJSON Emitter where
-   toJSON (Emitter name args) = Aeson.object ["name" Aeson..= name, "args" Aeson..= args]
-   toJSON NoEmitter = Aeson.object []
+
+--------------------------------------------------------------------------------
+instance FromJSON Emitter where
+    parseJSON (Object v) =  Emitter <$>
+                            v .: "name" <*>
+                            v .:? "args" .!= ([] :: [Text])
+
+--------------------------------------------------------------------------------
+instance ToJSON Emitter where
+   toJSON (Emitter name args) = object ["name" .= name, "args" .= args]
+   toJSON NoEmitter = object []
 
 data BufferHub = BufferHub
     {   selectLocalBuffer :: Buffer

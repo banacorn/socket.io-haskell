@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
--- | Parses message body
+-- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Parser (parseMessage, parsePath) where
+module Web.SocketIO.Protocol (parseMessage, parsePath) where
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
@@ -12,15 +12,6 @@ import              Text.ParserCombinators.Parsec
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types
 
---------------------------------------------------------------------------------
-instance FromJSON Emitter where
-    parseJSON (Object v) =  Emitter <$>
-                            v .: "name" <*>
-                            v .:? "args" .!= ([] :: [Text])
-    
---------------------------------------------------------------------------------
-decodeEmitter :: BL.ByteString -> Maybe Emitter
-decodeEmitter = decode
 
 --------------------------------------------------------------------------------
 parseMessage :: BL.ByteString -> Message
@@ -67,8 +58,6 @@ endpoint = many1 $ satisfy (/= ':')
 text = many1 anyChar
 number = many1 digit
 colon = char ':'
-textWithoutSlash = many1 $ satisfy (/= '/')
-slash = char '/'
 
 --------------------------------------------------------------------------------
 parseID :: Parser ID
@@ -92,11 +81,21 @@ parseEmitter :: Parser Emitter
 parseEmitter =  try (do
                 colon
                 t <- text
-                case decodeEmitter (fromString t) of
+                case decode (fromString t) of
                     Just e -> return e
                     Nothing -> return NoEmitter
             )
             <|>     (colon >>          return   NoEmitter)
+
+
+--------------------------------------------------------------------------------
+
+textWithoutSlash :: Parser String
+textWithoutSlash = many1 $ satisfy (/= '/')
+
+slash :: Parser Char
+slash = char '/'
+
 
 -------------------------------------------------------------------------------
 parseTransport :: Parser Transport
