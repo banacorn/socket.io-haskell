@@ -11,6 +11,7 @@ import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
+import              Data.ByteString                         (ByteString)
 import              Data.Aeson                              
 
 --------------------------------------------------------------------------------
@@ -35,18 +36,19 @@ data Configuration = Configuration
 type Port = Int
 
 --------------------------------------------------------------------------------
-type Event = Text
+type Event = ByteString
+type Payload = ByteString
 type Buffer = Chan Emitter
 
 type Listener = (Event, CallbackM ())
-data Emitter  = Emitter Event [Text] | NoEmitter deriving (Show, Eq)
+data Emitter  = Emitter Event [Payload] | NoEmitter deriving (Show, Eq)
 
 
 --------------------------------------------------------------------------------
 instance FromJSON Emitter where
     parseJSON (Object v) =  Emitter <$>
                             v .: "name" <*>
-                            v .:? "args" .!= ([] :: [Text])
+                            v .:? "args" .!= ([] :: [Payload])
 
 --------------------------------------------------------------------------------
 instance ToJSON Emitter where
@@ -81,8 +83,8 @@ class Publisher m where
     -- @
     -- `emit` \"launch\" [\"missile\", \"nuke\"] 
     -- @
-    emit    :: Event        -- ^ event to trigger
-            -> [Text]       -- ^ message to carry with
+    emit    :: Event                -- ^ event to trigger
+            -> [ByteString]         -- ^ message to carry with
             -> m ()
 
     -- | Sends a message to everyone else except for the socket that starts it.
@@ -90,8 +92,8 @@ class Publisher m where
     -- @
     -- `broadcast` \"hide\" [\"nukes coming!\"] 
     -- @
-    broadcast   :: Event    -- ^ event to trigger
-                -> [Text]   -- ^ message to carry with
+    broadcast   :: Event            -- ^ event to trigger
+                -> [ByteString]     -- ^ message to carry with
                 -> m ()
 
     -- | 
