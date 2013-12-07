@@ -4,6 +4,7 @@ module Web.SocketIO.Event where
 
 import Web.SocketIO.Types
 
+import Control.Applicative ((<$>))
 import Control.Monad.Reader
 
 --------------------------------------------------------------------------------
@@ -15,4 +16,4 @@ import Control.Monad.Reader
 --     liftIO $ print messages
 -- @
 reply :: CallbackM [Payload]
-reply = ask
+reply = callbackEnvPayload <$> ask

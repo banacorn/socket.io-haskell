@@ -75,14 +75,14 @@ handleSession SessionError = return "7"
 
 --------------------------------------------------------------------------------
 triggerListener :: Emitter -> BufferHub -> SessionM ()
-triggerListener (Emitter event reply) channelHub = do
+triggerListener (Emitter event payload) channelHub = do
     -- read
     listeners <- getListener
     -- filter out callbacks to be triggered
     let correspondingCallbacks = filter ((==) event . fst) listeners
     -- trigger them all
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
-        _ <- liftIO $ runReaderT (runReaderT (execWriterT (runCallbackM callback)) reply) channelHub
+        _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv payload channelHub)
         return ()
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 

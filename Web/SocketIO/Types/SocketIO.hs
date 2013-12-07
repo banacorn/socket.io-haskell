@@ -69,6 +69,13 @@ instance ToJSON Emitter where
    toJSON (Emitter name args) = object ["name" .= name, "args" .= args]
    toJSON NoEmitter = object []
 
+
+--------------------------------------------------------------------------------
+data CallbackEnv = CallbackEnv
+    {   callbackEnvPayload :: [Payload]
+    ,   callbackEnvBufferHub :: BufferHub
+    }
+
 data BufferHub = BufferHub
     {   selectLocalBuffer :: Buffer
     ,   selectGlobalBuffer :: Buffer
@@ -85,8 +92,8 @@ newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT BufferHub (WriterT [List
 -- | Capable of only sending events.
 --
 -- Use 'liftIO' if you wanna do some IO here.
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT [Payload] (ReaderT BufferHub IO))) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader [Payload], MonadBase IO)
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT CallbackEnv IO)) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader CallbackEnv, MonadBase IO)
 
 
 --------------------------------------------------------------------------------
@@ -122,10 +129,10 @@ instance Publisher HandlerM where
 
 instance Publisher CallbackM where
     emit event reply = do
-        channel <- CallbackM . lift . lift $ selectLocalBuffer <$> ask
+        channel <- CallbackM . lift $ selectLocalBuffer . callbackEnvBufferHub <$> ask
         writeChan channel (Emitter event reply)
     broadcast event reply = do
-        channel <- CallbackM . lift . lift $ selectGlobalBuffer <$> ask
+        channel <- CallbackM . lift $ selectGlobalBuffer . callbackEnvBufferHub <$> ask
         writeChan channel (Emitter event reply)
 
 --------------------------------------------------------------------------------
