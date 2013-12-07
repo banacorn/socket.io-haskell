@@ -12,8 +12,6 @@ import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
 import              Data.ByteString                         (ByteString)
-import qualified    Data.ByteString.Lazy                    as BL
-import qualified    Data.Text.Lazy                          as TL
 import              Data.Text.Lazy.Builder                  (toLazyText)
 import              Data.Vector                             (toList)
 import              Data.Aeson                              

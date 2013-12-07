@@ -62,7 +62,7 @@ handleConnection Handshake = do
 
     let session = Session sessionID Connecting bufferHub listeners timeout'
 
-    fork $ setTimeout sessionID timeout'
+    _ <- fork $ setTimeout sessionID timeout'
 
     updateSession (H.insert sessionID session)
 
@@ -82,6 +82,13 @@ handleConnection (Connect sessionID) = do
                     runSession SessionAck session
                 Connected ->
                     runSession SessionPolling session
+                s -> do
+                    debug . Error $ fromText sessionID ++ "    Undefined status: " ++ (fromString $ show s)
+                    runSession SessionError NoSession
+
+        Just NoSession -> do
+            debug . Error $ fromText sessionID ++ "    No session" 
+            runSession SessionError NoSession
         Nothing -> do
             debug . Error $ fromText sessionID ++ "    Unable to find session" 
             runSession SessionError NoSession

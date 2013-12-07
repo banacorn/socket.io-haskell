@@ -41,10 +41,11 @@ cabal-version:      >=1.8
 
 
 source-repository head
-  type:     git
-  location: https://github.com/banacorn/socket.io-haskell
+    type:     git
+    location: https://github.com/banacorn/socket.io-haskell
 
 library
+    --ghc-options:    -Wall
     exposed-modules:  
         Web.SocketIO
     Other-modules:
