@@ -1,4 +1,14 @@
-# Socket.io-Haskell
+# [Socket.IO](http://socket.io) server in Haskell.
+
+## Install
+
+    cabal install socketio
+
+## Usage
+
+Now only stand-alone version is supported.  `WAI` and `Snap` adapter will added in the future.
+
+### Stand-alone server
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
@@ -14,4 +24,11 @@ main = server 4000 $ do
     
     -- do some IO
     on "Kim Jong-Un" $ liftIO launchMissile
+    
 ```
+
+## Supported Transports
+
+`websockets` under development.
+
+* `xhr-polling`
