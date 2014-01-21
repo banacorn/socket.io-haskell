@@ -15,10 +15,10 @@ import Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 parseMessage :: BL.ByteString -> Message
-parseMessage text = case parse parseMessage' "" string of
+parseMessage raw = case parse parseMessage' "" str of
     Left _  -> MsgNoop
     Right x -> x
-    where   string = fromLazyByteString text
+    where   str = fromLazyByteString raw
 
 --------------------------------------------------------------------------------
 parseMessage' :: Parser Message

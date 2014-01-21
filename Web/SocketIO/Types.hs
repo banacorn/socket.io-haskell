@@ -49,11 +49,11 @@ data SessionState   = SessionSyn
 
 --------------------------------------------------------------------------------
 data Env = Env { 
-    sessionTable :: IORef Table, 
-    handler :: HandlerM (), 
-    configuration :: Configuration,
-    stdout :: Chan String,
-    globalBuffer :: Buffer
+    envSessionTable :: IORef Table, 
+    envHandler :: HandlerM (), 
+    envConfiguration :: Configuration,
+    envStdout :: Chan String,
+    envGlobalBuffer :: Buffer
 }
 
 --------------------------------------------------------------------------------
@@ -81,9 +81,9 @@ newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
 --------------------------------------------------------------------------------
 instance ConnectionLayer ConnectionM where
     getEnv = ask
-    getSessionTable = sessionTable <$> ask
-    getHandler = handler <$> ask
-    getConfiguration = configuration <$> ask
+    getSessionTable = envSessionTable <$> ask
+    getHandler = envHandler <$> ask
+    getConfiguration = envConfiguration <$> ask
 
 --------------------------------------------------------------------------------
 instance (MonadBaseControl IO) ConnectionM where
@@ -93,11 +93,11 @@ instance (MonadBaseControl IO) ConnectionM where
 
 --------------------------------------------------------------------------------
 data Session = Session { 
-    sessionID :: SessionID, 
-    status :: Status, 
-    bufferHub :: BufferHub, 
-    listener :: [Listener],
-    timeoutVar :: MVar ()
+    sessionSessionID :: SessionID, 
+    sessionStatus :: Status, 
+    sessionBufferHub :: BufferHub, 
+    sessionListener :: [Listener],
+    sessionTimeoutVar :: MVar ()
 } | NoSession
 
 --------------------------------------------------------------------------------
@@ -107,20 +107,20 @@ newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
 --------------------------------------------------------------------------------
 instance ConnectionLayer SessionM where
     getEnv = SessionM (lift ask)
-    getSessionTable = sessionTable <$> getEnv
-    getHandler = handler <$> getEnv
-    getConfiguration = configuration <$> getEnv
+    getSessionTable = envSessionTable <$> getEnv
+    getHandler = envHandler <$> getEnv
+    getConfiguration = envConfiguration <$> getEnv
 
 --------------------------------------------------------------------------------
 instance SessionLayer SessionM where
     getSession = ask
-    getSessionID = sessionID <$> ask
-    getStatus = status <$> ask
-    getBufferHub = bufferHub <$> ask
-    getLocalBuffer = selectLocalBuffer . bufferHub <$> ask
-    getGlobalBuffer = selectGlobalBuffer . bufferHub <$> ask
-    getListener = listener <$> ask
-    getTimeoutVar = timeoutVar <$> ask
+    getSessionID = sessionSessionID <$> ask
+    getStatus = sessionStatus <$> ask
+    getBufferHub = sessionBufferHub <$> ask
+    getLocalBuffer = selectLocalBuffer . sessionBufferHub <$> ask
+    getGlobalBuffer = selectGlobalBuffer . sessionBufferHub <$> ask
+    getListener = sessionListener <$> ask
+    getTimeoutVar = sessionTimeoutVar <$> ask
 
 --------------------------------------------------------------------------------
 instance (MonadBaseControl IO) SessionM where

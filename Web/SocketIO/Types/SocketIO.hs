@@ -54,13 +54,14 @@ instance FromJSON Emitter where
     parseJSON (Object v) =  Emitter <$>
                             v .: "name" <*>
                             parsePayload v
+    parseJSON _ = return NoEmitter
 
 --------------------------------------------------------------------------------
 -- | parse payload as a list of bytestrings and no further
 parsePayload :: Object -> Parser [Payload]
 parsePayload v = do
     case H.lookup "args" v of
-        Just (Array v) -> return $ map (fromLazyText . toLazyText . fromValue) (toList v)  -- return [fromString $ fromValue v]
+        Just (Array a) -> return $ map (fromLazyText . toLazyText . fromValue) (toList a)
         Just _  -> return []
         Nothing -> return []
 

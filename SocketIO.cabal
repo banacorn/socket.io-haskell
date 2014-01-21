@@ -45,7 +45,7 @@ source-repository head
     location: https://github.com/banacorn/socket.io-haskell
 
 library
-    --ghc-options:    -Wall
+    ghc-options:    -Wall -fno-warn-unused-do-bind
     exposed-modules:  
         Web.SocketIO
     Other-modules:

@@ -12,7 +12,7 @@ import Web.SocketIO.Types
 debug :: (Functor m, MonadIO m, ConnectionLayer m) => Log -> m ()
 debug message = do
     logLevel' <- fmap logLevel getConfiguration
-    stdout' <- fmap stdout getEnv
+    stdout' <- fmap envStdout getEnv
     if level <= logLevel' then liftIO $ writeChan stdout' (show message) else return ()
     where   levelOf (Error _)   = 0
             levelOf (Warn  _)   = 1

@@ -35,8 +35,8 @@ updateSession update = do
 --------------------------------------------------------------------------------
 lookupSession :: SessionID -> ConnectionM (Maybe Session)
 lookupSession sessionID = do
-    table <- getSessionTable
-    table <- liftIO (readIORef table)
+    tableVar <- getSessionTable
+    table <- liftIO (readIORef tableVar)
     return (H.lookup sessionID table)
 
 --------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ runConnection env req = do
 --------------------------------------------------------------------------------
 handleConnection :: Request -> ConnectionM Text
 handleConnection Handshake = do
-    globalBuffer <- globalBuffer <$> getEnv
+    globalBuffer <- envGlobalBuffer <$> getEnv
     globalBufferClone <- dupChan globalBuffer
     localBuffer <- newChan
     let bufferHub = BufferHub localBuffer globalBufferClone
@@ -74,16 +74,16 @@ handleConnection (Connect sessionID) = do
     result <- lookupSession sessionID
     clearTimeout sessionID
     case result of
-        Just (Session sessionID status buffer listeners timeout') -> do
-            let session = Session sessionID Connected buffer listeners timeout'
+        Just (Session sessionID' status buffer listeners timeout') -> do
+            let session = Session sessionID' Connected buffer listeners timeout'
             case status of
                 Connecting -> do
-                    updateSession (H.insert sessionID session)
+                    updateSession (H.insert sessionID' session)
                     runSession SessionAck session
                 Connected ->
                     runSession SessionPolling session
                 s -> do
-                    debug . Error $ fromText sessionID ++ "    Undefined status: " ++ (fromString $ show s)
+                    debug . Error $ fromText sessionID' ++ "    Undefined status: " ++ (fromString $ show s)
                     runSession SessionError NoSession
 
         Just NoSession -> do
@@ -135,4 +135,5 @@ clearTimeout sessionID = do
         Just (Session _ _ _ _ timeout') -> do
             debug . Debug $ fromText sessionID ++ "    Clear Timeout"
             putMVar timeout' ()
+        Just _                          -> return ()
         Nothing                         -> return ()
