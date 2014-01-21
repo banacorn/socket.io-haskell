@@ -8,5 +8,4 @@ cabal-dev
 
 *.DS_Store
 
-socket.sublime-project
-socket.sublime-workspace
+.cabal-sandbox
