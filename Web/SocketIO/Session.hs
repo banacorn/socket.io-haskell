@@ -15,7 +15,7 @@ import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
-handleSession :: SessionState -> SessionM Text
+handleSession :: SessionState -> SessionM ByteString
 handleSession SessionSyn = do
     sessionID <- getSessionID
     configuration <- getConfiguration
@@ -24,15 +24,12 @@ handleSession SessionSyn = do
     let closeTimeout' = fromString (show (closeTimeout configuration))
     let transportType = mconcat . intersperse "," . map toMessage $ transports configuration
 
-
-
-    debug . Info $ fromText sessionID ++ "    Handshake authorized"
+    debug . Info $ fromByteString sessionID ++ "    Handshake authorized"
     return $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
-
 
 handleSession SessionAck = do
     sessionID <- getSessionID
-    debug . Info $ fromText sessionID ++ "    Connected"
+    debug . Info $ fromByteString sessionID ++ "    Connected"
     return "1::"
 
 handleSession SessionPolling = do
@@ -44,10 +41,10 @@ handleSession SessionPolling = do
     case result of
         Just r  -> do
             let msg = toMessage (MsgEvent NoID NoEndpoint r)
-            debug . Debug $ fromText sessionID ++ "    Sending Message: " ++ fromText msg
+            debug . Debug $ fromByteString sessionID ++ "    Sending Message: " ++ fromByteString msg
             return msg
         Nothing -> do
-            debug . Debug $ fromText sessionID ++ "    Polling"
+            debug . Debug $ fromByteString sessionID ++ "    Polling"
             return "8::"
 
     where   readBothChannel (BufferHub localBuffer globalBuffer) = do
@@ -62,12 +59,12 @@ handleSession SessionPolling = do
 handleSession (SessionEmit emitter) = do
     sessionID <- getSessionID
     bufferHub <- getBufferHub
-    debug . Info $ fromText sessionID ++ "    Emit"
+    debug . Info $ fromByteString sessionID ++ "    Emit"
     triggerListener emitter bufferHub
     return "1"
 handleSession SessionDisconnect = do
     sessionID <- getSessionID
-    debug . Info $ fromText sessionID ++ "    Disconnected"
+    debug . Info $ fromByteString sessionID ++ "    Disconnected"
     bufferHub <- getBufferHub
     triggerListener (Emitter "disconnect" []) bufferHub
     return "1"
@@ -87,5 +84,5 @@ triggerListener (Emitter event payload) channelHub = do
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
 --------------------------------------------------------------------------------
-runSession :: SessionState -> Session -> ConnectionM Text
+runSession :: SessionState -> Session -> ConnectionM ByteString
 runSession state session = runReaderT (runSessionM (handleSession state)) session

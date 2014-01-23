@@ -8,6 +8,7 @@ module Web.SocketIO.Types.String (
     ,   IsText(..)
     ,   IsLazyText(..)
     ,   Text
+    ,   ByteString
     ,   LazyText
     ,   (<>)
     ) where
@@ -24,10 +25,11 @@ import              Data.Monoid                             ((<>))
 --------------------------------------------------------------------------------
 type Text = T.Text
 type LazyText = TL.Text
+type ByteString = B.ByteString
 
 --------------------------------------------------------------------------------
 class IsByteString a where
-    fromByteString :: B.ByteString -> a
+    fromByteString :: ByteString -> a
 
 --------------------------------------------------------------------------------
 instance IsByteString String where
@@ -62,7 +64,7 @@ instance IsLazyByteString TL.Text where
     fromLazyByteString = fromByteString . BL.toStrict
 
 --------------------------------------------------------------------------------
-instance IsLazyByteString B.ByteString where
+instance IsLazyByteString ByteString where
     fromLazyByteString = BL.toStrict
 
 --------------------------------------------------------------------------------
@@ -78,7 +80,7 @@ instance IsText TL.Text where
     fromText = TL.fromStrict
 
 --------------------------------------------------------------------------------
-instance IsText B.ByteString where
+instance IsText ByteString where
     fromText = C.pack . fromText
 
 --------------------------------------------------------------------------------
@@ -98,7 +100,7 @@ instance IsLazyText T.Text where
     fromLazyText = TL.toStrict
 
 --------------------------------------------------------------------------------
-instance IsLazyText B.ByteString where
+instance IsLazyText ByteString where
     fromLazyText = C.pack . fromLazyText
 
 --------------------------------------------------------------------------------

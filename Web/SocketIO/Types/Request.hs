@@ -7,7 +7,6 @@ module Web.SocketIO.Types.Request where
 
 --------------------------------------------------------------------------------
 import qualified    Data.Aeson                              as Aeson
-import qualified    Data.Text                               as T
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
@@ -16,9 +15,9 @@ import              Web.SocketIO.Types.SocketIO
 
 --------------------------------------------------------------------------------
 -- | Path of incoming request
-type Namespace = Text
-type Protocol = Text
-type SessionID = Text 
+type Namespace = ByteString
+type Protocol = ByteString
+type SessionID = ByteString 
 
 data Path   = WithSession    Namespace Protocol Transport SessionID
             | WithoutSession Namespace Protocol
@@ -46,14 +45,14 @@ data Message    = MsgDisconnect Endpoint
                 | MsgNoop
                 deriving (Show, Eq)
 
-data Endpoint   = Endpoint String
+data Endpoint   = Endpoint ByteString
                 | NoEndpoint
                 deriving (Show, Eq)
 data ID         = ID Int
                 | IDPlus Int
                 | NoID
                 deriving (Show, Eq)
-data Data       = Data Text
+data Data       = Data ByteString
                 | NoData
                 deriving (Show, Eq)
 
@@ -61,15 +60,15 @@ data Data       = Data Text
 --------------------------------------------------------------------------------
 -- | A typeclass for converting everything to Text for output
 class Msg m where
-    toMessage :: m -> Text
+    toMessage :: m -> ByteString
 
 instance Msg Endpoint where
-    toMessage (Endpoint s) = T.pack s
+    toMessage (Endpoint s) = s
     toMessage NoEndpoint = ""
 
 instance Msg ID where
-    toMessage (ID i) = T.pack $ show i
-    toMessage (IDPlus i) = T.pack $ show i ++ "+"
+    toMessage (ID i) = fromString $ show i
+    toMessage (IDPlus i) = fromString $ show i ++ "+"
     toMessage NoID = ""
 
 instance Msg Data where

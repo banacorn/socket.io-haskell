@@ -11,7 +11,6 @@ import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
-import              Data.ByteString                         (ByteString)
 import              Data.Text.Lazy.Builder                  (toLazyText)
 import              Data.Vector                             (toList)
 import              Data.Aeson                              

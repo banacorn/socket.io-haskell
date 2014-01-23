@@ -6,12 +6,10 @@ module Web.SocketIO.Protocol (parseMessage, parsePath) where
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
-import              Data.ByteString                         (ByteString)
 import qualified    Data.ByteString.Lazy                    as BL
 import              Text.ParserCombinators.Parsec
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types
-
 
 --------------------------------------------------------------------------------
 parseMessage :: BL.ByteString -> Message
@@ -25,9 +23,9 @@ parseMessage' :: Parser Message
 parseMessage' = do
     n <- digit
     case n of
-        '0' ->  (parseEndpoint >>= return . MsgDisconnect)
+        '0' ->  (parseID >> parseEndpoint >>= return . MsgDisconnect)
             <|> (                  return $ MsgDisconnect NoEndpoint)
-        '1' ->  (parseEndpoint >>= return . MsgConnect)
+        '1' ->  (parseID >> parseEndpoint >>= return . MsgConnect)
             <|> (                  return $ MsgConnect NoEndpoint)
         '2' ->  return MsgHeartbeat
         '3' ->  parseRegularMessage Msg
@@ -37,14 +35,14 @@ parseMessage' = do
                             <*> parseEmitter
         '6' ->  try (do 
                 string ":::"
-                n <- read <$> number
+                n' <- read <$> number
                 char '+'
                 d <- fromString <$> text
-                return $ MsgACK (ID n) (Data d)
+                return $ MsgACK (ID n') (Data d)
             ) <|> (do
                 string ":::"
-                n <- read <$> number
-                return $ MsgACK (ID n) NoData
+                n' <- read <$> number
+                return $ MsgACK (ID n') NoData
             )
         '7' -> colon >> MsgError <$> parseEndpoint <*> parseData
         '8' ->  return $ MsgNoop
@@ -54,9 +52,16 @@ parseMessage' = do
                                           <*> parseData
 
 --------------------------------------------------------------------------------
+endpoint :: Parser String
 endpoint = many1 $ satisfy (/= ':')
+
+text :: Parser String
 text = many1 anyChar
+
+number :: Parser String
 number = many1 digit
+
+colon :: Parser Char
 colon = char ':'
 
 --------------------------------------------------------------------------------
@@ -68,7 +73,7 @@ parseID  =  try (colon >> number >>= plus >>= return . IDPlus . read)
 
 --------------------------------------------------------------------------------
 parseEndpoint :: Parser Endpoint
-parseEndpoint    =  try (colon >> endpoint >>= return . Endpoint)
+parseEndpoint    =  try (colon >> fromString <$> endpoint >>= return . Endpoint)
                 <|>     (colon >>              return   NoEndpoint)
 
 --------------------------------------------------------------------------------
@@ -105,10 +110,9 @@ parseTransport = try (string "websocket" >> return WebSocket)
 
 --------------------------------------------------------------------------------               
 parsePath :: ByteString -> Path
-parsePath path = case parse parsePath' "" string of
+parsePath path = case parse parsePath' "" (fromByteString path) of
     Left _  -> WithoutSession "" ""
     Right x -> x 
-    where   string = fromByteString path
 
 --------------------------------------------------------------------------------
 parsePath' :: Parser Path

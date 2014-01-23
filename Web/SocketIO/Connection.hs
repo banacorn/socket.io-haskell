@@ -44,12 +44,12 @@ executeHandler :: HandlerM () -> BufferHub -> ConnectionM [Listener]
 executeHandler handler bufferHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) bufferHub)
 
 --------------------------------------------------------------------------------
-runConnection :: Env -> Request -> IO Text
+runConnection :: Env -> Request -> IO ByteString
 runConnection env req = do
     runReaderT (runConnectionM (handleConnection req)) env
 
 --------------------------------------------------------------------------------
-handleConnection :: Request -> ConnectionM Text
+handleConnection :: Request -> ConnectionM ByteString
 handleConnection Handshake = do
     globalBuffer <- envGlobalBuffer <$> getEnv
     globalBufferClone <- dupChan globalBuffer
@@ -67,7 +67,7 @@ handleConnection Handshake = do
     updateSession (H.insert sessionID session)
 
     runSession SessionSyn session
-    where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM Text
+    where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
 handleConnection (Connect sessionID) = do
 
@@ -83,14 +83,14 @@ handleConnection (Connect sessionID) = do
                 Connected ->
                     runSession SessionPolling session
                 s -> do
-                    debug . Error $ fromText sessionID' ++ "    Undefined status: " ++ (fromString $ show s)
+                    debug . Error $ fromByteString sessionID' ++ "    Undefined status: " ++ (fromString $ show s)
                     runSession SessionError NoSession
 
         Just NoSession -> do
-            debug . Error $ fromText sessionID ++ "    No session" 
+            debug . Error $ fromByteString sessionID ++ "    No session" 
             runSession SessionError NoSession
         Nothing -> do
-            debug . Error $ fromText sessionID ++ "    Unable to find session" 
+            debug . Error $ fromByteString sessionID ++ "    Unable to find session" 
             runSession SessionError NoSession
 
 handleConnection (Disconnect sessionID) = do
@@ -118,13 +118,13 @@ setTimeout :: SessionID -> MVar () -> ConnectionM ()
 setTimeout sessionID timeout' = do
     configuration <- getConfiguration
     let duration = (closeTimeout configuration) * 1000000
-    debug . Debug $ fromText sessionID ++ "    Set Timeout"
+    debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
     result <- timeout duration $ takeMVar timeout'
 
     case result of
         Just _  -> setTimeout sessionID timeout'
         Nothing -> do
-            debug . Debug $ fromText sessionID ++ "    Close Session"
+            debug . Debug $ fromByteString sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
 
 --------------------------------------------------------------------------------
@@ -133,7 +133,7 @@ clearTimeout sessionID = do
     result <- lookupSession sessionID
     case result of
         Just (Session _ _ _ _ timeout') -> do
-            debug . Debug $ fromText sessionID ++ "    Clear Timeout"
+            debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
             putMVar timeout' ()
         Just _                          -> return ()
         Nothing                         -> return ()
