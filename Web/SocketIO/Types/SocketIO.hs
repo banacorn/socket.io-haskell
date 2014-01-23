@@ -40,8 +40,8 @@ data Configuration = Configuration
 type Port = Int
 
 --------------------------------------------------------------------------------
-type Event = ByteString
-type Payload = ByteString
+type Event = Text
+type Payload = Text
 type Buffer = Chan Emitter
 
 type Listener = (Event, CallbackM ())
@@ -105,7 +105,7 @@ class Publisher m where
     -- `emit` \"launch\" [\"missile\", \"nuke\"] 
     -- @
     emit    :: Event                -- ^ event to trigger
-            -> [ByteString]         -- ^ message to carry with
+            -> [Text]               -- ^ message to carry with
             -> m ()
 
     -- | Sends a message to everyone else except for the socket that starts it.
@@ -114,7 +114,7 @@ class Publisher m where
     -- `broadcast` \"hide\" [\"nukes coming!\"] 
     -- @
     broadcast   :: Event            -- ^ event to trigger
-                -> [ByteString]     -- ^ message to carry with
+                -> [Text]           -- ^ message to carry with
                 -> m ()
 
     -- | 

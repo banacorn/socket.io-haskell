@@ -76,7 +76,7 @@ instance Msg Data where
     toMessage NoData = ""
 
 instance Msg Emitter where
-    toMessage = fromLazyByteString . Aeson.encode 
+    toMessage = fromLazyByteString . Aeson.encode
 
 instance Msg Message where
     toMessage (MsgDisconnect NoEndpoint)    = "0"
