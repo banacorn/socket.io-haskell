@@ -45,6 +45,10 @@ instance IsByteString TL.Text where
     fromByteString = TL.pack . fromByteString
 
 --------------------------------------------------------------------------------
+instance IsByteString ByteString where
+    fromByteString = id
+
+--------------------------------------------------------------------------------
 instance IsByteString BL.ByteString where
     fromByteString = BL.fromStrict
 
@@ -69,12 +73,20 @@ instance IsLazyByteString ByteString where
     fromLazyByteString = BL.toStrict
 
 --------------------------------------------------------------------------------
+instance IsLazyByteString BL.ByteString where
+    fromLazyByteString = id
+
+--------------------------------------------------------------------------------
 class IsText a where
     fromText :: T.Text -> a
 
 --------------------------------------------------------------------------------
 instance IsText String where
     fromText = T.unpack
+
+--------------------------------------------------------------------------------
+instance IsText Text where
+    fromText = id
 
 --------------------------------------------------------------------------------
 instance IsText TL.Text where
@@ -99,6 +111,10 @@ instance IsLazyText String where
 --------------------------------------------------------------------------------
 instance IsLazyText T.Text where
     fromLazyText = TL.toStrict
+
+--------------------------------------------------------------------------------
+instance IsLazyText TL.Text where
+    fromLazyText = id
 
 --------------------------------------------------------------------------------
 instance IsLazyText ByteString where
