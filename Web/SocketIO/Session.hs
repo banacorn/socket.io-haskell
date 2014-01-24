@@ -22,7 +22,7 @@ handleSession SessionSyn = do
 
     let heartbeatTimeout' = fromString (show (heartbeatTimeout configuration))
     let closeTimeout' = fromString (show (closeTimeout configuration))
-    let transportType = mconcat . intersperse "," . map toMessage $ transports configuration
+    let transportType = mconcat . intersperse "," . map serialize $ transports configuration
 
     debug . Info $ fromByteString sessionID ++ "    Handshake authorized"
     return $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
@@ -40,7 +40,7 @@ handleSession SessionPolling = do
     result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
     case result of
         Just r  -> do
-            let msg = toMessage (MsgEvent NoID NoEndpoint r)
+            let msg = serialize (MsgEvent NoID NoEndpoint r)
             debug . Debug $ fromByteString sessionID ++ "    Sending Message: " ++ fromByteString msg
             return msg
         Nothing -> do

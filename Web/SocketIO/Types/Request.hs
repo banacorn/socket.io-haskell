@@ -6,9 +6,6 @@
 module Web.SocketIO.Types.Request where
 
 --------------------------------------------------------------------------------
-import qualified    Data.Aeson                              as Aeson
-
---------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
 import              Web.SocketIO.Types.SocketIO
 
@@ -23,6 +20,15 @@ data Path   = WithSession    Namespace Protocol Transport SessionID
             | WithoutSession Namespace Protocol
             deriving (Eq, Show)
 
+instance Serializable Path where
+    serialize (WithSession n p t s) = "/" <> serialize n 
+                                   <> "/" <> serialize p 
+                                   <> "/" <> serialize t
+                                   <> "/" <> serialize s
+                                   <> "/"
+    serialize (WithoutSession n p)  = "/" <> serialize n
+                                   <> "/" <> serialize p 
+                                   <> "/"
 
 --------------------------------------------------------------------------------
 -- | Incoming request
@@ -58,47 +64,35 @@ data Data       = Data ByteString
 
 
 --------------------------------------------------------------------------------
--- | A typeclass for converting everything to Text for output
-class Msg m where
-    toMessage :: m -> ByteString
+instance Serializable Endpoint where
+    serialize (Endpoint s) = serialize s
+    serialize NoEndpoint = ""
 
-instance Msg Endpoint where
-    toMessage (Endpoint s) = s
-    toMessage NoEndpoint = ""
+instance Serializable ID where
+    serialize (ID i) = serialize $ show i
+    serialize (IDPlus i) = serialize $ show i <> "+"
+    serialize NoID = ""
 
-instance Msg ID where
-    toMessage (ID i) = fromString $ show i
-    toMessage (IDPlus i) = fromString $ show i ++ "+"
-    toMessage NoID = ""
+instance Serializable Data where
+    serialize (Data s) = serialize s
+    serialize NoData = ""
 
-instance Msg Data where
-    toMessage (Data s) = s
-    toMessage NoData = ""
-
-instance Msg Emitter where
-    toMessage = fromLazyByteString . Aeson.encode
-
-instance Msg Message where
-    toMessage (MsgDisconnect NoEndpoint)    = "0"
-    toMessage (MsgDisconnect e)             = "0::" <> toMessage e
-    toMessage (MsgConnect e)                = "1::" <> toMessage e
-    toMessage MsgHeartbeat                  = "2::"
-    toMessage (Msg i e d)                   = "3:" <> toMessage i <>
-                                              ":" <> toMessage e <>
-                                              ":" <> toMessage d
-    toMessage (MsgJSON i e d)               = "4:" <> toMessage i <>
-                                              ":" <> toMessage e <>
-                                              ":" <> toMessage d
-    toMessage (MsgEvent i e d)              = "5:" <> toMessage i <>
-                                              ":" <> toMessage e <>
-                                              ":" <> toMessage d
-    toMessage (MsgACK i d)                  = "6:::" <> toMessage i <> 
-                                              "+" <> toMessage d
-    toMessage (MsgError e d)                = "7::" <> toMessage e <> 
-                                              ":" <> toMessage d
-    toMessage MsgNoop                       = "8:::"
-
-instance Msg Transport where
-    toMessage WebSocket     = "websocket"
-    toMessage XHRPolling    = "xhr-polling"
-    toMessage NoTransport   = ""
+instance Serializable Message where
+    serialize (MsgDisconnect NoEndpoint)    = "0"
+    serialize (MsgDisconnect e)             = "0::" <> serialize e
+    serialize (MsgConnect e)                = "1::" <> serialize e
+    serialize MsgHeartbeat                  = "2::"
+    serialize (Msg i e d)                   = "3:" <> serialize i <>
+                                                       ":" <> serialize e <>
+                                              ":" <> serialize d
+    serialize (MsgJSON i e d)               = "4:" <> serialize i <>
+                                              ":" <> serialize e <>
+                                              ":" <> serialize d
+    serialize (MsgEvent i e d)              = "5:" <> serialize i <>
+                                              ":" <> serialize e <>
+                                              ":" <> serialize d
+    serialize (MsgACK i d)                  = "6:::" <> serialize i <> 
+                                              "+" <> serialize d
+    serialize (MsgError e d)                = "7::" <> serialize e <> 
+                                              ":" <> serialize d
+    serialize MsgNoop                       = "8:::"

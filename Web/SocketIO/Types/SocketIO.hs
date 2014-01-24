@@ -20,6 +20,11 @@ import              Web.SocketIO.Types.String
 -- | Now only xhr-polling is supported.
 data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
 
+instance Serializable Transport where
+    serialize WebSocket = "websocket" 
+    serialize XHRPolling = "xhr-polling" 
+    serialize NoTransport = "unknown" 
+
 --------------------------------------------------------------------------------
 data Configuration = Configuration
     {   transports :: [Transport]
@@ -42,6 +47,8 @@ type Buffer = Chan Emitter
 type Listener = (Event, CallbackM ())
 data Emitter  = Emitter Event [Payload] | NoEmitter deriving (Show, Eq)
 
+instance Serializable Emitter where
+    serialize = serialize . encode
 
 --------------------------------------------------------------------------------
 instance FromJSON Emitter where
