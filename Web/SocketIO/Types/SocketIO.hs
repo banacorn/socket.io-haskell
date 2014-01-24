@@ -11,15 +11,10 @@ import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
-import              Data.Text.Lazy.Builder                  (toLazyText)
-import              Data.Vector                             (toList)
 import              Data.Aeson                              
-import              Data.Aeson.Types                        (Parser)
-import              Data.Aeson.Encode                       (fromValue)
-import qualified    Data.HashMap.Strict                     as H
 
 --------------------------------------------------------------------------------
-import              Web.SocketIO.Types.String
+import              Web.SocketIO.Types.String   
 
 --------------------------------------------------------------------------------
 -- | Now only xhr-polling is supported.
@@ -52,17 +47,8 @@ data Emitter  = Emitter Event [Payload] | NoEmitter deriving (Show, Eq)
 instance FromJSON Emitter where
     parseJSON (Object v) =  Emitter <$>
                             v .: "name" <*>
-                            parsePayload v
+                            v .: "args"
     parseJSON _ = return NoEmitter
-
---------------------------------------------------------------------------------
--- | parse payload as a list of bytestrings and no further
-parsePayload :: Object -> Parser [Payload]
-parsePayload v = do
-    case H.lookup "args" v of
-        Just (Array a) -> return $ map (fromLazyText . toLazyText . fromValue) (toList a)
-        Just _  -> return []
-        Nothing -> return []
 
 --------------------------------------------------------------------------------
 instance ToJSON Emitter where

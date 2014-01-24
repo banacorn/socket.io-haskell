@@ -7,6 +7,7 @@ module Web.SocketIO.Types.String (
     ,   IsLazyByteString(..)
     ,   IsText(..)
     ,   IsLazyText(..)
+    ,   Serializable(..)
     ,   Text
     ,   ByteString
     ,   LazyText
@@ -20,7 +21,7 @@ import qualified    Data.Text.Lazy                          as TL
 import qualified    Data.ByteString                         as B
 import qualified    Data.ByteString.Lazy                    as BL
 import qualified    Data.ByteString.Char8                   as C
-import              Data.Monoid                             ((<>))
+import              Data.Monoid                             ((<>), Monoid)
 
 --------------------------------------------------------------------------------
 type Text = T.Text
@@ -106,3 +107,29 @@ instance IsLazyText ByteString where
 --------------------------------------------------------------------------------
 instance IsLazyText BL.ByteString where
     fromLazyText = BL.fromStrict . C.pack . fromLazyText
+
+--------------------------------------------------------------------------------
+class Serializable a where
+    serialize :: ( Monoid s
+                 , S.IsString s
+                 , IsText s
+                 , IsLazyText s
+                 , IsByteString s
+                 , IsLazyByteString s
+                 , Show a) => a -> s
+    serialize = S.fromString . show
+
+instance Serializable String where
+    serialize = S.fromString
+
+instance Serializable T.Text where
+    serialize = fromText
+
+instance Serializable TL.Text where
+    serialize = fromLazyText
+
+instance Serializable ByteString where
+    serialize = fromByteString
+    
+instance Serializable BL.ByteString where
+    serialize = fromLazyByteString
