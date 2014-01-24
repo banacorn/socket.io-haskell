@@ -106,6 +106,7 @@ slash = char '/'
 parseTransport :: Parser Transport
 parseTransport = try (string "websocket" >> return WebSocket) 
         <|> (string "xhr-polling" >> return XHRPolling)
+        <|> (string "unknown" >> return NoTransport)
         <|> return NoTransport
 
 --------------------------------------------------------------------------------               
