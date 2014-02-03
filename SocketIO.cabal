@@ -91,9 +91,10 @@ test-suite socketio-test
 
     build-depends:    base                          ==4.6.*
                     , QuickCheck                    ==2.*
+                    , HUnit                         ==1.2.*
                     , test-framework                ==0.8.*
                     , test-framework-quickcheck2    ==0.3.*
-
+                    , test-framework-hunit          ==0.3.*
     build-depends:    base                  ==4.6.*
                     , text                  ==0.11.*
                     , bytestring            ==0.10.*
