@@ -20,7 +20,9 @@ handleSession SessionSyn = do
     sessionID <- getSessionID
     configuration <- getConfiguration
 
-    let heartbeatTimeout' = fromString (show (heartbeatTimeout configuration))
+    let heartbeatTimeout' = if heartbeats configuration
+            then fromString (show (heartbeatTimeout configuration))
+            else ""
     let closeTimeout' = fromString (show (closeTimeout configuration))
     let transportType = mconcat . intersperse "," . map serialize $ transports configuration
 
