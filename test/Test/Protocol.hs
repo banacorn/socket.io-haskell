@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Test.Protocol where
+module Test.Protocol (test) where
 
 import Test.Framework
 import Test.QuickCheck
