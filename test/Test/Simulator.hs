@@ -4,25 +4,26 @@
 
 module Test.Simulator where
 
-import qualified    Test.Framework                  as Framework
+import qualified    Test.Framework                          as Framework
 import              Test.Framework
 import              Test.HUnit
---import Test.HUnit
 import              Test.Framework.Providers.HUnit
-import              Control.Applicative             ((<$>))
 import              Control.Concurrent.Chan
-import qualified    Data.ByteString as B
+import              Control.Concurrent                      (threadDelay)
+--import              Control.Monad                           (forever)
+import qualified    Data.ByteString                         as B
+import              Data.IORef                              (readIORef)
+import qualified    Data.HashMap.Strict                     as H
 
-import              Web.SocketIO.Server
 import              Web.SocketIO.Types
 import              Web.SocketIO.Connection
 
 testConfig :: Configuration
 testConfig = Configuration
-    {   transports = [XHRPolling, WebSocket]
+    {   transports = [XHRPolling]
     ,   logLevel = 3
-    ,   heartbeats = False
-    ,   closeTimeout = 60
+    ,   heartbeats = True
+    ,   closeTimeout = 2
     ,   heartbeatTimeout = 60
     ,   heartbeatInterval = 25
     ,   pollingDuration = 20
@@ -47,41 +48,14 @@ makeEnvironment = do
 run :: Env -> Request -> IO ByteString
 run env req = runConnection env req
 
---alphaNum :: Gen Char
---alphaNum = elements $ ['A' .. 'Z'] ++ ['a' .. 'z'] ++ ['0' .. '9']
-
---instance Arbitrary SessionID where
---    arbitrary = fromString <$> (vectorOf 20 alphaNum)
-
---instance Arbitrary Text where
---    arbitrary = fromString <$> arbitrary
-
---instance Arbitrary Emitter where
---    arbitrary = do
---        event <- fromString <$> listOf1 alphaNum
---        payloads <- listOf (fromString <$> listOf1 alphaNum)
---        elements [NoEmitter, Emitter event payloads]
-
---instance Arbitrary Request where
---    arbitrary = do
---        sessionID <- arbitrary
---        emitter <- arbitrary
---        elements
---            [ Handshake
---            , Disconnect sessionID
---            , Connect sessionID
---            , Emit sessionID emitter
---            ]
-
-
 -- The body of the response should contain the session id (sid) given to
 -- the client, followed by the heartbeat timeout, the connection closing
 -- timeout, and the list of supported transports separated by :
 -- 
 -- The absence of a heartbeat timeout ('') is interpreted as the server
 -- and client not expecting heartbeats.
-testHandShake :: Assertion
-testHandShake = do
+testWellFormedHandShake :: Assertion
+testWellFormedHandShake = do
     env <- makeEnvironment
     res <- run env Handshake
     expectedHandshakeResponse env @=? (B.drop 20 res)
@@ -97,7 +71,28 @@ expectedHandshakeResponse env =  ":" <> heartbeatTimeout'
             closeTimeout' = fromString $ show $ closeTimeout config
             transports' = B.intercalate "," $ map serialize (transports config)
 
+testHandShakeSession :: Assertion
+testHandShakeSession = do
+    env <- makeEnvironment
+
+    -- before
+    table <- readIORef (envSessionTable env)
+    assertEqual "number of sessions before handshake" 0 (H.size table)
+    
+    -- after
+    run env Handshake
+    table' <- readIORef (envSessionTable env)
+    assertEqual "number of sessions after handshake" 1 (H.size table')
+
+    -- timeout
+    let closeTimeout' = closeTimeout (envConfiguration env)
+    threadDelay (closeTimeout' * 1000000 + 1000000)
+    table'' <- readIORef (envSessionTable env)
+    assertEqual "number of sessions after handshake closing timeout" 0 (H.size table'')
+
+
 test :: Framework.Test
-test = testGroup "Unit Test"
-    [ testCase "Handshake" testHandShake
+test = testGroup "Handshake"
+    [ testCase "response" testWellFormedHandShake
+    , testCase "session management" testHandShakeSession
     ]
