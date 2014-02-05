@@ -24,16 +24,16 @@ import              System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
 --
---  # State transitions after handshaked
+--  # State transitions after handshake
 --
---                  Connect         Disconnect      Emit
---  ------------------------------------------------------------------
---  Disconnected    Disconnected    Disconnected    Disconnected
---                  (Error)         (Error)         (Error)
---  Connecting      Connected       Disconnected    Connected
---                  (OK)            (OK)            (Error)
---  Connected       Connected       Disconnected    Connected
---                  (OK)            (OK)            (OK)
+--                  Connect     Disconnect      Emit            Timeout
+--  ----------------------------------------------------------------------------
+--
+--  Connecting      Connected   Disconnected    Disconnected    Disconnected
+--                  (OK)        (OK)            (Error)         (OK)
+--  
+--  Connected       Connected   Disconnected    Connected       Disconnected
+--                  (OK)        (OK)            (OK)            (OK)
 --
 --------------------------------------------------------------------------------
 newSessionTable :: IO (IORef Table)
