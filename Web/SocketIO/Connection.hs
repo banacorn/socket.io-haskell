@@ -23,6 +23,19 @@ import              System.Random                           (randomRIO)
 import              System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
+--
+--  # State transitions after handshaked
+--
+--                  Connect         Disconnect      Emit
+--  ------------------------------------------------------------------
+--  Disconnected    Disconnected    Disconnected    Disconnected
+--                  (Error)         (Error)         (Error)
+--  Connecting      Connected       Disconnected    Connected
+--                  (OK)            (OK)            (Error)
+--  Connected       Connected       Disconnected    Connected
+--                  (OK)            (OK)            (OK)
+--
+--------------------------------------------------------------------------------
 newSessionTable :: IO (IORef Table)
 newSessionTable = newIORef H.empty
 
