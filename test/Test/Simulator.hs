@@ -25,7 +25,7 @@ import              Web.SocketIO.Connection
 data Operation = OpHandshake
                | OpConnect 
                | OpDisconnect 
-               | OpEmit (Either (Maybe Int) Event)
+               | OpEmit (Either (Maybe Int) Event) [Payload]
                deriving Show
 type CompiledOperation = (SessionID, Operation)
 data Sitzung = Sitzung SessionID [Operation] deriving Show
@@ -40,12 +40,17 @@ instance Arbitrary SessionID where
 instance Arbitrary Event where
     arbitrary = fromString . (:) '#' <$> vectorOf 4 (elements ['a' .. 'z'])
 
+--instance Arbitrary Payload where
+--    arbitrary = fromString . (:) '>' <$> vectorOf 10 (elements ['a' .. 'z'])
+
+
 instance Arbitrary Operation where
     arbitrary = do
         nth <- arbitrary
+        payload <- arbitrary
         frequency
             [ (0, elements [OpHandshake, OpConnect, OpDisconnect])
-            , (5, elements [OpEmit (Left nth)])
+            , (5, elements [OpEmit (Left nth) payload])
             ]
 
 instance Arbitrary Sitzung where
@@ -53,7 +58,8 @@ instance Arbitrary Sitzung where
         oneof [wellformed, illformed]
         where   wellformed = do
                     sessionID <- arbitrary
-                    emits <- map (OpEmit . Left) <$> listOf arbitrary
+                    payload <- arbitrary
+                    emits <- map (\ event -> OpEmit (Left event) payload) <$> listOf arbitrary
                     return $ Sitzung sessionID ([OpHandshake, OpConnect] ++ emits ++ [OpDisconnect])
                 illformed = do
                     sessionID <- arbitrary
@@ -83,10 +89,10 @@ compileOperation :: [Event] -> SessionID -> Operation -> CompiledOperation
 compileOperation _ i OpHandshake = (i, OpHandshake)
 compileOperation _ i OpConnect = (i, OpConnect)
 compileOperation _ i OpDisconnect = (i, OpDisconnect)
-compileOperation _ i (OpEmit (Right e')) = (i, OpEmit (Right e'))
-compileOperation _ i (OpEmit (Left Nothing)) = (i, OpEmit (Right "#some other event"))
-compileOperation [] i (OpEmit (Left (Just _))) = (i, OpEmit (Right "#some other event"))
-compileOperation e i (OpEmit (Left (Just n))) = (i, OpEmit (Right e'))
+compileOperation _ i (OpEmit (Right e') p) = (i, OpEmit (Right e') p)
+compileOperation _ i (OpEmit (Left Nothing) p) = (i, OpEmit (Right "#some other event") p)
+compileOperation [] i (OpEmit (Left (Just _)) p) = (i, OpEmit (Right "#some other event") p)
+compileOperation e i (OpEmit (Left (Just n)) p) = (i, OpEmit (Right e') p)
     where   index = n `mod` length e
             e' = e !! index
 
@@ -102,8 +108,17 @@ instance Arbitrary Scheme where
         let shuffledOperations = shuffle seeds compiledOperations
         return $ Scheme events shuffledOperations
 s :: IO ()
-s = sample (arbitrary :: Gen Sitzung) 
+s = sample (arbitrary :: Gen Scheme) 
 
+a :: Scheme
+a = Scheme ["#enar","#zfuy"] [("IPCd0BS7Zd8j2OBS1RwG",OpHandshake),("IPCd0BS7Zd8j2OBS1RwG",OpConnect),("IPCd0BS7Zd8j2OBS1RwG",OpEmit (Right "#enar") ["#bzsb"]),("IPCd0BS7Zd8j2OBS1RwG",OpEmit (Right "#enar") ["#bzsb"]),("IPCd0BS7Zd8j2OBS1RwG",OpDisconnect)]
+
+
+b :: Scheme
+b = Scheme ["#ozeb","#aafv","#vlfu","#muev","#gdya","#fulf","#wajg"] [("PVZO28fptRycouWNSI2A",OpEmit (Right "#some other event") ["#xwlj","#yknl","#mlvp","#nksg","#mokf","#jqpb","#roml","#qbwd","#cvhm"]),("PVZO28fptRycouWNSI2A",OpEmit (Right "#ozeb") ["#zafb"]),("PVZO28fptRycouWNSI2A",OpEmit (Right "#some other event") ["#luwa","#wvec","#xkmw","#ebga","#nvej","#hant","#vsey"]),("PVZO28fptRycouWNSI2A",OpEmit (Right "#aafv") ["#xlwr","#nvcs","#wbcq"])]
+
+--compiled :: CompiledOperation
+--compiled 
 
 testConfig :: Configuration
 testConfig = Configuration
@@ -132,16 +147,23 @@ makeEnvironment = do
 
     return $ Env tableRef handler testConfig stdout globalChannel
 
---compileScheme :: Scheme -> CompiledScheme
---compileScheme (Scheme events operations) = CompiledScheme events operations'
---    where   operations' = 
 
---runScheme :: Scheme -> IO Bool
---runScheme (Scheme sessionID events operations) = do
+runScheme :: Scheme -> IO Bool
+runScheme (Scheme events operations) = do
 
---    env <- makeEnvironment
---    res <- runConnection env Handshake
---    print "good"
+    env <- makeEnvironment
+
+    res <- mapM (runConnection env . translate) operations
+    print res
+
+    return True
+
+    where   translate :: CompiledOperation -> Request
+            translate (_, OpHandshake)  = Handshake
+            translate (i, OpConnect)    = Connect i
+            translate (i, OpDisconnect) = Disconnect i
+            translate (i, OpEmit (Left _) _) = Emit i NoEmitter
+            translate (i, OpEmit (Right e) p) = Emit i (Emitter e p)
 
 --testScheme :: Property
 --testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
