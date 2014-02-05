@@ -37,7 +37,7 @@ import              Data.IORef.Lifted
 
 --------------------------------------------------------------------------------
 type Table = H.HashMap SessionID Session 
-data Status = Connecting | Connected | Disconnecting deriving Show
+data Status = Connecting | Connected | Disconnecting deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 data SessionState   = SessionSyn
@@ -99,6 +99,12 @@ data Session = Session {
     sessionListener :: [Listener],
     sessionTimeoutVar :: MVar ()
 } | NoSession
+
+instance Show Session where
+    show (Session i s _ _ _) = "Session " 
+                            ++ fromByteString i 
+                            ++ " [" ++ show s ++ "]"
+    show NoSession = "NoSession"
 
 --------------------------------------------------------------------------------
 newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
