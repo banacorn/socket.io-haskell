@@ -2,7 +2,7 @@
 
 module Web.SocketIO.Connection
     (   runConnection
-    ,   newSessionTable
+    ,   newSessionTableRef
     )  where
 
 --------------------------------------------------------------------------------
@@ -36,20 +36,20 @@ import              System.Timeout.Lifted
 --                  (OK)        (OK)            (OK)            (OK)
 --
 --------------------------------------------------------------------------------
-newSessionTable :: IO (IORef Table)
-newSessionTable = newIORef H.empty
+newSessionTableRef :: IO (IORef Table)
+newSessionTableRef = newIORef H.empty
 
 --------------------------------------------------------------------------------
 updateSession :: (Table -> Table) -> ConnectionM ()
 updateSession update = do
-    table <- getSessionTable
-    liftIO (modifyIORef table update)
+    tableRef <- getSessionTableRef
+    liftIO (modifyIORef tableRef update)
 
 --------------------------------------------------------------------------------
 lookupSession :: SessionID -> ConnectionM (Maybe Session)
 lookupSession sessionID = do
-    tableVar <- getSessionTable
-    table <- liftIO (readIORef tableVar)
+    tableRef <- getSessionTableRef
+    table <- liftIO (readIORef tableRef)
     return (H.lookup sessionID table)
 
 --------------------------------------------------------------------------------

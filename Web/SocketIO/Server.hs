@@ -29,7 +29,7 @@ server p h = serverConfig p defaultConfig h
 serverConfig :: Port -> Configuration -> HandlerM () -> IO ()
 serverConfig port config handler = do
 
-    tableRef <- newSessionTable
+    tableRef <- newSessionTableRef
 
     stdout <- newChan :: IO (Chan String)
 

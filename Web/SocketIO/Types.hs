@@ -37,7 +37,7 @@ import              Data.IORef.Lifted
 
 --------------------------------------------------------------------------------
 type Table = H.HashMap SessionID Session 
-data Status = Connecting | Connected | Disconnecting deriving (Show, Eq)
+data Status = Connecting | Connected | Disconnected deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
 data SessionState   = SessionSyn
@@ -49,7 +49,7 @@ data SessionState   = SessionSyn
 
 --------------------------------------------------------------------------------
 data Env = Env { 
-    envSessionTable :: IORef Table, 
+    envSessionTableRef :: IORef Table, 
     envHandler :: HandlerM (), 
     envConfiguration :: Configuration,
     envStdout :: Chan String,
@@ -59,7 +59,7 @@ data Env = Env {
 --------------------------------------------------------------------------------
 class ConnectionLayer m where
     getEnv :: m Env
-    getSessionTable :: m (IORef Table)
+    getSessionTableRef :: m (IORef Table)
     getHandler :: m (HandlerM ())
     getConfiguration :: m Configuration
 
@@ -81,7 +81,7 @@ newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
 --------------------------------------------------------------------------------
 instance ConnectionLayer ConnectionM where
     getEnv = ask
-    getSessionTable = envSessionTable <$> ask
+    getSessionTableRef = envSessionTableRef <$> ask
     getHandler = envHandler <$> ask
     getConfiguration = envConfiguration <$> ask
 
@@ -113,7 +113,7 @@ newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
 --------------------------------------------------------------------------------
 instance ConnectionLayer SessionM where
     getEnv = SessionM (lift ask)
-    getSessionTable = envSessionTable <$> getEnv
+    getSessionTableRef = envSessionTableRef <$> getEnv
     getHandler = envHandler <$> getEnv
     getConfiguration = envConfiguration <$> getEnv
 

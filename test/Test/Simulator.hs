@@ -98,7 +98,7 @@ testConfig = Configuration
 makeEnvironment :: IO Env
 makeEnvironment = do 
 
-    tableRef <- newSessionTable
+    tableRef <- newSessionTableRef
 
     let handler = return ()
 
