@@ -86,5 +86,5 @@ triggerListener (Emitter event payload) channelHub = do
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
 --------------------------------------------------------------------------------
-runSession :: SessionState -> Session -> ConnectionM ByteString
+runSession :: SessionState -> Maybe Session -> ConnectionM ByteString
 runSession state session = runReaderT (runSessionM (handleSession state)) session

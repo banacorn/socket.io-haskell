@@ -6,9 +6,9 @@ module Test.Simulator where
 
 import qualified    Test.Framework                          as Framework
 --import              Test.Framework
---import              Test.Framework.Providers.QuickCheck2
+import              Test.Framework.Providers.QuickCheck2
 import              Test.QuickCheck
---import              Test.QuickCheck.Monadic
+import              Test.QuickCheck.Monadic
 
 import              Control.Applicative                     ((<$>))
 import              Control.Concurrent.Chan                 (Chan, newChan)
@@ -117,18 +117,18 @@ runScheme (Scheme events operations) = do
 
     env <- makeEnvironment
 
-    sessionID <- B.take 20 <$> runConnection env Handshake
+    --sessionID <- B.take 20 <$> runConnection env Handshake
 
-    res <- mapM (runConnection env . translate sessionID) operations
-    print res
+    --res <- mapM (runConnection env . translate sessionID) operations
+    --print res
 
     return True
 
 
 
---testScheme :: Property
---testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
+testScheme :: Property
+testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
 
 test :: Framework.Test
-test = undefined
---test = testProperty "Schemes" testScheme
+--test = undefined
+test = testProperty "Schemes" testScheme

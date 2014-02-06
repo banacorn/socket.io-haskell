@@ -79,7 +79,7 @@ handleConnection Handshake = do
 
     updateSession (H.insert sessionID session)
 
-    runSession SessionSyn session
+    runSession SessionSyn (Just session)
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
 handleConnection (Connect sessionID) = do
@@ -92,25 +92,25 @@ handleConnection (Connect sessionID) = do
             case status of
                 Connecting -> do
                     updateSession (H.insert sessionID' session)
-                    runSession SessionAck session
+                    runSession SessionAck (Just session)
                 Connected ->
-                    runSession SessionPolling session
-                s -> do
-                    debug . Error $ fromByteString sessionID' ++ "    Undefined status: " ++ (fromString $ show s)
-                    runSession SessionError NoSession
+                    runSession SessionPolling (Just session)
+                Disconnected -> do
+                    debug . Error $ fromByteString sessionID' ++ "    Session Disconnected"
+                    runSession SessionError Nothing
 
-        Just NoSession -> do
-            debug . Error $ fromByteString sessionID ++ "    No session" 
-            runSession SessionError NoSession
+        --Just NoSession -> do
+        --    debug . Error $ fromByteString sessionID ++ "    No session" 
+        --    runSession SessionError NoSession
         Nothing -> do
             debug . Error $ fromByteString sessionID ++ "    Unable to find session" 
-            runSession SessionError NoSession
+            runSession SessionError Nothing
 
 handleConnection (Disconnect sessionID) = do
 
     result <- lookupSession sessionID
     response <- case result of
-        Just session -> runSession SessionDisconnect session
+        Just session -> runSession SessionDisconnect (Just session)
         Nothing -> return ""
 
     clearTimeout sessionID
@@ -123,8 +123,8 @@ handleConnection (Emit sessionID emitter) = do
 
     result <- lookupSession sessionID
     case result of
-        Just session -> runSession (SessionEmit emitter) session
-        Nothing      -> runSession SessionError NoSession
+        Just session -> runSession (SessionEmit emitter) (Just session)
+        Nothing      -> runSession SessionError Nothing
 
 --------------------------------------------------------------------------------
 setTimeout :: SessionID -> MVar () -> ConnectionM ()
@@ -148,5 +148,4 @@ clearTimeout sessionID = do
         Just (Session _ _ _ _ timeout') -> do
             debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
             putMVar timeout' ()
-        Just _                          -> return ()
         Nothing                         -> return ()
