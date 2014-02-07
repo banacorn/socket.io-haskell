@@ -62,18 +62,22 @@ runConnection env req = do
     runReaderT (runConnectionM (handleConnection req)) env
 
 --------------------------------------------------------------------------------
-retrieveSession :: Request -> ConnectionM (Request, Maybe Session)
+split :: Maybe Session -> Maybe (Session, SessionState)
+split (Just session@(Session _ state _ _ _)) = Just (session, state)
+split Nothing = Nothing
+
+retrieveSession :: Request -> ConnectionM (Request, Maybe (Session, SessionState))
 retrieveSession Handshake = do
     return (Handshake, Nothing)
-retrieveSession request@(Connect sessionID) = do
+retrieveSession (Connect sessionID) = do
     result <- lookupSession sessionID
-    return (request, result)
-retrieveSession request@(Disconnect sessionID) = do
+    return (Connect sessionID, split result)
+retrieveSession (Disconnect sessionID) = do
     result <- lookupSession sessionID
-    return (request, result)
-retrieveSession request@(Emit sessionID _) = do
+    return (Disconnect sessionID, split result)
+retrieveSession (Emit sessionID e) = do
     result <- lookupSession sessionID
-    return (request, result)
+    return (Emit sessionID e, split result)
 
 --------------------------------------------------------------------------------
 handleConnection :: Request -> ConnectionM ByteString
