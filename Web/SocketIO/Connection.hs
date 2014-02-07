@@ -59,7 +59,7 @@ executeHandler handler bufferHub = liftIO $ execWriterT (runReaderT (runHandlerM
 --------------------------------------------------------------------------------
 runConnection :: Env -> Request -> IO ByteString
 runConnection env req = do
-    runReaderT (runConnectionM (handleConnection req)) env
+    runReaderT (runConnectionM (handleConnection =<< (retrieveSession req))) env
 
 --------------------------------------------------------------------------------
 split :: Maybe Session -> Maybe (Session, SessionState)
@@ -80,8 +80,8 @@ retrieveSession (Emit sessionID e) = do
     return (Emit sessionID e, split result)
 
 --------------------------------------------------------------------------------
-handleConnection :: Request -> ConnectionM ByteString
-handleConnection Handshake = do
+handleConnection :: (Request, Maybe (Session, SessionState)) -> ConnectionM ByteString
+handleConnection (Handshake, _) = do
     globalBuffer <- envGlobalBuffer <$> getEnv
     globalBufferClone <- dupChan globalBuffer
     localBuffer <- newChan
@@ -100,49 +100,48 @@ handleConnection Handshake = do
     runSession SessionSyn (Just session)
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
-handleConnection (Connect sessionID) = do
-
-    result <- lookupSession sessionID
+handleConnection (Connect sessionID, Just (session, Connecting)) = do
     clearTimeout sessionID
-    case result of
-        Just (Session sessionID' status buffer listeners timeout') -> do
-            let session = Session sessionID' Connected buffer listeners timeout'
-            case status of
-                Connecting -> do
-                    updateSession (H.insert sessionID' session)
-                    runSession SessionAck (Just session)
-                Connected ->
-                    runSession SessionPolling (Just session)
-                --Disconnected -> do
-                --    debug . Error $ fromByteString sessionID' ++ "    Session Disconnected"
-                --    runSession SessionError Nothing
 
-        --Just NoSession -> do
-        --    debug . Error $ fromByteString sessionID ++ "    No session" 
-        --    runSession SessionError NoSession
-        Nothing -> do
-            debug . Error $ fromByteString sessionID ++ "    Unable to find session" 
-            runSession SessionError Nothing
+    let session' = session { sessionState = Connected }
+    updateSession (H.insert sessionID session')
+    runSession SessionAck (Just session')
 
-handleConnection (Disconnect sessionID) = do
+handleConnection (Connect sessionID, Just (session, Connected)) = do
+    clearTimeout sessionID
+    
+    runSession SessionPolling (Just session)
 
-    result <- lookupSession sessionID
-    response <- case result of
-        Just session -> runSession SessionDisconnect (Just session)
-        Nothing -> return ""
+handleConnection (Connect sessionID, Nothing) = do
+    debug . Error $ fromByteString sessionID ++ "    Session not found" 
+    runSession SessionError Nothing
+
+handleConnection (Disconnect sessionID, Just (session, _)) = do
 
     clearTimeout sessionID
+
     updateSession (H.delete sessionID)
+    runSession SessionDisconnect (Just session)
 
-    return response
+handleConnection (Disconnect sessionID, Nothing) = do
 
-handleConnection (Emit sessionID emitter) = do
+    clearTimeout sessionID
+    return ""
+
+handleConnection (Emit sessionID _, Just (_, Connecting)) = do
     clearTimeout sessionID
 
-    result <- lookupSession sessionID
-    case result of
-        Just session -> runSession (SessionEmit emitter) (Just session)
-        Nothing      -> runSession SessionError Nothing
+    debug . Error $ fromByteString sessionID ++ "    Session still connecting" 
+    runSession SessionError Nothing
+
+handleConnection (Emit sessionID emitter, Just (session, Connected)) = do
+
+    clearTimeout sessionID
+
+    runSession (SessionEmit emitter) (Just session)
+
+handleConnection (Emit _ _, Nothing) = do
+    runSession SessionError Nothing
 
 --------------------------------------------------------------------------------
 setTimeout :: SessionID -> MVar () -> ConnectionM ()

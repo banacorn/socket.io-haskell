@@ -14,7 +14,6 @@ import              Control.Applicative                     ((<$>))
 import              Control.Concurrent.Chan                 (Chan, newChan)
 --import              Control.Concurrent                      (threadDelay)
 ----import              Control.Monad                           (forever)
-import qualified    Data.ByteString                         as B
 --import              Data.IORef                              (readIORef)
 --import qualified    Data.HashMap.Strict                     as H
 
@@ -113,9 +112,9 @@ makeEnvironment = do
 
 
 runScheme :: Scheme -> IO Bool
-runScheme (Scheme events operations) = do
+runScheme (Scheme _ _) = do
 
-    env <- makeEnvironment
+    _ <- makeEnvironment
 
     --sessionID <- B.take 20 <$> runConnection env Handshake
 
