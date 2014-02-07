@@ -62,6 +62,20 @@ runConnection env req = do
     runReaderT (runConnectionM (handleConnection req)) env
 
 --------------------------------------------------------------------------------
+retrieveSession :: Request -> ConnectionM (Request, Maybe Session)
+retrieveSession Handshake = do
+    return (Handshake, Nothing)
+retrieveSession request@(Connect sessionID) = do
+    result <- lookupSession sessionID
+    return (request, result)
+retrieveSession request@(Disconnect sessionID) = do
+    result <- lookupSession sessionID
+    return (request, result)
+retrieveSession request@(Emit sessionID _) = do
+    result <- lookupSession sessionID
+    return (request, result)
+
+--------------------------------------------------------------------------------
 handleConnection :: Request -> ConnectionM ByteString
 handleConnection Handshake = do
     globalBuffer <- envGlobalBuffer <$> getEnv
