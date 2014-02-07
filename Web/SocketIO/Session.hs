@@ -15,7 +15,7 @@ import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
-handleSession :: SessionState -> SessionM ByteString
+handleSession :: SessionAction -> SessionM ByteString
 handleSession SessionSyn = do
     sessionID <- getSessionID
     configuration <- getConfiguration
@@ -86,5 +86,5 @@ triggerListener (Emitter event payload) channelHub = do
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
 --------------------------------------------------------------------------------
-runSession :: SessionState -> Maybe Session -> ConnectionM ByteString
-runSession state session = runReaderT (runSessionM (handleSession state)) session
+runSession :: SessionAction -> Maybe Session -> ConnectionM ByteString
+runSession action session = runReaderT (runSessionM (handleSession action)) session

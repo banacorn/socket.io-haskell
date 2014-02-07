@@ -14,7 +14,7 @@ module Web.SocketIO.Types
     ,   Env(..)
     ,   Session(..)
     ,   SessionState(..)
-    ,   Status(..)
+    ,   SessionAction(..)
     ,   Table
     ) where
 
@@ -38,15 +38,15 @@ import              Data.Maybe                              (fromJust)
 
 --------------------------------------------------------------------------------
 type Table = H.HashMap SessionID Session 
-data Status = Connecting | Connected | Disconnected deriving (Show, Eq)
+data SessionState = Connecting | Connected deriving (Show, Eq)
 
 --------------------------------------------------------------------------------
-data SessionState   = SessionSyn
-                    | SessionAck
-                    | SessionPolling
-                    | SessionEmit Emitter
-                    | SessionDisconnect
-                    | SessionError
+data SessionAction   = SessionSyn
+                     | SessionAck
+                     | SessionPolling
+                     | SessionEmit Emitter
+                     | SessionDisconnect
+                     | SessionError
 
 --------------------------------------------------------------------------------
 data Env = Env { 
@@ -68,7 +68,7 @@ class ConnectionLayer m where
 class SessionLayer m where
     getSession :: m (Maybe Session)
     getSessionID :: m SessionID
-    getStatus :: m Status
+    getSessionState :: m SessionState
     getBufferHub :: m BufferHub
     getLocalBuffer :: m Buffer
     getGlobalBuffer :: m Buffer
@@ -95,7 +95,7 @@ instance (MonadBaseControl IO) ConnectionM where
 --------------------------------------------------------------------------------
 data Session = Session { 
     sessionSessionID :: SessionID, 
-    sessionStatus :: Status, 
+    sessionState :: SessionState, 
     sessionBufferHub :: BufferHub, 
     sessionListener :: [Listener],
     sessionTimeoutVar :: MVar ()
@@ -121,7 +121,7 @@ instance ConnectionLayer SessionM where
 instance SessionLayer SessionM where
     getSession = ask
     getSessionID = sessionSessionID . fromJust <$> ask
-    getStatus = sessionStatus . fromJust <$> ask
+    getSessionState = sessionState . fromJust <$> ask
     getBufferHub = sessionBufferHub . fromJust <$> ask
     getLocalBuffer = selectLocalBuffer . sessionBufferHub . fromJust <$> ask
     getGlobalBuffer = selectGlobalBuffer . sessionBufferHub . fromJust <$> ask

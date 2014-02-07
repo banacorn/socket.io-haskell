@@ -31,10 +31,10 @@ import              System.Timeout.Lifted
 --
 --  Connecting      Connected   Disconnected    Disconnected    Disconnected
 --                  (OK)        (OK)            (Error)         (OK)
---  
+--                              x               
 --  Connected       Connected   Disconnected    Connected       Disconnected
 --                  (OK)        (OK)            (OK)            (OK)
---
+--                  Noop        x
 --------------------------------------------------------------------------------
 newSessionTableRef :: IO (IORef Table)
 newSessionTableRef = newIORef H.empty
@@ -95,9 +95,9 @@ handleConnection (Connect sessionID) = do
                     runSession SessionAck (Just session)
                 Connected ->
                     runSession SessionPolling (Just session)
-                Disconnected -> do
-                    debug . Error $ fromByteString sessionID' ++ "    Session Disconnected"
-                    runSession SessionError Nothing
+                --Disconnected -> do
+                --    debug . Error $ fromByteString sessionID' ++ "    Session Disconnected"
+                --    runSession SessionError Nothing
 
         --Just NoSession -> do
         --    debug . Error $ fromByteString sessionID ++ "    No session" 
