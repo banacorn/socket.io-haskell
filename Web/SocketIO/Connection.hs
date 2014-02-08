@@ -97,7 +97,7 @@ handleConnection (Handshake, _) = do
 
     updateSession (H.insert sessionID session)
 
-    runSession SessionSyn (Just session)
+    runSession SessionHandshake session
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
@@ -105,23 +105,23 @@ handleConnection (Connect sessionID, Just (session, Connecting)) = do
 
     let session' = session { sessionState = Connected }
     updateSession (H.insert sessionID session')
-    runSession SessionAck (Just session')
+    runSession SessionConnect session'
 
 handleConnection (Connect sessionID, Just (session, Connected)) = do
     clearTimeout sessionID
     
-    runSession SessionPolling (Just session)
+    runSession SessionPolling session
 
 handleConnection (Connect sessionID, Nothing) = do
     debug . Error $ fromByteString sessionID ++ "    Session not found" 
-    runSession SessionError Nothing
+    return "7"
 
 handleConnection (Disconnect sessionID, Just (session, _)) = do
 
     clearTimeout sessionID
 
     updateSession (H.delete sessionID)
-    runSession SessionDisconnect (Just session)
+    runSession SessionDisconnect session
 
 handleConnection (Disconnect sessionID, Nothing) = do
 
@@ -132,16 +132,17 @@ handleConnection (Emit sessionID _, Just (_, Connecting)) = do
     clearTimeout sessionID
 
     debug . Error $ fromByteString sessionID ++ "    Session still connecting" 
-    runSession SessionError Nothing
+    return "7"
 
 handleConnection (Emit sessionID emitter, Just (session, Connected)) = do
 
     clearTimeout sessionID
 
-    runSession (SessionEmit emitter) (Just session)
+    runSession (SessionEmit emitter) session
 
 handleConnection (Emit _ _, Nothing) = do
-    runSession SessionError Nothing
+    return "7"
+    --runSession SessionError Nothing
 
 --------------------------------------------------------------------------------
 setTimeout :: SessionID -> MVar () -> ConnectionM ()

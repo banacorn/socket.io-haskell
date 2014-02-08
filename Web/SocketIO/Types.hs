@@ -34,19 +34,15 @@ import              Control.Monad.Base
 
 import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
-import              Data.Maybe                              (fromJust)
 
 --------------------------------------------------------------------------------
 type Table = H.HashMap SessionID Session 
 data SessionState = Connecting | Connected deriving (Show, Eq)
-
---------------------------------------------------------------------------------
-data SessionAction   = SessionSyn
-                     | SessionAck
+data SessionAction   = SessionHandshake
+                     | SessionConnect
                      | SessionPolling
                      | SessionEmit Emitter
                      | SessionDisconnect
-                     | SessionError
 
 --------------------------------------------------------------------------------
 data Env = Env { 
@@ -66,7 +62,7 @@ class ConnectionLayer m where
 
 --------------------------------------------------------------------------------
 class SessionLayer m where
-    getSession :: m (Maybe Session)
+    getSession :: m Session
     getSessionID :: m SessionID
     getSessionState :: m SessionState
     getBufferHub :: m BufferHub
@@ -107,8 +103,8 @@ instance Show Session where
                             ++ " [" ++ show s ++ "]"
 
 --------------------------------------------------------------------------------
-newtype SessionM a = SessionM { runSessionM :: (ReaderT (Maybe Session) ConnectionM) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadReader (Maybe Session), MonadBase IO)
+newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadReader Session, MonadBase IO)
 
 --------------------------------------------------------------------------------
 instance ConnectionLayer SessionM where
@@ -120,16 +116,16 @@ instance ConnectionLayer SessionM where
 --------------------------------------------------------------------------------
 instance SessionLayer SessionM where
     getSession = ask
-    getSessionID = sessionSessionID . fromJust <$> ask
-    getSessionState = sessionState . fromJust <$> ask
-    getBufferHub = sessionBufferHub . fromJust <$> ask
-    getLocalBuffer = selectLocalBuffer . sessionBufferHub . fromJust <$> ask
-    getGlobalBuffer = selectGlobalBuffer . sessionBufferHub . fromJust <$> ask
-    getListener = sessionListener . fromJust <$> ask
-    getTimeoutVar = sessionTimeoutVar . fromJust <$> ask
+    getSessionID = sessionSessionID <$> ask
+    getSessionState = sessionState <$> ask
+    getBufferHub = sessionBufferHub <$> ask
+    getLocalBuffer = selectLocalBuffer . sessionBufferHub <$> ask
+    getGlobalBuffer = selectGlobalBuffer . sessionBufferHub <$> ask
+    getListener = sessionListener <$> ask
+    getTimeoutVar = sessionTimeoutVar <$> ask
 
 --------------------------------------------------------------------------------
 instance (MonadBaseControl IO) SessionM where
-    newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT (Maybe Session) ConnectionM) a }
+    newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session ConnectionM) a }
     liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMSession . run . runSessionM)))
     restoreM = SessionM . restoreM . unStMSession

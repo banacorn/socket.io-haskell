@@ -16,7 +16,7 @@ import System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
 handleSession :: SessionAction -> SessionM ByteString
-handleSession SessionSyn = do
+handleSession SessionHandshake = do
     sessionID <- getSessionID
     configuration <- getConfiguration
 
@@ -29,7 +29,7 @@ handleSession SessionSyn = do
     debug . Info $ fromByteString sessionID ++ "    Handshake authorized"
     return $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
 
-handleSession SessionAck = do
+handleSession SessionConnect = do
     sessionID <- getSessionID
     debug . Info $ fromByteString sessionID ++ "    Connected"
     return "1::"
@@ -70,7 +70,6 @@ handleSession SessionDisconnect = do
     bufferHub <- getBufferHub
     triggerListener (Emitter "disconnect" []) bufferHub
     return "1"
-handleSession SessionError = return "7"
 
 --------------------------------------------------------------------------------
 triggerListener :: Emitter -> BufferHub -> SessionM ()
@@ -86,5 +85,5 @@ triggerListener (Emitter event payload) channelHub = do
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
 --------------------------------------------------------------------------------
-runSession :: SessionAction -> Maybe Session -> ConnectionM ByteString
+runSession :: SessionAction -> Session -> ConnectionM ByteString
 runSession action session = runReaderT (runSessionM (handleSession action)) session
