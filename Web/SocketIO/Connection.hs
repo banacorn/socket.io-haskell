@@ -89,11 +89,11 @@ handleConnection (Handshake, _) = do
     handler <- getHandler
     sessionID <- genSessionID
     listeners <- executeHandler handler bufferHub
-    timeout' <- newEmptyMVar
+    timeoutVar <- newEmptyMVar
 
-    let session = Session sessionID Connecting bufferHub listeners timeout'
+    let session = Session sessionID Connecting bufferHub listeners timeoutVar
 
-    _ <- fork $ setTimeout sessionID timeout'
+    _ <- fork $ setTimeout session
 
     updateSession (H.insert sessionID session)
     runSession SessionHandshake session
@@ -101,14 +101,14 @@ handleConnection (Handshake, _) = do
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
-    clearTimeout sessionID
+    clearTimeout session
 
     let session' = session { sessionState = Connected }
     updateSession (H.insert sessionID session')
     runSession SessionConnect session'
 
-handleConnection (Connect sessionID, Just (session, Connected)) = do
-    clearTimeout sessionID
+handleConnection (Connect _, Just (session, Connected)) = do
+    clearTimeout session
     
     runSession SessionPolling session
 
@@ -118,53 +118,45 @@ handleConnection (Connect sessionID, Nothing) = do
 
 handleConnection (Disconnect sessionID, Just (session, _)) = do
 
-    clearTimeout sessionID
+    clearTimeout session
 
     updateSession (H.delete sessionID)
     runSession SessionDisconnect session
 
-handleConnection (Disconnect sessionID, Nothing) = do
-
-    clearTimeout sessionID
+handleConnection (Disconnect _, Nothing) = do
     return MsgNoop
 
-handleConnection (Emit sessionID _, Just (_, Connecting)) = do
-    clearTimeout sessionID
+handleConnection (Emit sessionID _, Just (session, Connecting)) = do
+    clearTimeout session
 
     debug . Error $ fromByteString sessionID ++ "    Session still connecting" 
     return $ MsgError NoEndpoint NoData
 
-handleConnection (Emit sessionID emitter, Just (session, Connected)) = do
+handleConnection (Emit _ emitter, Just (session, Connected)) = do
 
-    clearTimeout sessionID
+    clearTimeout session
 
     runSession (SessionEmit emitter) session
 
 handleConnection (Emit _ _, Nothing) = do
     return $ MsgError NoEndpoint NoData
 
-    --runSession SessionError Nothing
-
 --------------------------------------------------------------------------------
-setTimeout :: SessionID -> MVar () -> ConnectionM ()
-setTimeout sessionID timeout' = do
+setTimeout :: Session-> ConnectionM ()
+setTimeout session@(Session sessionID _ _ _ timeoutVar) = do
     configuration <- getConfiguration
     let duration = (closeTimeout configuration) * 1000000
     debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
-    result <- timeout duration $ takeMVar timeout'
+    result <- timeout duration $ takeMVar timeoutVar
 
     case result of
-        Just _  -> setTimeout sessionID timeout'
+        Just _  -> setTimeout session
         Nothing -> do
             debug . Debug $ fromByteString sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
 
 --------------------------------------------------------------------------------
-clearTimeout :: SessionID -> ConnectionM ()
-clearTimeout sessionID = do
-    result <- lookupSession sessionID
-    case result of
-        Just (Session _ _ _ _ timeout') -> do
-            debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
-            putMVar timeout' ()
-        Nothing                         -> return ()
+clearTimeout :: Session -> ConnectionM ()
+clearTimeout (Session sessionID _ _ _ timeoutVar) = do
+    debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
+    putMVar timeoutVar ()

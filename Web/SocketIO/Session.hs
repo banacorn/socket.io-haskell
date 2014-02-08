@@ -69,7 +69,7 @@ handleSession SessionDisconnect = do
     debug . Info $ fromByteString sessionID ++ "    Disconnected"
     bufferHub <- getBufferHub
     triggerListener (Emitter "disconnect" []) bufferHub
-    return $ MsgConnect NoEndpoint
+    return $ MsgNoop
 
 --------------------------------------------------------------------------------
 triggerListener :: Emitter -> BufferHub -> SessionM ()
