@@ -69,7 +69,7 @@ class SessionLayer m where
     getLocalBuffer :: m Buffer
     getGlobalBuffer :: m Buffer
     getListener :: m [Listener]
-    getTimeoutVar :: m (MVar ())
+    getTimeoutVar :: m (MVar Bool)
 
 --------------------------------------------------------------------------------
 newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
@@ -94,7 +94,7 @@ data Session = Session {
     sessionState :: SessionState, 
     sessionBufferHub :: BufferHub, 
     sessionListener :: [Listener],
-    sessionTimeoutVar :: MVar ()
+    sessionTimeoutVar :: MVar Bool
 }
 
 instance Show Session where

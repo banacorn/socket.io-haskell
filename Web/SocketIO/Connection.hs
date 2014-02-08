@@ -101,14 +101,14 @@ handleConnection (Handshake, _) = do
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
-    clearTimeout session
+    extendTimeout session
 
     let session' = session { sessionState = Connected }
     updateSession (H.insert sessionID session')
     runSession SessionConnect session'
 
 handleConnection (Connect _, Just (session, Connected)) = do
-    clearTimeout session
+    extendTimeout session
     
     runSession SessionPolling session
 
@@ -127,14 +127,14 @@ handleConnection (Disconnect _, Nothing) = do
     return MsgNoop
 
 handleConnection (Emit sessionID _, Just (session, Connecting)) = do
-    clearTimeout session
+    extendTimeout session
 
     debug . Error $ fromByteString sessionID ++ "    Session still connecting" 
     return $ MsgError NoEndpoint NoData
 
 handleConnection (Emit _ emitter, Just (session, Connected)) = do
 
-    clearTimeout session
+    extendTimeout session
 
     runSession (SessionEmit emitter) session
 
@@ -142,21 +142,42 @@ handleConnection (Emit _ _, Nothing) = do
     return $ MsgError NoEndpoint NoData
 
 --------------------------------------------------------------------------------
-setTimeout :: Session-> ConnectionM ()
-setTimeout session@(Session sessionID _ _ _ timeoutVar) = do
-    configuration <- getConfiguration
-    let duration = (closeTimeout configuration) * 1000000
-    debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
+getTimeoutDuration :: ConnectionM Int
+getTimeoutDuration = toMicroSec . closeTimeout <$> getConfiguration
+    where   toMicroSec = (*) 1000000
+
+--------------------------------------------------------------------------------
+extendTimeout' :: Bool -> Session -> ConnectionM ()
+extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
+
+    duration <- getTimeoutDuration
+
+    if firstTime 
+        then debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
+        else debug . Debug $ fromByteString sessionID ++ "    Extend Timeout"
     result <- timeout duration $ takeMVar timeoutVar
 
     case result of
-        Just _  -> setTimeout session
+        -- extend!
+        Just True -> extendTimeout' False session
+        -- die!
+        Just False -> clearTimeout session
         Nothing -> do
             debug . Debug $ fromByteString sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
+
+----------------------------------------------------------------------------------
+setTimeout :: Session -> ConnectionM ()
+setTimeout = extendTimeout' True
+
+extendTimeout :: Session -> ConnectionM ()
+extendTimeout (Session _ _ _ _ timeoutVar) = do
+    putMVar timeoutVar True
+
 
 --------------------------------------------------------------------------------
 clearTimeout :: Session -> ConnectionM ()
 clearTimeout (Session sessionID _ _ _ timeoutVar) = do
     debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
-    putMVar timeoutVar ()
+    putMVar timeoutVar False
+
