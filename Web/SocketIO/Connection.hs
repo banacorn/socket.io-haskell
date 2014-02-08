@@ -57,7 +57,7 @@ executeHandler :: HandlerM () -> BufferHub -> ConnectionM [Listener]
 executeHandler handler bufferHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) bufferHub)
 
 --------------------------------------------------------------------------------
-runConnection :: Env -> Request -> IO ByteString
+runConnection :: Env -> Request -> IO Message
 runConnection env req = do
     runReaderT (runConnectionM (handleConnection =<< (retrieveSession req))) env
 
@@ -80,7 +80,7 @@ retrieveSession (Emit sessionID e) = do
     return (Emit sessionID e, split result)
 
 --------------------------------------------------------------------------------
-handleConnection :: (Request, Maybe (Session, SessionState)) -> ConnectionM ByteString
+handleConnection :: (Request, Maybe (Session, SessionState)) -> ConnectionM Message
 handleConnection (Handshake, _) = do
     globalBuffer <- envGlobalBuffer <$> getEnv
     globalBufferClone <- dupChan globalBuffer
@@ -96,8 +96,8 @@ handleConnection (Handshake, _) = do
     _ <- fork $ setTimeout sessionID timeout'
 
     updateSession (H.insert sessionID session)
-
     runSession SessionHandshake session
+
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
@@ -114,7 +114,7 @@ handleConnection (Connect sessionID, Just (session, Connected)) = do
 
 handleConnection (Connect sessionID, Nothing) = do
     debug . Error $ fromByteString sessionID ++ "    Session not found" 
-    return "7"
+    return $ MsgError NoEndpoint NoData
 
 handleConnection (Disconnect sessionID, Just (session, _)) = do
 
@@ -126,13 +126,13 @@ handleConnection (Disconnect sessionID, Just (session, _)) = do
 handleConnection (Disconnect sessionID, Nothing) = do
 
     clearTimeout sessionID
-    return ""
+    return MsgNoop
 
 handleConnection (Emit sessionID _, Just (_, Connecting)) = do
     clearTimeout sessionID
 
     debug . Error $ fromByteString sessionID ++ "    Session still connecting" 
-    return "7"
+    return $ MsgError NoEndpoint NoData
 
 handleConnection (Emit sessionID emitter, Just (session, Connected)) = do
 
@@ -141,7 +141,8 @@ handleConnection (Emit sessionID emitter, Just (session, Connected)) = do
     runSession (SessionEmit emitter) session
 
 handleConnection (Emit _ _, Nothing) = do
-    return "7"
+    return $ MsgError NoEndpoint NoData
+
     --runSession SessionError Nothing
 
 --------------------------------------------------------------------------------

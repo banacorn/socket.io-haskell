@@ -6,7 +6,7 @@ import Web.SocketIO.Types
 import Web.SocketIO.Util
 
 --------------------------------------------------------------------------------
-import Data.List                        (intersperse)
+import              Data.List                               (intersperse)
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
@@ -15,7 +15,7 @@ import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
-handleSession :: SessionAction -> SessionM ByteString
+handleSession :: SessionAction -> SessionM Message
 handleSession SessionHandshake = do
     sessionID <- getSessionID
     configuration <- getConfiguration
@@ -27,12 +27,13 @@ handleSession SessionHandshake = do
     let transportType = mconcat . intersperse "," . map serialize $ transports configuration
 
     debug . Info $ fromByteString sessionID ++ "    Handshake authorized"
-    return $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
+    return $ MsgRaw $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
+    
 
 handleSession SessionConnect = do
     sessionID <- getSessionID
     debug . Info $ fromByteString sessionID ++ "    Connected"
-    return "1::"
+    return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
     sessionID <- getSessionID
@@ -42,12 +43,11 @@ handleSession SessionPolling = do
     result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
     case result of
         Just r  -> do
-            let msg = serialize (MsgEvent NoID NoEndpoint r)
-            debug . Debug $ fromByteString sessionID ++ "    Sending Message: " ++ fromByteString msg
-            return msg
+            debug . Debug $ fromByteString sessionID ++ "    Sending Message: " ++ serialize (MsgEvent NoID NoEndpoint r)
+            return $ MsgEvent NoID NoEndpoint r
         Nothing -> do
             debug . Debug $ fromByteString sessionID ++ "    Polling"
-            return "8::"
+            return MsgNoop
 
     where   readBothChannel (BufferHub localBuffer globalBuffer) = do
                 output <- newEmptyMVar
@@ -63,13 +63,13 @@ handleSession (SessionEmit emitter) = do
     bufferHub <- getBufferHub
     debug . Info $ fromByteString sessionID ++ "    Emit"
     triggerListener emitter bufferHub
-    return "1"
+    return $ MsgConnect NoEndpoint
 handleSession SessionDisconnect = do
     sessionID <- getSessionID
     debug . Info $ fromByteString sessionID ++ "    Disconnected"
     bufferHub <- getBufferHub
     triggerListener (Emitter "disconnect" []) bufferHub
-    return "1"
+    return $ MsgConnect NoEndpoint
 
 --------------------------------------------------------------------------------
 triggerListener :: Emitter -> BufferHub -> SessionM ()
@@ -85,5 +85,5 @@ triggerListener (Emitter event payload) channelHub = do
 triggerListener NoEmitter _ = error "trigger listeners with any emitters"
 
 --------------------------------------------------------------------------------
-runSession :: SessionAction -> Session -> ConnectionM ByteString
+runSession :: SessionAction -> Session -> ConnectionM Message
 runSession action session = runReaderT (runSessionM (handleSession action)) session

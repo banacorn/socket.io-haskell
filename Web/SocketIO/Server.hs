@@ -43,11 +43,11 @@ serverConfig port config handler = do
     Warp.run port (httpApp (runConnection env))
 
 --------------------------------------------------------------------------------
-httpApp :: (Request -> IO ByteString) -> Wai.Application
+httpApp :: (Request -> IO Message) -> Wai.Application
 httpApp runConnection' httpRequest = liftIO $ do
     req <- processHTTPRequest httpRequest
     response <- runConnection' req
-    text (fromByteString response)
+    text (serialize response)
 
 --------------------------------------------------------------------------------
 -- | Default configurations to be overridden.

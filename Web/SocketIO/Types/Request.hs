@@ -40,7 +40,8 @@ data Request    = Handshake
 
 --------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol
-data Message    = MsgDisconnect Endpoint
+data Message    = MsgRaw ByteString
+                | MsgDisconnect Endpoint
                 | MsgConnect Endpoint
                 | MsgHeartbeat
                 | Msg ID Endpoint Data
@@ -78,6 +79,7 @@ instance Serializable Data where
     serialize NoData = ""
 
 instance Serializable Message where
+    serialize (MsgRaw s)                    = serialize s
     serialize (MsgDisconnect NoEndpoint)    = "0"
     serialize (MsgDisconnect e)             = "0::" <> serialize e
     serialize (MsgConnect e)                = "1::" <> serialize e
