@@ -82,23 +82,28 @@ retrieveSession (Emit sessionID e) = do
 --------------------------------------------------------------------------------
 handleConnection :: (Request, Maybe (Session, SessionState)) -> ConnectionM Message
 handleConnection (Handshake, _) = do
-    globalBuffer <- envGlobalBuffer <$> getEnv
-    globalBufferClone <- dupChan globalBuffer
-    localBuffer <- newChan
-    let bufferHub = BufferHub localBuffer globalBufferClone
-    handler <- getHandler
-    sessionID <- genSessionID
-    listeners <- executeHandler handler bufferHub
-    timeoutVar <- newEmptyMVar
 
-    let session = Session sessionID Connecting bufferHub listeners timeoutVar
-
+    session@(Session sessionID _ _ _ _) <- makeSession
     setTimeout session
 
     updateSession (H.insert sessionID session)
     runSession SessionHandshake session
 
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
+            makeBufferHub = do
+                globalBuffer <- envGlobalBuffer <$> getEnv
+                globalBufferClone <- dupChan globalBuffer
+                localBuffer <- newChan
+                return $ BufferHub localBuffer globalBufferClone
+            makeSession = do
+
+                bufferHub <- makeBufferHub
+                handler <- getHandler
+                sessionID <- genSessionID
+                listeners <- executeHandler handler bufferHub
+                timeoutVar <- newEmptyMVar
+
+                return $ Session sessionID Connecting bufferHub listeners timeoutVar
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
     extendTimeout session
