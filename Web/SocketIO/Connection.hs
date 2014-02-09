@@ -93,7 +93,7 @@ handleConnection (Handshake, _) = do
 
     let session = Session sessionID Connecting bufferHub listeners timeoutVar
 
-    _ <- fork $ setTimeout session
+    setTimeout session
 
     updateSession (H.insert sessionID session)
     runSession SessionHandshake session
@@ -168,7 +168,7 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
 
 ----------------------------------------------------------------------------------
 setTimeout :: Session -> ConnectionM ()
-setTimeout = extendTimeout' True
+setTimeout = void . fork . extendTimeout' True
 
 extendTimeout :: Session -> ConnectionM ()
 extendTimeout (Session _ _ _ _ timeoutVar) = do
