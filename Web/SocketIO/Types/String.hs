@@ -135,9 +135,6 @@ class Serializable a where
                  , Show a) => a -> s
     serialize = S.fromString . show
 
-instance Serializable String where
-    serialize = S.fromString
-
 instance Serializable T.Text where
     serialize = fromText
 
@@ -149,3 +146,18 @@ instance Serializable ByteString where
     
 instance Serializable BL.ByteString where
     serialize = fromLazyByteString
+
+instance Serializable Bool
+instance Serializable Char
+instance Serializable Double
+instance Serializable Float
+instance Serializable Int
+instance Serializable Integer
+instance Serializable Ordering
+instance Serializable ()
+instance Serializable a => Serializable [a]
+instance Serializable a => Serializable (Maybe a)
+instance (Serializable a, Serializable b) => Serializable (Either a b)
+instance (Serializable a, Serializable b, Serializable c) => Serializable (a, b, c)
+instance (Serializable a, Serializable b, Serializable c, Serializable d) => Serializable (a, b, c, d)
+instance (Serializable a, Serializable b, Serializable c, Serializable d, Serializable e) => Serializable (a, b, c, d, e)
