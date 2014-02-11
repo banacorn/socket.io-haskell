@@ -26,13 +26,12 @@ handleSession SessionHandshake = do
     let closeTimeout' = fromString (show (closeTimeout configuration))
     let transportType = mconcat . intersperse "," . map serialize $ transports configuration
 
-    debug . Info $ fromByteString sessionID ++ "    Handshake authorized"
     return $ MsgRaw $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
     
 
 handleSession SessionConnect = do
     sessionID <- getSessionID
-    debug . Info $ fromByteString sessionID ++ "    Connected"
+    debugSession Info $ "Connected"
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
@@ -41,12 +40,12 @@ handleSession SessionPolling = do
     bufferHub <- getBufferHub
   
     result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
+
     case result of
         Just r  -> do
-            debug . Debug $ fromByteString sessionID ++ "    Sending Message: " ++ serialize (MsgEvent NoID NoEndpoint r)
+            debugSession Info $ "Sending message: " <> serialize (MsgEvent NoID NoEndpoint r)
             return $ MsgEvent NoID NoEndpoint r
         Nothing -> do
-            debug . Debug $ fromByteString sessionID ++ "    Polling"
             return MsgNoop
 
     where   readBothChannel (BufferHub localBuffer globalBuffer) = do
@@ -61,12 +60,13 @@ handleSession SessionPolling = do
 handleSession (SessionEmit emitter) = do
     sessionID <- getSessionID
     bufferHub <- getBufferHub
-    debug . Info $ fromByteString sessionID ++ "    Emit"
+    debugSession Info $ "Recieving message"
+
     triggerListener emitter bufferHub
     return $ MsgConnect NoEndpoint
 handleSession SessionDisconnect = do
     sessionID <- getSessionID
-    debug . Info $ fromByteString sessionID ++ "    Disconnected"
+    debugSession Info $ "Disconnected"
     bufferHub <- getBufferHub
     triggerListener (Emitter "disconnect" []) bufferHub
     return $ MsgNoop

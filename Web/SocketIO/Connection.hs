@@ -83,11 +83,15 @@ retrieveSession (Emit sessionID e) = do
 handleConnection :: (Request, Maybe (Session, SessionState)) -> ConnectionM Message
 handleConnection (Handshake, _) = do
 
+
+
     session@(Session sessionID _ _ _ _) <- makeSession
     setTimeout session
+    debugLog Debug session "[Handshake]"
 
     updateSession (H.insert sessionID session)
     runSession SessionHandshake session
+
 
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
             makeBufferHub = do
@@ -106,6 +110,8 @@ handleConnection (Handshake, _) = do
                 return $ Session sessionID Connecting bufferHub listeners timeoutVar
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
+    debugLog Debug session "[Connect] Connecting"
+
     extendTimeout session
 
     let session' = session { sessionState = Connected }
@@ -113,31 +119,38 @@ handleConnection (Connect sessionID, Just (session, Connecting)) = do
     runSession SessionConnect session'
 
 handleConnection (Connect _, Just (session, Connected)) = do
+    debugLog Debug session "[Connect] Polling"
+
     extendTimeout session
     
     runSession SessionPolling session
 
 handleConnection (Connect sessionID, Nothing) = do
-    debug . Error $ fromByteString sessionID ++ "    Session not found" 
+    debug Warn $ sessionID <> "    [Connect] Session not found" 
     return $ MsgError NoEndpoint NoData
 
 handleConnection (Disconnect sessionID, Just (session, _)) = do
+    
+    debugLog Debug session "[Disconnect]"
 
     clearTimeout session
 
     updateSession (H.delete sessionID)
     runSession SessionDisconnect session
 
-handleConnection (Disconnect _, Nothing) = do
+handleConnection (Disconnect sessionID, Nothing) = do
+    debug Warn $ sessionID <> "    [Disconnect] Session not found" 
+
     return MsgNoop
 
 handleConnection (Emit sessionID _, Just (session, Connecting)) = do
     extendTimeout session
 
-    debug . Error $ fromByteString sessionID ++ "    Session still connecting" 
+    debugLog Warn session "[Emit] Session still connecting" 
     return $ MsgError NoEndpoint NoData
 
 handleConnection (Emit _ emitter, Just (session, Connected)) = do
+    debugLog Debug session $ "[Emit] " <> serialize emitter
 
     extendTimeout session
 
@@ -157,9 +170,9 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
 
     duration <- getTimeoutDuration
 
-    if firstTime 
-        then debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
-        else debug . Debug $ fromByteString sessionID ++ "    Extend Timeout"
+    --if firstTime 
+    --    then debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
+    --    else debug . Debug $ fromByteString sessionID ++ "    Extend Timeout"
     result <- timeout duration $ takeMVar timeoutVar
 
     case result of
@@ -168,7 +181,7 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
         -- die!
         Just False -> clearTimeout session
         Nothing -> do
-            debug . Debug $ fromByteString sessionID ++ "    Close Session"
+            --debug . Debug $ fromByteString sessionID ++ "    Close Session"
             updateSession (H.delete sessionID)
 
 ----------------------------------------------------------------------------------
@@ -183,6 +196,6 @@ extendTimeout (Session _ _ _ _ timeoutVar) = do
 --------------------------------------------------------------------------------
 clearTimeout :: Session -> ConnectionM ()
 clearTimeout (Session sessionID _ _ _ timeoutVar) = do
-    debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
+    --debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
     putMVar timeoutVar False
 

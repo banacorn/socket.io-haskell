@@ -1,20 +1,23 @@
-module Web.SocketIO.Types.Log (Log(..)) where
+{-# LANGUAGE OverloadedStrings #-}
+
+module Web.SocketIO.Types.Log (Log(..), Serializable(..)) where
 
 import System.Console.ANSI
+import Web.SocketIO.Types.String
 
 --------------------------------------------------------------------------------
 -- | Logger
-data Log = Error String
-         | Warn String
-         | Info String
-         | Debug String
-         deriving (Eq)
+data Log = Error ByteString
+         | Warn ByteString
+         | Info ByteString
+         | Debug ByteString
+         deriving (Eq, Show)
 
-instance Show Log where
-    show (Error message) = "    " ++ paint Red 	"[error] " ++ error message
-    show (Warn  message) = "    " ++ paint Yellow "[warn]  " ++ message
-    show (Info  message) = "    " ++ paint Cyan   "[info]  " ++ message
-    show (Debug message) = "    " ++ paint Black  "[debug] " ++ message
+instance Serializable Log where
+    serialize (Error message) = fromString $ "    " ++ (paint Red    $ "[error] " ++ error (fromByteString message))
+    serialize (Warn  message) = fromString $ "    " ++ (paint Yellow $ "[warn]  " ++ fromByteString message)
+    serialize (Info  message) = fromString $ "    " ++ (paint Cyan   $ "[info]  " ++ fromByteString message)
+    serialize (Debug message) = fromString $ "    " ++ (paint Black  $ "[debug] " ++ fromByteString message)
 
 --------------------------------------------------------------------------------
 paint :: Color -> String -> String
