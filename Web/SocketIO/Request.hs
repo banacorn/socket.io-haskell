@@ -30,10 +30,10 @@ retrieveRequestInfo request = do
         )
 
 processRequestInfo :: RequestInfo -> Request
-processRequestInfo ("GET" , (WithoutSession _ _)         , _                   )    = Handshake 
-processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                   )    = Connect sessionID
-processRequestInfo ("POST", (WithSession _ _ _ sessionID), MsgEvent _ _ emitter)    = Emit sessionID emitter
-processRequestInfo (_     , (WithSession _ _ _ sessionID), _                   )    = Disconnect sessionID
+processRequestInfo ("GET" , (WithoutSession _ _)         , _                 )  = Handshake 
+processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                 )  = Connect sessionID
+processRequestInfo ("POST", (WithSession _ _ _ sessionID), MsgEvent _ _ event)  = Emit sessionID event
+processRequestInfo (_     , (WithSession _ _ _ sessionID), _                 )  = Disconnect sessionID
 processRequestInfo _    = error "error parsing http request"
  
 processHTTPRequest :: Wai.Request -> IO Request

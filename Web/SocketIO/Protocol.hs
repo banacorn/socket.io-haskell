@@ -32,7 +32,7 @@ parseMessage' = do
         '4' ->  parseRegularMessage MsgJSON
         '5' ->  MsgEvent    <$> parseID 
                             <*> parseEndpoint 
-                            <*> parseEmitter
+                            <*> parseEvent
         '6' ->  try (do 
                 string ":::"
                 n' <- read <$> number
@@ -82,15 +82,15 @@ parseData    =  try (colon >> text >>= return . Data . fromString)
             <|>     (colon >>          return   NoData)
 
 --------------------------------------------------------------------------------
-parseEmitter :: Parser Emitter
-parseEmitter =  try (do
+parseEvent :: Parser Event
+parseEvent = try (do
                 colon
                 t <- text
                 case decode (fromString t) of
                     Just e -> return e
-                    Nothing -> return NoEmitter
+                    Nothing -> return NoEvent
             )
-            <|>     (colon >>          return   NoEmitter)
+            <|>     (colon >>          return   NoEvent)
 
 
 --------------------------------------------------------------------------------

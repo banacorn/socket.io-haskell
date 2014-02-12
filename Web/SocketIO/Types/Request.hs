@@ -35,7 +35,7 @@ instance Serializable Path where
 data Request    = Handshake
                 | Disconnect SessionID
                 | Connect SessionID 
-                | Emit SessionID Emitter
+                | Emit SessionID Event
                 deriving (Show)
 
 --------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ data Message    = MsgRaw ByteString
                 | MsgHeartbeat
                 | Msg ID Endpoint Data
                 | MsgJSON ID Endpoint Data
-                | MsgEvent ID Endpoint Emitter
+                | MsgEvent ID Endpoint Event
                 | MsgACK ID Data
                 | MsgError Endpoint Data
                 | MsgNoop

@@ -41,7 +41,7 @@ data SessionState = Connecting | Connected deriving (Show, Eq)
 data SessionAction   = SessionHandshake
                      | SessionConnect
                      | SessionPolling
-                     | SessionEmit Emitter
+                     | SessionEmit Event
                      | SessionDisconnect
 
 --------------------------------------------------------------------------------

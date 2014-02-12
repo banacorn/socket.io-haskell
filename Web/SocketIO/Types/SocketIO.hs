@@ -40,27 +40,27 @@ data Configuration = Configuration
 type Port = Int
 
 --------------------------------------------------------------------------------
-type Event = Text
+type EventName = Text
 type Payload = Text
-type Buffer = Chan Emitter
+type Buffer = Chan Event
 
-type Listener = (Event, CallbackM ())
-data Emitter  = Emitter Event [Payload] | NoEmitter deriving (Show, Eq)
+type Listener = (EventName, CallbackM ())
+data Event  = Event EventName [Payload] | NoEvent deriving (Show, Eq)
 
-instance Serializable Emitter where
+instance Serializable Event where
     serialize = serialize . encode
 
 --------------------------------------------------------------------------------
-instance FromJSON Emitter where
-    parseJSON (Object v) =  Emitter <$>
+instance FromJSON Event where
+    parseJSON (Object v) =  Event <$>
                             v .: "name" <*>
                             v .: "args"
-    parseJSON _ = return NoEmitter
+    parseJSON _ = return NoEvent
 
 --------------------------------------------------------------------------------
-instance ToJSON Emitter where
-   toJSON (Emitter name args) = object ["name" .= name, "args" .= args]
-   toJSON NoEmitter = object []
+instance ToJSON Event where
+   toJSON (Event name args) = object ["name" .= name, "args" .= args]
+   toJSON NoEvent = object []
 
 
 --------------------------------------------------------------------------------
@@ -85,8 +85,8 @@ newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT BufferHub (WriterT [List
 -- | Capable of only sending events.
 --
 -- Use 'liftIO' if you wanna do some IO here.
-newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Emitter] (ReaderT CallbackEnv IO)) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Emitter], MonadReader CallbackEnv, MonadBase IO)
+newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Event] (ReaderT CallbackEnv IO)) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Event], MonadReader CallbackEnv, MonadBase IO)
 
 
 --------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ class Publisher m where
     -- @
     -- `emit` \"launch\" [\"missile\", \"nuke\"] 
     -- @
-    emit    :: Event                -- ^ event to trigger
+    emit    :: EventName            -- ^ name of event to trigger
             -> [Text]               -- ^ message to carry with
             -> m ()
 
@@ -106,7 +106,7 @@ class Publisher m where
     -- @
     -- `broadcast` \"hide\" [\"nukes coming!\"] 
     -- @
-    broadcast   :: Event            -- ^ event to trigger
+    broadcast   :: EventName        -- ^ name of event to trigger
                 -> [Text]           -- ^ message to carry with
                 -> m ()
 
@@ -115,18 +115,18 @@ class Publisher m where
 instance Publisher HandlerM where
     emit event reply = do
         channel <- selectLocalBuffer <$> ask
-        writeChan channel (Emitter event reply)
+        writeChan channel (Event event reply)
     broadcast event reply = do
         channel <- selectGlobalBuffer <$> ask
-        writeChan channel (Emitter event reply)
+        writeChan channel (Event event reply)
 
 instance Publisher CallbackM where
     emit event reply = do
         channel <- CallbackM . lift $ selectLocalBuffer . callbackEnvBufferHub <$> ask
-        writeChan channel (Emitter event reply)
+        writeChan channel (Event event reply)
     broadcast event reply = do
         channel <- CallbackM . lift $ selectGlobalBuffer . callbackEnvBufferHub <$> ask
-        writeChan channel (Emitter event reply)
+        writeChan channel (Event event reply)
 
 --------------------------------------------------------------------------------
 -- | Receiving events.
@@ -135,7 +135,7 @@ class Subscriber m where
     -- 'on' \"ping\" $ do
     --     'emit' \"pong\" []
     -- @
-    on  :: Event            -- ^ event to listen to
+    on  :: EventName        -- ^ name of event to listen to
         -> CallbackM ()     -- ^ callback
         -> m ()             
 

@@ -30,12 +30,10 @@ handleSession SessionHandshake = do
     
 
 handleSession SessionConnect = do
-    sessionID <- getSessionID
     debugSession Info $ "Connected"
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
-    sessionID <- getSessionID
     configuration <- getConfiguration
     bufferHub <- getBufferHub
   
@@ -57,23 +55,21 @@ handleSession SessionPolling = do
 
 
 
-handleSession (SessionEmit emitter) = do
-    sessionID <- getSessionID
+handleSession (SessionEmit event) = do
     bufferHub <- getBufferHub
     debugSession Info $ "Recieving message"
 
-    triggerListener emitter bufferHub
+    triggerListener event bufferHub
     return $ MsgConnect NoEndpoint
 handleSession SessionDisconnect = do
-    sessionID <- getSessionID
     debugSession Info $ "Disconnected"
     bufferHub <- getBufferHub
-    triggerListener (Emitter "disconnect" []) bufferHub
+    triggerListener (Event "disconnect" []) bufferHub
     return $ MsgNoop
 
 --------------------------------------------------------------------------------
-triggerListener :: Emitter -> BufferHub -> SessionM ()
-triggerListener (Emitter event payload) channelHub = do
+triggerListener :: Event -> BufferHub -> SessionM ()
+triggerListener (Event event payload) channelHub = do
     -- read
     listeners <- getListener
     -- filter out callbacks to be triggered
@@ -82,7 +78,7 @@ triggerListener (Emitter event payload) channelHub = do
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
         _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv payload channelHub)
         return ()
-triggerListener NoEmitter _ = error "trigger listeners with any emitters"
+triggerListener NoEvent _ = error "trigger listeners with any events"
 
 --------------------------------------------------------------------------------
 runSession :: SessionAction -> Session -> ConnectionM Message
