@@ -68,11 +68,11 @@ data CallbackEnv = CallbackEnv
     ,   callbackEnvChannelHub :: ChannelHub
     }
 
-type Channel = Chan Event
 data ChannelHub = ChannelHub
-    {   channelHubLocal :: Channel
-    ,   channelHubGlobal :: Channel
-    ,   channelHubOutput :: Channel
+    {   channelHubLocal :: Chan Event
+    ,   channelHubGlobal :: Chan Event
+    ,   channelHubOutput :: Chan Event
+    ,   channelHubLog :: Chan ByteString
     }
    
 --------------------------------------------------------------------------------

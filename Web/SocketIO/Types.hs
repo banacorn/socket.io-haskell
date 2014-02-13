@@ -49,8 +49,8 @@ data Env = Env {
     envSessionTableRef :: IORef Table, 
     envHandler :: HandlerM (), 
     envConfiguration :: Configuration,
-    envStdout :: Chan String,
-    envGlobalChannel :: Channel
+    envLogChannel :: Chan ByteString,
+    envGlobalChannel :: Chan Event
 }
 
 --------------------------------------------------------------------------------

@@ -12,8 +12,8 @@ import Web.SocketIO.Types
 debug :: (Functor m, MonadIO m, ConnectionLayer m) => (ByteString -> Log) -> ByteString -> m ()
 debug logType message = do
     logLevel' <- fmap logLevel getConfiguration
-    stdout' <- fmap envStdout getEnv
-    if level <= logLevel' then liftIO $ writeChan stdout' (serialize log') else return ()
+    logChannel <- fmap envLogChannel getEnv
+    if level <= logLevel' then liftIO $ writeChan logChannel (serialize log') else return ()
     where   log' = logType message
             levelOf (Error _) = 0
             levelOf (Warn  _) = 1

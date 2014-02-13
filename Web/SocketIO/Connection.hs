@@ -97,10 +97,11 @@ handleConnection (Handshake, _) = do
             
             makeChannelHub = do
                 globalChannel <- envGlobalChannel <$> getEnv
+                logChannel <- envLogChannel <$> getEnv
                 globalChannelClone <- dupChan globalChannel
                 localChannel <- newChan
                 outputChannel <- newChan
-                return $ ChannelHub localChannel globalChannelClone outputChannel
+                return $ ChannelHub localChannel globalChannelClone outputChannel logChannel
             makeSession = do
 
                 channelHub <- makeChannelHub

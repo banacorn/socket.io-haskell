@@ -10,6 +10,7 @@ import              Web.SocketIO.Types
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
 
+import qualified    Data.ByteString.Char8           as BC
 import              Control.Concurrent.Chan
 import              Control.Concurrent              (forkIO)
 import              Control.Monad                   (forever)
@@ -31,14 +32,13 @@ serverConfig port config handler = do
 
     tableRef <- newSessionTableRef
 
-    stdout <- newChan :: IO (Chan String)
-
-    globalChannel <- newChan :: IO Channel
+    logChannel <- newChan :: IO (Chan ByteString)
+    globalChannel <- newChan :: IO (Chan Event)
 
     forkIO . forever $ do
-        readChan stdout >>= putStrLn 
+        readChan logChannel >>= BC.putStrLn 
 
-    let env = Env tableRef handler config stdout globalChannel
+    let env = Env tableRef handler config logChannel globalChannel
 
     Warp.run port (httpApp (runConnection env))
 

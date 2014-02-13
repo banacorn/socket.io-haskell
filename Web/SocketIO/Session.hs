@@ -49,7 +49,7 @@ handleSession SessionPolling = do
         Nothing -> do
             return MsgNoop
 
-    where   readBothChannel (ChannelHub localChannel globalChannel _) = do
+    where   readBothChannel (ChannelHub localChannel globalChannel _ _) = do
                 output <- newEmptyMVar
                 _ <- fork (readChan localChannel >>= putMVar output)
                 _ <- fork (readChan globalChannel >>= putMVar output)
