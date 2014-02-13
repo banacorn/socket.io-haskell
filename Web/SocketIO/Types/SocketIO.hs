@@ -31,9 +31,9 @@ type Listener = (EventName, CallbackM ())
 
 --------------------------------------------------------------------------------
 data ChannelHub = ChannelHub
-    {   channelHubLocal :: Chan Event
-    ,   channelHubGlobal :: Chan Event
-    ,   channelHubOutput :: Chan Event
+    {   channelHubLocal :: Chan Package
+    ,   channelHubGlobal :: Chan Package
+    ,   channelHubOutput :: Chan Package
     ,   channelHubLog :: Chan ByteString
     }
 
@@ -92,18 +92,20 @@ class Publisher m where
 instance Publisher HandlerM where
     emit event reply = do
         channel <- channelHubLocal . handlerEnvChannelHub <$> ask
-        writeChan channel (Event event reply)
+        writeChan channel (Private, Event event reply)
     broadcast event reply = do
         channel <- channelHubGlobal . handlerEnvChannelHub <$> ask
-        writeChan channel (Event event reply)
+        sessionID <- handlerEnvSessionID <$> ask
+        writeChan channel (Broadcast sessionID, Event event reply)
 
 instance Publisher CallbackM where
     emit event reply = do
         channel <- CallbackM . lift $ channelHubLocal . callbackEnvChannelHub <$> ask
-        writeChan channel (Event event reply)
+        writeChan channel (Private, Event event reply)
     broadcast event reply = do
         channel <- CallbackM . lift $ channelHubGlobal . callbackEnvChannelHub <$> ask
-        writeChan channel (Event event reply)
+        sessionID <- CallbackM . lift $ callbackEnvSessionID <$> ask
+        writeChan channel (Broadcast sessionID, Event event reply)
 
 --------------------------------------------------------------------------------
 -- | Receiving events.

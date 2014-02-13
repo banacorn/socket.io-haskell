@@ -22,7 +22,7 @@ import              Control.Monad.Trans.Control             (MonadBaseControl)
 import qualified    Data.ByteString.Char8                   as BC
 
 --------------------------------------------------------------------------------
-newGlobalChannel :: MonadBase IO m => m (Chan Event)
+newGlobalChannel :: MonadBase IO m => m (Chan Package)
 newGlobalChannel = newChan
 
 --------------------------------------------------------------------------------

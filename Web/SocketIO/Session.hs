@@ -33,18 +33,30 @@ handleSession SessionConnect = do
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
+    sessionID <- getSessionID
     configuration <- getConfiguration
     ChannelHub _ _ outputChannel _ <- getChannelHub
   
     result <- timeout (pollingDuration configuration * 1000000) (readChan outputChannel)
 
     case result of
-        Just event@(Event eventName payloads) -> do
+        -- private
+        Just (Private, Event eventName payloads) -> do
             debugSession Info $ "--->  " <> serialize eventName <> " " <> serialize payloads
-            return $ MsgEvent NoID NoEndpoint event
-        Just NoEvent -> do
+            return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
+        -- broadcast
+        Just (Broadcast sessionID', Event eventName payloads) -> do
+            if sessionID /= sessionID'
+                then do
+                    debugSession Info $ "*-->  " <> serialize eventName <> " " <> serialize payloads
+                    return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
+                else do
+                    return $ MsgNoop
+        -- wtf
+        Just (_, NoEvent) -> do
             debugSession Error $ "No Emit"
             return $ MsgEvent NoID NoEndpoint NoEvent
+        -- no output, keep polling
         Nothing -> do
             return MsgNoop
 

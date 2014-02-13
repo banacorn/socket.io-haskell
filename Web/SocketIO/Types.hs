@@ -50,7 +50,7 @@ data Env = Env {
     envHandler :: HandlerM (), 
     envConfiguration :: Configuration,
     envLogChannel :: Chan ByteString,
-    envGlobalChannel :: Chan Event
+    envGlobalChannel :: Chan Package
 }
 
 --------------------------------------------------------------------------------
