@@ -6,24 +6,15 @@
 module Web.SocketIO.Types.SocketIO where
 
 --------------------------------------------------------------------------------
-import 				Control.Applicative						(Applicative, (<$>), (<*>))
+import 				Control.Applicative						(Applicative, (<$>))
 import 				Control.Concurrent.Chan.Lifted			(Chan, writeChan)
 import              Control.Monad.Base
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
-import              Data.Aeson                              
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String   
-
---------------------------------------------------------------------------------
--- | Now only xhr-polling is supported.
-data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
-
-instance Serializable Transport where
-    serialize WebSocket = "websocket" 
-    serialize XHRPolling = "xhr-polling" 
-    serialize NoTransport = "unknown" 
+import              Web.SocketIO.Types.Request   
 
 --------------------------------------------------------------------------------
 data Configuration = Configuration
@@ -40,27 +31,7 @@ data Configuration = Configuration
 type Port = Int
 
 --------------------------------------------------------------------------------
-type EventName = Text
-type Payload = Text
-
 type Listener = (EventName, CallbackM ())
-data Event  = Event EventName [Payload] | NoEvent deriving (Show, Eq)
-
-instance Serializable Event where
-    serialize = serialize . encode
-
---------------------------------------------------------------------------------
-instance FromJSON Event where
-    parseJSON (Object v) =  Event <$>
-                            v .: "name" <*>
-                            v .: "args"
-    parseJSON _ = return NoEvent
-
---------------------------------------------------------------------------------
-instance ToJSON Event where
-   toJSON (Event name args) = object ["name" .= name, "args" .= args]
-   toJSON NoEvent = object []
-
 
 --------------------------------------------------------------------------------
 data CallbackEnv = CallbackEnv
