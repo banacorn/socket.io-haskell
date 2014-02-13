@@ -53,8 +53,8 @@ lookupSession sessionID = do
     return (H.lookup sessionID table)
 
 --------------------------------------------------------------------------------
-executeHandler :: HandlerM () -> BufferHub -> ConnectionM [Listener]
-executeHandler handler bufferHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) bufferHub)
+executeHandler :: HandlerM () -> ChannelHub -> ConnectionM [Listener]
+executeHandler handler channelHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) channelHub)
 
 --------------------------------------------------------------------------------
 runConnection :: Env -> Request -> IO Message
@@ -94,20 +94,22 @@ handleConnection (Handshake, _) = do
 
 
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
-            makeBufferHub = do
-                globalBuffer <- envGlobalBuffer <$> getEnv
-                globalBufferClone <- dupChan globalBuffer
-                localBuffer <- newChan
-                return $ BufferHub localBuffer globalBufferClone
+            
+            makeChannelHub = do
+                globalChannel <- envGlobalChannel <$> getEnv
+                globalChannelClone <- dupChan globalChannel
+                localChannel <- newChan
+                outputChannel <- newChan
+                return $ ChannelHub localChannel globalChannelClone outputChannel
             makeSession = do
 
-                bufferHub <- makeBufferHub
+                channelHub <- makeChannelHub
                 handler <- getHandler
                 sessionID <- genSessionID
-                listeners <- executeHandler handler bufferHub
+                listeners <- executeHandler handler channelHub
                 timeoutVar <- newEmptyMVar
 
-                return $ Session sessionID Connecting bufferHub listeners timeoutVar
+                return $ Session sessionID Connecting channelHub listeners timeoutVar
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
     debugLog Debug session "[Connect] Connecting"

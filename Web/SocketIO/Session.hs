@@ -35,13 +35,13 @@ handleSession SessionConnect = do
 
 handleSession SessionPolling = do
     configuration <- getConfiguration
-    bufferHub <- getBufferHub
+    channelHub <- getChannelHub
   
-    result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
+    result <- timeout (pollingDuration configuration * 1000000) (readBothChannel channelHub)
 
     case result of
         Just event@(Event eventName payloads) -> do
-            debugSession Info $ "Emit: " <> serialize eventName <> " " <> serialize payloads
+            debugSession Info $ "<<==  " <> serialize eventName <> " " <> serialize payloads
             return $ MsgEvent NoID NoEndpoint event
         Just NoEvent -> do
             debugSession Error $ "No Emit"
@@ -49,32 +49,32 @@ handleSession SessionPolling = do
         Nothing -> do
             return MsgNoop
 
-    where   readBothChannel (BufferHub localBuffer globalBuffer) = do
+    where   readBothChannel (ChannelHub localChannel globalChannel _) = do
                 output <- newEmptyMVar
-                _ <- fork (readChan localBuffer >>= putMVar output)
-                _ <- fork (readChan globalBuffer >>= putMVar output)
+                _ <- fork (readChan localChannel >>= putMVar output)
+                _ <- fork (readChan globalChannel >>= putMVar output)
                 
                 takeMVar output
 
 
 
 handleSession (SessionEmit event) = do
-    bufferHub <- getBufferHub
+    channelHub <- getChannelHub
 
     case event of
-        Event eventName payloads -> debugSession Info $ "On: " <> serialize eventName <> " " <> serialize payloads
+        Event eventName payloads -> debugSession Info $ "==>>  " <> serialize eventName <> " " <> serialize payloads
         NoEvent                  -> debugSession Error $ "Event malformed"
 
-    triggerListener event bufferHub
+    triggerListener event channelHub
     return $ MsgConnect NoEndpoint
 handleSession SessionDisconnect = do
     debugSession Info $ "Disconnected"
-    bufferHub <- getBufferHub
-    triggerListener (Event "disconnect" []) bufferHub
+    channelHub <- getChannelHub
+    triggerListener (Event "disconnect" []) channelHub
     return $ MsgNoop
 
 --------------------------------------------------------------------------------
-triggerListener :: Event -> BufferHub -> SessionM ()
+triggerListener :: Event -> ChannelHub -> SessionM ()
 triggerListener (Event event payload) channelHub = do
     -- read
     listeners <- getListener

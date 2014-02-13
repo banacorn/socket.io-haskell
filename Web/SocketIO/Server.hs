@@ -33,7 +33,7 @@ serverConfig port config handler = do
 
     stdout <- newChan :: IO (Chan String)
 
-    globalChannel <- newChan :: IO (Buffer)
+    globalChannel <- newChan :: IO Channel
 
     forkIO . forever $ do
         readChan stdout >>= putStrLn 

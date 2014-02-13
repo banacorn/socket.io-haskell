@@ -50,7 +50,7 @@ data Env = Env {
     envHandler :: HandlerM (), 
     envConfiguration :: Configuration,
     envStdout :: Chan String,
-    envGlobalBuffer :: Buffer
+    envGlobalChannel :: Channel
 }
 
 --------------------------------------------------------------------------------
@@ -65,9 +65,9 @@ class SessionLayer m where
     getSession :: m Session
     getSessionID :: m SessionID
     getSessionState :: m SessionState
-    getBufferHub :: m BufferHub
-    getLocalBuffer :: m Buffer
-    getGlobalBuffer :: m Buffer
+    getChannelHub :: m ChannelHub
+    --getLocalChannel :: m Buffer
+    --getGlobalBuffer :: m Buffer
     getListener :: m [Listener]
     getTimeoutVar :: m (MVar Bool)
 
@@ -92,7 +92,7 @@ instance (MonadBaseControl IO) ConnectionM where
 data Session = Session { 
     sessionSessionID :: SessionID, 
     sessionState :: SessionState, 
-    sessionBufferHub :: BufferHub, 
+    sessionChannelHub :: ChannelHub, 
     sessionListener :: [Listener],
     sessionTimeoutVar :: MVar Bool
 }
@@ -118,9 +118,9 @@ instance SessionLayer SessionM where
     getSession = ask
     getSessionID = sessionSessionID <$> ask
     getSessionState = sessionState <$> ask
-    getBufferHub = sessionBufferHub <$> ask
-    getLocalBuffer = selectLocalBuffer . sessionBufferHub <$> ask
-    getGlobalBuffer = selectGlobalBuffer . sessionBufferHub <$> ask
+    getChannelHub = sessionChannelHub <$> ask
+    --getLocalBuffer = selectLocalBuffer . sessionBufferHub <$> ask
+    --getGlobalBuffer = selectGlobalBuffer . sessionBufferHub <$> ask
     getListener = sessionListener <$> ask
     getTimeoutVar = sessionTimeoutVar <$> ask
 

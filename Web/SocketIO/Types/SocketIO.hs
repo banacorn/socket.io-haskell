@@ -42,7 +42,6 @@ type Port = Int
 --------------------------------------------------------------------------------
 type EventName = Text
 type Payload = Text
-type Buffer = Chan Event
 
 type Listener = (EventName, CallbackM ())
 data Event  = Event EventName [Payload] | NoEvent deriving (Show, Eq)
@@ -66,20 +65,22 @@ instance ToJSON Event where
 --------------------------------------------------------------------------------
 data CallbackEnv = CallbackEnv
     {   callbackEnvPayload :: [Payload]
-    ,   callbackEnvBufferHub :: BufferHub
+    ,   callbackEnvChannelHub :: ChannelHub
     }
 
-data BufferHub = BufferHub
-    {   selectLocalBuffer :: Buffer
-    ,   selectGlobalBuffer :: Buffer
+type Channel = Chan Event
+data ChannelHub = ChannelHub
+    {   channelHubLocal :: Channel
+    ,   channelHubGlobal :: Channel
+    ,   channelHubOutput :: Channel
     }
    
 --------------------------------------------------------------------------------
 -- | Capable of both sending and receiving events.
 --
 -- Use 'liftIO' if you wanna do some IO here.
-newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT BufferHub (WriterT [Listener] IO)) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader BufferHub, MonadBase IO)
+newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT ChannelHub (WriterT [Listener] IO)) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader ChannelHub, MonadBase IO)
 
 --------------------------------------------------------------------------------
 -- | Capable of only sending events.
@@ -114,18 +115,18 @@ class Publisher m where
 
 instance Publisher HandlerM where
     emit event reply = do
-        channel <- selectLocalBuffer <$> ask
+        channel <- channelHubLocal <$> ask
         writeChan channel (Event event reply)
     broadcast event reply = do
-        channel <- selectGlobalBuffer <$> ask
+        channel <- channelHubGlobal <$> ask
         writeChan channel (Event event reply)
 
 instance Publisher CallbackM where
     emit event reply = do
-        channel <- CallbackM . lift $ selectLocalBuffer . callbackEnvBufferHub <$> ask
+        channel <- CallbackM . lift $ channelHubLocal . callbackEnvChannelHub <$> ask
         writeChan channel (Event event reply)
     broadcast event reply = do
-        channel <- CallbackM . lift $ selectGlobalBuffer . callbackEnvBufferHub <$> ask
+        channel <- CallbackM . lift $ channelHubGlobal . callbackEnvChannelHub <$> ask
         writeChan channel (Event event reply)
 
 --------------------------------------------------------------------------------
