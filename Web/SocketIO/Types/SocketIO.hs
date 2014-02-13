@@ -26,32 +26,37 @@ data Configuration = Configuration
     ,   heartbeatInterval :: Int
     ,   pollingDuration :: Int
     } deriving Show
-
---------------------------------------------------------------------------------
 type Port = Int
-
---------------------------------------------------------------------------------
 type Listener = (EventName, CallbackM ())
 
 --------------------------------------------------------------------------------
-data CallbackEnv = CallbackEnv
-    {   callbackEnvPayload :: [Payload]
-    ,   callbackEnvChannelHub :: ChannelHub
-    }
-
 data ChannelHub = ChannelHub
     {   channelHubLocal :: Chan Event
     ,   channelHubGlobal :: Chan Event
     ,   channelHubOutput :: Chan Event
     ,   channelHubLog :: Chan ByteString
     }
+
+--------------------------------------------------------------------------------
+data HandlerEnv = HandlerEnv
+    {   handlerEnvChannelHub :: ChannelHub
+    ,   handlerEnvSessionID :: SessionID
+    }
+
+--------------------------------------------------------------------------------
+data CallbackEnv = CallbackEnv
+    {   callbackEnvPayload :: [Payload]
+    ,   callbackEnvChannelHub :: ChannelHub
+    ,   callbackEnvSessionID :: SessionID
+    }
+
    
 --------------------------------------------------------------------------------
 -- | Capable of both sending and receiving events.
 --
 -- Use 'liftIO' if you wanna do some IO here.
-newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT ChannelHub (WriterT [Listener] IO)) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader ChannelHub, MonadBase IO)
+newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT HandlerEnv (WriterT [Listener] IO)) a }
+    deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader HandlerEnv, MonadBase IO)
 
 --------------------------------------------------------------------------------
 -- | Capable of only sending events.
@@ -86,10 +91,10 @@ class Publisher m where
 
 instance Publisher HandlerM where
     emit event reply = do
-        channel <- channelHubLocal <$> ask
+        channel <- channelHubLocal . handlerEnvChannelHub <$> ask
         writeChan channel (Event event reply)
     broadcast event reply = do
-        channel <- channelHubGlobal <$> ask
+        channel <- channelHubGlobal . handlerEnvChannelHub <$> ask
         writeChan channel (Event event reply)
 
 instance Publisher CallbackM where

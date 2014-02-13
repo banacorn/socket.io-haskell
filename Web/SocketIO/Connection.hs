@@ -53,8 +53,8 @@ lookupSession sessionID = do
     return (H.lookup sessionID table)
 
 --------------------------------------------------------------------------------
-executeHandler :: HandlerM () -> ChannelHub -> ConnectionM [Listener]
-executeHandler handler channelHub = liftIO $ execWriterT (runReaderT (runHandlerM handler) channelHub)
+executeHandler :: HandlerM () -> ChannelHub -> SessionID -> ConnectionM [Listener]
+executeHandler handler channelHub sessionID = liftIO $ execWriterT (runReaderT (runHandlerM handler) (HandlerEnv channelHub sessionID))
 
 --------------------------------------------------------------------------------
 runConnection :: Env -> Request -> IO Message
@@ -100,7 +100,7 @@ handleConnection (Handshake, _) = do
                 channelHub <- makeChannelHub
                 handler <- getHandler
                 sessionID <- genSessionID
-                listeners <- executeHandler handler channelHub
+                listeners <- executeHandler handler channelHub sessionID
                 timeoutVar <- newEmptyMVar
 
                 return $ Session sessionID Connecting channelHub listeners timeoutVar

@@ -45,7 +45,8 @@ instance Serializable Transport where
 -- | Event
 type EventName = Text
 type Payload = Text
-data Event  = Event EventName [Payload] | NoEvent deriving (Show, Eq)
+data Event = Event EventName [Payload] | NoEvent deriving (Show, Eq)
+type Package = (SessionID, Event)
 
 instance Serializable Event where
     serialize = serialize . encode

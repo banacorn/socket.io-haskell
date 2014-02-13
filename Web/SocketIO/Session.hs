@@ -49,31 +49,33 @@ handleSession SessionPolling = do
             return MsgNoop
 
 handleSession (SessionEmit event) = do
+    sessionID <- getSessionID
     channelHub <- getChannelHub
     case event of
         Event eventName payloads -> debugSession Info $ "<---  " <> serialize eventName <> " " <> serialize payloads
         NoEvent                  -> debugSession Error $ "Event malformed"
 
-    triggerListener event channelHub
+    triggerListener event channelHub sessionID
     return $ MsgConnect NoEndpoint
 handleSession SessionDisconnect = do
+    sessionID <- getSessionID
     debugSession Info $ "Disconnected"
     channelHub <- getChannelHub
-    triggerListener (Event "disconnect" []) channelHub
+    triggerListener (Event "disconnect" []) channelHub sessionID
     return $ MsgNoop
 
 --------------------------------------------------------------------------------
-triggerListener :: Event -> ChannelHub -> SessionM ()
-triggerListener (Event event payload) channelHub = do
+triggerListener :: Event -> ChannelHub -> SessionID -> SessionM ()
+triggerListener (Event event payload) channelHub sessionID = do
     -- read
     listeners <- getListener
     -- filter out callbacks to be triggered
     let correspondingCallbacks = filter ((==) event . fst) listeners
     -- trigger them all
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
-        _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv payload channelHub)
+        _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv payload channelHub sessionID)
         return ()
-triggerListener NoEvent _ = error "trigger listeners with any events"
+triggerListener NoEvent _ _ = error "trigger listeners with any events"
 
 --------------------------------------------------------------------------------
 runSession :: SessionAction -> Session -> ConnectionM Message
