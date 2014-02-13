@@ -97,9 +97,9 @@ handleConnection (Handshake, _) = do
     
             makeSession = do
 
-                channelHub <- makeChannelHub
-                handler <- getHandler
                 sessionID <- genSessionID
+                channelHub <- makeChannelHub sessionID
+                handler <- getHandler
                 listeners <- executeHandler handler channelHub sessionID
                 timeoutVar <- newEmptyMVar
 

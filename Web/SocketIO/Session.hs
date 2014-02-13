@@ -46,12 +46,9 @@ handleSession SessionPolling = do
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- broadcast
         Just (Broadcast sessionID', Event eventName payloads) -> do
-            if sessionID /= sessionID'
-                then do
-                    debugSession Info $ "*-->  " <> serialize eventName <> " " <> serialize payloads
-                    return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
-                else do
-                    return $ MsgNoop
+            -- this log will cause massive overhead, need to be removed
+            debugSession Info $ "*-->  " <> serialize eventName <> " " <> serialize payloads
+            return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- wtf
         Just (_, NoEvent) -> do
             debugSession Error $ "No Emit"

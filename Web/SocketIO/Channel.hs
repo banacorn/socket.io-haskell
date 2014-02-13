@@ -35,8 +35,8 @@ streamToStdout channel = void . fork . forever $ do
     readChan channel >>= BC.putStrLn 
 
 --------------------------------------------------------------------------------
-makeChannelHub :: ConnectionM ChannelHub
-makeChannelHub = do
+makeChannelHub :: SessionID -> ConnectionM ChannelHub
+makeChannelHub sessionID = do
 
     globalChannel <- envGlobalChannel <$> getEnv
     logChannel <- envLogChannel <$> getEnv
@@ -47,12 +47,21 @@ makeChannelHub = do
     localChannel <- newChan
     outputChannel <- newChan
 
-    streamBothChannelTo localChannel globalChannelClone outputChannel
+    streamBothChannelTo sessionID localChannel globalChannelClone outputChannel
 
     return $ ChannelHub localChannel globalChannelClone outputChannel logChannel
 
 ------------------------------------------------------------------------------
-streamBothChannelTo :: (MonadBaseControl IO m, MonadBase IO m) => Chan a -> Chan a -> Chan a -> m ()
-streamBothChannelTo a b c = do
-    void . fork . forever $ readChan a >>= writeChan c
-    void . fork . forever $ readChan b >>= writeChan c
+streamBothChannelTo :: (MonadBaseControl IO m, MonadBase IO m) => SessionID -> Chan Package -> Chan Package -> Chan Package -> m ()
+streamBothChannelTo sessionID local global output = do
+    -- local
+    void . fork . forever $ readChan local >>= writeChan output
+    -- global, drops Broacast package if same sessionID (same origin)
+    void . fork . forever $ do
+        package <- readChan global
+        case package of
+            (Private, _) -> writeChan output package
+            (Broadcast sessionID', _) -> do
+                if sessionID /= sessionID'
+                    then writeChan output package
+                    else return ()
