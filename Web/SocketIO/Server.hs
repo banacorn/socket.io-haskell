@@ -6,14 +6,11 @@ module Web.SocketIO.Server
     ,   defaultConfig
     ) where
 
-import              Web.SocketIO.Types
+import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
+import              Web.SocketIO.Types
 
-import qualified    Data.ByteString.Char8           as BC
-import              Control.Concurrent.Chan
-import              Control.Concurrent              (forkIO)
-import              Control.Monad                   (forever)
 import              Control.Monad.Trans             (liftIO)
 import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
@@ -32,11 +29,10 @@ serverConfig port config handler = do
 
     tableRef <- newSessionTableRef
 
-    logChannel <- newChan :: IO (Chan ByteString)
-    globalChannel <- newChan :: IO (Chan Event)
+    logChannel      <- newLogChannel
+    globalChannel   <- newGlobalChannel
 
-    forkIO . forever $ do
-        readChan logChannel >>= BC.putStrLn 
+    streamToStdout logChannel
 
     let env = Env tableRef handler config logChannel globalChannel
 

@@ -6,11 +6,10 @@ import Web.SocketIO.Types
 import Web.SocketIO.Util
 
 --------------------------------------------------------------------------------
-import              Data.List                               (intersperse)
+import Data.List                               (intersperse)
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
-import Control.Concurrent.MVar.Lifted
 import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
 
@@ -35,13 +34,13 @@ handleSession SessionConnect = do
 
 handleSession SessionPolling = do
     configuration <- getConfiguration
-    channelHub <- getChannelHub
+    ChannelHub _ _ outputChannel _ <- getChannelHub
   
-    result <- timeout (pollingDuration configuration * 1000000) (readBothChannel channelHub)
+    result <- timeout (pollingDuration configuration * 1000000) (readChan outputChannel)
 
     case result of
         Just event@(Event eventName payloads) -> do
-            debugSession Info $ "<<==  " <> serialize eventName <> " " <> serialize payloads
+            debugSession Info $ "--->  " <> serialize eventName <> " " <> serialize payloads
             return $ MsgEvent NoID NoEndpoint event
         Just NoEvent -> do
             debugSession Error $ "No Emit"
@@ -49,20 +48,10 @@ handleSession SessionPolling = do
         Nothing -> do
             return MsgNoop
 
-    where   readBothChannel (ChannelHub localChannel globalChannel _ _) = do
-                output <- newEmptyMVar
-                _ <- fork (readChan localChannel >>= putMVar output)
-                _ <- fork (readChan globalChannel >>= putMVar output)
-                
-                takeMVar output
-
-
-
 handleSession (SessionEmit event) = do
     channelHub <- getChannelHub
-
     case event of
-        Event eventName payloads -> debugSession Info $ "==>>  " <> serialize eventName <> " " <> serialize payloads
+        Event eventName payloads -> debugSession Info $ "<---  " <> serialize eventName <> " " <> serialize payloads
         NoEvent                  -> debugSession Error $ "Event malformed"
 
     triggerListener event channelHub

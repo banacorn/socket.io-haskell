@@ -6,16 +6,16 @@ module Web.SocketIO.Connection
     )  where
 
 --------------------------------------------------------------------------------
+import              Web.SocketIO.Channel
+import              Web.SocketIO.Session
 import              Web.SocketIO.Types
 import              Web.SocketIO.Util
-import              Web.SocketIO.Session
 
 --------------------------------------------------------------------------------
 import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
 import              Control.Applicative                     ((<$>))
 import              Control.Concurrent.Lifted               (fork)
-import              Control.Concurrent.Chan.Lifted 
 import              Control.Concurrent.MVar.Lifted
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
@@ -94,14 +94,7 @@ handleConnection (Handshake, _) = do
 
 
     where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
-            
-            makeChannelHub = do
-                globalChannel <- envGlobalChannel <$> getEnv
-                logChannel <- envLogChannel <$> getEnv
-                globalChannelClone <- dupChan globalChannel
-                localChannel <- newChan
-                outputChannel <- newChan
-                return $ ChannelHub localChannel globalChannelClone outputChannel logChannel
+    
             makeSession = do
 
                 channelHub <- makeChannelHub
@@ -146,7 +139,7 @@ handleConnection (Disconnect sessionID, Nothing) = do
 
     return MsgNoop
 
-handleConnection (Emit sessionID _, Just (session, Connecting)) = do
+handleConnection (Emit _ _, Just (session, Connecting)) = do
     extendTimeout session
 
     debugLog Warn session "[Emit] Session still connecting" 
@@ -173,9 +166,9 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
 
     duration <- getTimeoutDuration
 
-    --if firstTime 
-    --    then debug . Debug $ fromByteString sessionID ++ "    Set Timeout"
-    --    else debug . Debug $ fromByteString sessionID ++ "    Extend Timeout"
+    if firstTime 
+        then debug Debug $ sessionID <> "    Set Timeout"
+        else debug Debug $ sessionID <> "    Extend Timeout"
     result <- timeout duration $ takeMVar timeoutVar
 
     case result of
@@ -184,7 +177,7 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
         -- die!
         Just False -> clearTimeout session
         Nothing -> do
-            --debug . Debug $ fromByteString sessionID ++ "    Close Session"
+            debug Debug $ sessionID <> "    Close Session"
             updateSession (H.delete sessionID)
 
 ----------------------------------------------------------------------------------
@@ -199,6 +192,6 @@ extendTimeout (Session _ _ _ _ timeoutVar) = do
 --------------------------------------------------------------------------------
 clearTimeout :: Session -> ConnectionM ()
 clearTimeout (Session sessionID _ _ _ timeoutVar) = do
-    --debug . Debug $ fromByteString sessionID ++ "    Clear Timeout"
+    debug Debug $ sessionID <> "    Clear Timeout"
     putMVar timeoutVar False
 
