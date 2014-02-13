@@ -40,9 +40,12 @@ handleSession SessionPolling = do
     result <- timeout (pollingDuration configuration * 1000000) (readBothChannel bufferHub)
 
     case result of
-        Just r  -> do
-            debugSession Info $ "Sending message: " <> serialize (MsgEvent NoID NoEndpoint r)
-            return $ MsgEvent NoID NoEndpoint r
+        Just event@(Event eventName payloads) -> do
+            debugSession Info $ "Emit: " <> serialize eventName <> " " <> serialize payloads
+            return $ MsgEvent NoID NoEndpoint event
+        Just NoEvent -> do
+            debugSession Error $ "No Emit"
+            return $ MsgEvent NoID NoEndpoint NoEvent
         Nothing -> do
             return MsgNoop
 
@@ -57,7 +60,10 @@ handleSession SessionPolling = do
 
 handleSession (SessionEmit event) = do
     bufferHub <- getBufferHub
-    debugSession Info $ "Recieving message"
+
+    case event of
+        Event eventName payloads -> debugSession Info $ "On: " <> serialize eventName <> " " <> serialize payloads
+        NoEvent                  -> debugSession Error $ "Event malformed"
 
     triggerListener event bufferHub
     return $ MsgConnect NoEndpoint
