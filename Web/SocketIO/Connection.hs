@@ -178,6 +178,7 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
         Just False -> clearTimeout session
         Nothing -> do
             debug Debug $ sessionID <> "    Close Session"
+            debug Info $ sessionID <> "    Disconnected by server"
             updateSession (H.delete sessionID)
 
 ----------------------------------------------------------------------------------

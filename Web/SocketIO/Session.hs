@@ -68,7 +68,7 @@ handleSession (SessionEmit event) = do
     return $ MsgConnect NoEndpoint
 handleSession SessionDisconnect = do
     sessionID <- getSessionID
-    debugSession Info $ "Disconnected"
+    debugSession Info $ "Disconnected by client"
     channelHub <- getChannelHub
     triggerListener (Event "disconnect" []) channelHub sessionID
     return $ MsgNoop
