@@ -102,8 +102,8 @@ instance Serializable Endpoint where
     serialize NoEndpoint = ""
 
 instance Serializable ID where
-    serialize (ID i) = serialize $ show i
-    serialize (IDPlus i) = serialize $ show i <> "+"
+    serialize (ID i) = serialize i
+    serialize (IDPlus i) = serialize i <> "+"
     serialize NoID = ""
 
 instance Serializable Data where
