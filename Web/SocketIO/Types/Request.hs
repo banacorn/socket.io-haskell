@@ -1,6 +1,5 @@
 --------------------------------------------------------------------------------
 -- | Types for comsuming incoming data
-
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Types.Request where
@@ -11,6 +10,7 @@ import              Web.SocketIO.Types.String
 --------------------------------------------------------------------------------
 import              Control.Applicative                     (Applicative, (<$>), (<*>))
 import              Data.Aeson                              
+import              Data.List                               (intersperse)
 
 --------------------------------------------------------------------------------
 -- | Path of incoming request
@@ -72,7 +72,7 @@ data Request    = Handshake
 
 --------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol
-data Message    = MsgRaw ByteString
+data Message    = MsgHandshake SessionID Int Int [Transport]
                 | MsgDisconnect Endpoint
                 | MsgConnect Endpoint
                 | MsgHeartbeat
@@ -111,13 +111,18 @@ instance Serializable Data where
     serialize NoData = ""
 
 instance Serializable Message where
-    serialize (MsgRaw s)                    = serialize s
+    serialize (MsgHandshake s a b t)        = serialize s <> ":" <>
+                                              serialize a' <> ":" <>
+                                              serialize b <> ":" <>
+                                              serialize transportType
+        where   transportType = fromString $ concat . intersperse "," . map serialize $ t :: ByteString
+                a' = if a == 0 then "" else show a
     serialize (MsgDisconnect NoEndpoint)    = "0"
     serialize (MsgDisconnect e)             = "0::" <> serialize e
     serialize (MsgConnect e)                = "1::" <> serialize e
     serialize MsgHeartbeat                  = "2::"
     serialize (Msg i e d)                   = "3:" <> serialize i <>
-                                                       ":" <> serialize e <>
+                                              ":" <> serialize e <>
                                               ":" <> serialize d
     serialize (MsgJSON i e d)               = "4:" <> serialize i <>
                                               ":" <> serialize e <>

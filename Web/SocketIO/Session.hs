@@ -6,7 +6,6 @@ import Web.SocketIO.Types
 import Web.SocketIO.Util
 
 --------------------------------------------------------------------------------
-import Data.List                               (intersperse)
 import Control.Monad.Reader       
 import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
@@ -20,12 +19,14 @@ handleSession SessionHandshake = do
     configuration <- getConfiguration
 
     let heartbeatTimeout' = if heartbeats configuration
-            then fromString (show (heartbeatTimeout configuration))
-            else ""
-    let closeTimeout' = fromString (show (closeTimeout configuration))
-    let transportType = mconcat . intersperse "," . map serialize $ transports configuration
+            then heartbeatTimeout configuration
+            else 0
 
-    return $ MsgRaw $ sessionID <> ":" <> heartbeatTimeout' <> ":" <> closeTimeout' <> ":" <> transportType
+    return $ MsgHandshake
+                sessionID
+                heartbeatTimeout'
+                (closeTimeout configuration)
+                (transports configuration)
     
 
 handleSession SessionConnect = do
@@ -33,7 +34,6 @@ handleSession SessionConnect = do
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
-    sessionID <- getSessionID
     configuration <- getConfiguration
     ChannelHub _ _ outputChannel _ <- getChannelHub
   
@@ -45,7 +45,7 @@ handleSession SessionPolling = do
             debugSession Info $ "--->  " <> serialize eventName <> " " <> serialize payloads
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- broadcast
-        Just (Broadcast sessionID', Event eventName payloads) -> do
+        Just (Broadcast _, Event eventName payloads) -> do
             -- this log will cause massive overhead, need to be removed
             debugSession Info $ "*-->  " <> serialize eventName <> " " <> serialize payloads
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)

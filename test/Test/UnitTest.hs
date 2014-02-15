@@ -8,6 +8,7 @@ import qualified    Test.Framework                          as Framework
 import              Test.Framework
 import              Test.HUnit
 import              Test.Framework.Providers.HUnit
+import              Control.Applicative                     ((<$>))
 import              Control.Concurrent.Chan
 import              Control.Concurrent                      (threadDelay)
 --import              Control.Monad                           (forever)
@@ -16,6 +17,7 @@ import              Data.IORef                              (readIORef)
 import qualified    Data.HashMap.Strict                     as H
 
 import              Web.SocketIO.Types
+import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 
 testConfig :: Configuration
@@ -32,20 +34,16 @@ testConfig = Configuration
 makeEnvironment :: IO Env
 makeEnvironment = do 
 
-    tableRef <- newSessionTable
+    tableRef <- newSessionTableRef
 
     let handler = return ()
 
-    stdout <- newChan :: IO (Chan String)
+    logChhannel <- newLogChannel
+    globalChannel <- newGlobalChannel
 
-    globalChannel <- newChan :: IO (Buffer)
+    return $ Env tableRef handler testConfig logChhannel globalChannel
 
-    --forkIO . forever $ do
-    --    readChan stdout >>= putStrLn 
-
-    return $ Env tableRef handler testConfig stdout globalChannel
-
-run :: Env -> Request -> IO ByteString
+run :: Env -> Request -> IO Message
 run env req = runConnection env req
 
 -- The body of the response should contain the session id (sid) given to
@@ -57,7 +55,7 @@ run env req = runConnection env req
 testWellFormedHandShake :: Assertion
 testWellFormedHandShake = do
     env <- makeEnvironment
-    res <- run env Handshake
+    res <- serialize <$> run env Handshake
     expectedHandshakeResponse env @=? (B.drop 20 res)
 
 expectedHandshakeResponse :: Env -> ByteString
@@ -73,12 +71,12 @@ expectedHandshakeResponse env =  ":" <> heartbeatTimeout'
 
 sessionTableSize :: Env -> IO Int
 sessionTableSize env = do
-    table <- readIORef (envSessionTable env)
+    table <- readIORef (envSessionTableRef env)
     return (H.size table)
 
 sessionLookup :: Env -> SessionID -> IO (Maybe Session)
 sessionLookup env sessionID = do
-    table <- readIORef (envSessionTable env)
+    table <- readIORef (envSessionTableRef env)
     return (H.lookup sessionID table)
 
 testHandShakeSession :: Assertion
