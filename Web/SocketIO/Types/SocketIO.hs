@@ -65,7 +65,6 @@ newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT HandlerEnv (WriterT [Lis
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Event] (ReaderT CallbackEnv IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Event], MonadReader CallbackEnv, MonadBase IO)
 
-
 --------------------------------------------------------------------------------
 -- | Sending events
 class Publisher m where

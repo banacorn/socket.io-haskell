@@ -8,6 +8,6 @@ import qualified Test.Simulator
 main :: IO ()
 main = defaultMain
     [ Test.Protocol.test
-    , Test.Simulator.test
+    --, Test.Simulator.test
     --, Test.UnitTest.test
     ]

@@ -5,26 +5,28 @@
 module Test.Simulator where
 
 import qualified    Test.Framework                          as Framework
---import              Test.Framework
 import              Test.Framework.Providers.QuickCheck2
 import              Test.QuickCheck
 import              Test.QuickCheck.Monadic
 
 import              Control.Applicative                     ((<$>))
-import              Control.Concurrent.Chan                 (Chan, newChan)
 --import              Control.Concurrent                      (threadDelay)
-----import              Control.Monad                           (forever)
+import              Control.Monad.Writer
+import              Control.Monad.Reader
 --import              Data.IORef                              (readIORef)
 --import qualified    Data.HashMap.Strict                     as H
+import qualified    Data.ByteString                         as B
+import              System.IO.Unsafe                        (unsafePerformIO)
 
 import              Web.SocketIO.Types
 import              Web.SocketIO.Connection
+import              Web.SocketIO.Channel
 
 data Operation = OpConnect 
                | OpDisconnect 
-               | OpEmit Emitter
+               | OpEmit Event
                deriving Show
-data Scheme = Scheme [Event] [Operation] deriving Show
+data Scheme = Scheme [EventName] [Operation] deriving Show
 
 --instance Arbitrary SessionID where
 --    arbitrary = fromString <$> vectorOf 20 (elements alphaNum)
@@ -33,47 +35,51 @@ data Scheme = Scheme [Event] [Operation] deriving Show
 --                        ++ ['0' .. '9']
 
 
-instance Arbitrary Event where
+instance Arbitrary EventName where
     arbitrary = fromString . (:) '#' <$> vectorOf 4 (elements ['a' .. 'z'])
 
 arbitraryPayload :: Gen Payload
 arbitraryPayload = fromString . (:) '>' <$> vectorOf 10 (elements ['a' .. 'z'])
 
-arbitraryEmitter :: [Event] -> Gen Emitter
-arbitraryEmitter [] = do
+arbitraryEvent :: [EventName] -> Gen Event
+arbitraryEvent [] = do
         payloads <- listOf arbitraryPayload
-        return (Emitter "#####" payloads)
-arbitraryEmitter events = do
-        event <- elements events
+        return (Event "#####" payloads)
+arbitraryEvent eventNames = do
+        event <- elements eventNames
         payloads <- listOf arbitraryPayload
-        return (Emitter event payloads)
+        return (Event event payloads)
 
-arbitraryOperation :: [Event] -> Gen Operation
-arbitraryOperation events = do
-    emitter <- arbitraryEmitter events
+arbitraryOperation :: [EventName] -> Gen Operation
+arbitraryOperation eventNames = do
+    event <- arbitraryEvent eventNames
     frequency
         [ (1, elements [OpConnect, OpDisconnect])
-        , (2, elements [OpEmit emitter])
+        , (2, elements [OpEmit event])
         ]
 
 instance Arbitrary Scheme where
-    arbitrary = oneof [illformed, wellformed]
-        where   illformed = do
-                    events <- arbitrary
-                    operations <- listOf (arbitraryOperation events)
-                    return (Scheme events operations)
-                wellformed = do
-                    events <- arbitrary
-                    operations <- map OpEmit <$> listOf (arbitraryEmitter events)
-                    return (Scheme events ([OpConnect] ++ operations ++ [OpDisconnect]))
+    arbitrary = oneof [wellformed]
+        where   wellformed = do
+                    eventNames <- arbitrary
+                    operations <- map OpEmit <$> listOf (arbitraryEvent eventNames)
+                    return (Scheme eventNames ([OpConnect] ++ operations ++ [OpDisconnect]))
+                --illformed = do
+                --    eventNames <- arbitrary
+                --    operations <- listOf (arbitraryOperation eventNames)
+                --    return (Scheme eventNames operations)
+
+instance Arbitrary (HandlerM a) where
+    arbitrary = undefined
+
 e :: IO ()
 e = sample (arbitraryOperation ["#aaaa", "#bbbb", "#cccc"])
 
-s :: IO ()
-s = sample (arbitrary :: Gen Scheme) 
+--s :: IO ()
+--s = sample (arbitrary :: Gen (Listener))
 
 scheme :: Scheme
-scheme = Scheme ["#rema","#gbdj","#dznb"] [OpEmit (Emitter "#dznb" [">pfbgqwosid",">hqrcrqtcwh",">sggwvouqay",">hehbufiurw",">gglzbulmil",">iakgpxnjuc",">mirutplyvh",">kqfyugqqjx",">rejabcrkqy",">gidxxtmlag",">jzbdzgmbsd",">bxnemodtfc",">zmoyuyvhee"])]
+scheme = Scheme ["#rema","#gbdj","#dznb"] [OpEmit (Event "#dznb" [">pfbgqwosid",">hqrcrqtcwh",">sggwvouqay",">hehbufiurw",">gglzbulmil",">iakgpxnjuc",">mirutplyvh",">kqfyugqqjx",">rejabcrkqy",">gidxxtmlag",">jzbdzgmbsd",">bxnemodtfc",">zmoyuyvhee"])]
 
 
 
@@ -91,7 +97,7 @@ testConfig = Configuration
     ,   closeTimeout = 2
     ,   heartbeatTimeout = 60
     ,   heartbeatInterval = 25
-    ,   pollingDuration = 20
+    ,   pollingDuration = 1
     }
 
 makeEnvironment :: IO Env
@@ -101,33 +107,38 @@ makeEnvironment = do
 
     let handler = return ()
 
-    stdout <- newChan :: IO (Chan String)
+    logChhannel <- newLogChannel
+    globalChannel <- newGlobalChannel
 
-    globalChannel <- newChan :: IO (Buffer)
+    --streamToStdout logChhannel
 
-    --forkIO . forever $ do
-    --    readChan stdout >>= putStrLn 
-
-    return $ Env tableRef handler testConfig stdout globalChannel
+    return $ Env tableRef handler testConfig logChhannel globalChannel
 
 
 runScheme :: Scheme -> IO Bool
-runScheme (Scheme _ _) = do
+runScheme (Scheme _ operations) = do
 
-    _ <- makeEnvironment
+    env <- makeEnvironment
 
-    --sessionID <- B.take 20 <$> runConnection env Handshake
+    MsgRaw raw <- runConnection env Handshake
+    let sessionID = B.take 20 raw
 
-    --res <- mapM (runConnection env . translate sessionID) operations
-    --print res
+    res <- mapM (runConnection env . translate sessionID) operations
+    print res
 
     return True
 
-
+a :: Scheme
+a = Scheme [] [OpConnect, OpConnect]
 
 testScheme :: Property
-testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
+testScheme = monadicIO $ do
+    run $ runScheme a
+--testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
 
 test :: Framework.Test
---test = undefined
 test = testProperty "Schemes" testScheme
+--test = undefined
+
+go :: IO Bool
+go = runScheme a

@@ -37,11 +37,11 @@ instance Arbitrary Data where
 instance Arbitrary Text where
     arbitrary = fmap fromString arbitrary
 
-instance Arbitrary Emitter where
+instance Arbitrary Event where
     arbitrary = do
-        event <- arbitrary
+        eventName <- arbitrary
         payloads <- listOf arbitrary
-        elements [NoEmitter, Emitter event payloads]
+        elements [NoEvent, Event eventName payloads]
 
 instance Arbitrary Message where
     arbitrary = do
