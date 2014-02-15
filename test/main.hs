@@ -3,11 +3,11 @@ module Main where
 import Test.Framework (defaultMain)
 import qualified Test.Protocol
 import qualified Test.Simulator
---import qualified Test.UnitTest
+import qualified Test.Unit
 
 main :: IO ()
 main = defaultMain
     [ Test.Protocol.test
     --, Test.Simulator.test
-    --, Test.UnitTest.test
+    , Test.Unit.test
     ]

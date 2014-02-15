@@ -15,7 +15,6 @@ import              Control.Monad.Writer
 import              Control.Monad.Reader
 --import              Data.IORef                              (readIORef)
 --import qualified    Data.HashMap.Strict                     as H
-import qualified    Data.ByteString                         as B
 import              System.IO.Unsafe                        (unsafePerformIO)
 
 import              Web.SocketIO.Types
@@ -79,7 +78,7 @@ e = sample (arbitraryOperation ["#aaaa", "#bbbb", "#cccc"])
 --s = sample (arbitrary :: Gen (Listener))
 
 scheme :: Scheme
-scheme = Scheme ["#rema","#gbdj","#dznb"] [OpEmit (Event "#dznb" [">pfbgqwosid",">hqrcrqtcwh",">sggwvouqay",">hehbufiurw",">gglzbulmil",">iakgpxnjuc",">mirutplyvh",">kqfyugqqjx",">rejabcrkqy",">gidxxtmlag",">jzbdzgmbsd",">bxnemodtfc",">zmoyuyvhee"])]
+scheme = Scheme ["#rema","#gbdj","#dznb"] [OpEmit (Event "#dznb" [">pfbgqwosid",">hqrcrqtcwh",">sggwvouqay"])]
 
 
 
@@ -120,8 +119,7 @@ runScheme (Scheme _ operations) = do
 
     env <- makeEnvironment
 
-    MsgRaw raw <- runConnection env Handshake
-    let sessionID = B.take 20 raw
+    MsgHandshake sessionID _ _ _ <- runConnection env Handshake
 
     res <- mapM (runConnection env . translate sessionID) operations
     print res
