@@ -4,12 +4,15 @@
 
 module Test.Unit.Session where
 
+--------------------------------------------------------------------------------
 import qualified    Test.Framework                          as Framework
 import              Test.Framework
 import              Test.HUnit
 import              Test.Framework.Providers.HUnit
+import              Control.Concurrent                      (threadDelay)
 import              Data.IORef                              (readIORef)
 import qualified    Data.HashMap.Strict                     as H
+--------------------------------------------------------------------------------
 
 import              Web.SocketIO.Types
 import              Web.SocketIO.Channel
@@ -20,7 +23,7 @@ testConfig = Configuration
     {   transports = [XHRPolling]
     ,   logLevel = 3
     ,   heartbeats = True
-    ,   closeTimeout = 2
+    ,   closeTimeout = 1
     ,   heartbeatTimeout = 60
     ,   heartbeatInterval = 25
     ,   pollingDuration = 20
@@ -69,10 +72,10 @@ testHandshake = do
         _ -> assertFailure "session not found"
 
     -- timeout
-    --let closeTimeout' = closeTimeout (envConfiguration env)
-    --threadDelay (closeTimeout' * 1000000 + 1000000)
-    --size'' <- sessionTableSize env
-    --assertEqual "number of sessions after handshake closing timeout" 0 size''
+    let closeTimeout' = closeTimeout (envConfiguration env)
+    threadDelay (closeTimeout' * 1000000 + 10000)
+    size'' <- sessionTableSize env
+    assertEqual "number of sessions after handshake closing timeout" 0 size''
 --------------------------------------------------------------------------------
 testConnect :: Assertion
 testConnect = do
@@ -88,12 +91,12 @@ testConnect = do
             assertEqual "session status" Connected s
         _ -> assertFailure "session not found"
 
-    ---- timeout
-    --let closeTimeout' = closeTimeout (envConfiguration env)
-    --threadDelay (closeTimeout' * 1000000 + 1000000)
+    -- timeout
+    let closeTimeout' = closeTimeout (envConfiguration env)
+    threadDelay (closeTimeout' * 1000000 + 10000)
 
-    --size <- sessionTableSize env
-    --assertEqual "number of sessions after connect closing timeout" 0 size
+    size <- sessionTableSize env
+    assertEqual "number of sessions after connect closing timeout" 0 size
 
 --------------------------------------------------------------------------------
 testDisconnect :: Assertion
@@ -112,7 +115,7 @@ testDisconnect = do
         _ -> return ()
 
     size <- sessionTableSize env
-    assertEqual "number of sessions after disconnected" 0 size
+    assertEqual "number of sessions after client force disconnected" 0 size
 --------------------------------------------------------------------------------
 test :: Framework.Test
 test = testGroup "Session" 
