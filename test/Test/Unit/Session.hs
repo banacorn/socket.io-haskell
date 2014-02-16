@@ -8,7 +8,6 @@ import qualified    Test.Framework                          as Framework
 import              Test.Framework
 import              Test.HUnit
 import              Test.Framework.Providers.HUnit
-import              Control.Concurrent                      (threadDelay)
 import              Data.IORef                              (readIORef)
 import qualified    Data.HashMap.Strict                     as H
 

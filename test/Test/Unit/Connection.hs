@@ -41,7 +41,8 @@ testHandshake :: Assertion
 testHandshake = do
     env <- makeEnvironment
     MsgHandshake _ a b t <- runConnection env Handshake
-    expectedResponse env @=? (MsgHandshake "" a b t)
+    assertEqual "respond with " (expectedResponse env) (MsgHandshake "" a b t)
+
     where   expectedResponse env = MsgHandshake "" heartbeatTimeout' closeTimeout' transports'
                 where   config = envConfiguration env
                         heartbeatTimeout' = if heartbeats config 
@@ -54,21 +55,32 @@ testConnect :: Assertion
 testConnect = do
     env <- makeEnvironment
     MsgHandshake sessionID _ _ _ <- runConnection env Handshake
-    res' <- runConnection env (Connect sessionID)
-    assertEqual "response with 1::" "1::" (serialize res' :: ByteString)
+    res <- runConnection env (Connect sessionID)
+    assertEqual "respond with (MsgConnect NoEndpoint)" (MsgConnect NoEndpoint) res
+
+--------------------------------------------------------------------------------
+testEmit :: Assertion
+testEmit = do
+    env <- makeEnvironment
+    MsgHandshake sessionID _ _ _ <- runConnection env Handshake
+    runConnection env (Connect sessionID)
+    res <- runConnection env (Emit sessionID (Event "event name" ["payload"]))
+    assertEqual "respond with (MsgConnect NoEndpoint)" (MsgConnect NoEndpoint) (res)
     
+--------------------------------------------------------------------------------
 testDisconnect :: Assertion
 testDisconnect = do
     env <- makeEnvironment
     MsgHandshake sessionID _ _ _ <- runConnection env Handshake
     runConnection env (Connect sessionID)
-    res' <- runConnection env (Disconnect sessionID)
-    assertEqual "response with Noop" "8:::" (serialize res' :: ByteString)
+    res <- runConnection env (Disconnect sessionID)
+    assertEqual "respond with MsgNoop" MsgNoop res
 
 --------------------------------------------------------------------------------
 test :: Framework.Test
 test = testGroup "Connection" 
     [ testCase "Handshake"  testHandshake
     , testCase "Connect"    testConnect
+    , testCase "Emit"       testEmit
     , testCase "Disconnect" testDisconnect
     ]
