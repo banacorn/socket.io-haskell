@@ -7,10 +7,10 @@ module Web.SocketIO.Types.Base
     ,   module Web.SocketIO.Types.Request
     ,   module Web.SocketIO.Types.SocketIO
     ,   module Web.SocketIO.Types.String
-    ,   ConnectionM(..)
-    ,   SessionM(..)
-    ,   ConnectionLayer(..)
-    ,   SessionLayer(..)
+    --,   ConnectionM(..)
+    --,   SessionM(..)
+    --,   ConnectionLayer(..)
+    --,   SessionLayer(..)
     ,   Env(..)
     ,   Session(..)
     ,   SessionState(..)
@@ -54,41 +54,6 @@ data Env = Env {
 }
 
 --------------------------------------------------------------------------------
-class ConnectionLayer m where
-    getEnv :: m Env
-    getSessionTableRef :: m (IORef Table)
-    getHandler :: m (HandlerM ())
-    getConfiguration :: m Configuration
-
---------------------------------------------------------------------------------
-class SessionLayer m where
-    getSession :: m Session
-    getSessionID :: m SessionID
-    getSessionState :: m SessionState
-    getChannelHub :: m ChannelHub
-    --getLocalChannel :: m Buffer
-    --getGlobalBuffer :: m Buffer
-    getListener :: m [Listener]
-    getTimeoutVar :: m (MVar Bool)
-
---------------------------------------------------------------------------------
-newtype ConnectionM a = ConnectionM { runConnectionM :: ReaderT Env IO a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadReader Env, MonadBase IO)
-
---------------------------------------------------------------------------------
-instance ConnectionLayer ConnectionM where
-    getEnv = ask
-    getSessionTableRef = envSessionTableRef <$> ask
-    getHandler = envHandler <$> ask
-    getConfiguration = envConfiguration <$> ask
-
---------------------------------------------------------------------------------
-instance (MonadBaseControl IO) ConnectionM where
-    newtype StM ConnectionM a = StMConnection { unStMConnection :: StM (ReaderT Env IO) a }
-    liftBaseWith f = ConnectionM (liftBaseWith (\run -> f (liftM StMConnection . run . runConnectionM)))
-    restoreM = ConnectionM . restoreM . unStMConnection
-
---------------------------------------------------------------------------------
 data Session = Session { 
     sessionSessionID :: SessionID, 
     sessionState :: SessionState, 
@@ -101,31 +66,3 @@ instance Show Session where
     show (Session i s _ _ _) = "Session " 
                             ++ fromByteString i 
                             ++ " [" ++ show s ++ "]"
-
---------------------------------------------------------------------------------
-newtype SessionM a = SessionM { runSessionM :: (ReaderT Session ConnectionM) a }
-    deriving (Monad, Functor, Applicative, MonadIO, MonadReader Session, MonadBase IO)
-
---------------------------------------------------------------------------------
-instance ConnectionLayer SessionM where
-    getEnv = SessionM (lift ask)
-    getSessionTableRef = envSessionTableRef <$> getEnv
-    getHandler = envHandler <$> getEnv
-    getConfiguration = envConfiguration <$> getEnv
-
---------------------------------------------------------------------------------
-instance SessionLayer SessionM where
-    getSession = ask
-    getSessionID = sessionSessionID <$> ask
-    getSessionState = sessionState <$> ask
-    getChannelHub = sessionChannelHub <$> ask
-    --getLocalBuffer = selectLocalBuffer . sessionBufferHub <$> ask
-    --getGlobalBuffer = selectGlobalBuffer . sessionBufferHub <$> ask
-    getListener = sessionListener <$> ask
-    getTimeoutVar = sessionTimeoutVar <$> ask
-
---------------------------------------------------------------------------------
-instance (MonadBaseControl IO) SessionM where
-    newtype StM SessionM a = StMSession { unStMSession :: StM (ReaderT Session ConnectionM) a }
-    liftBaseWith f = SessionM (liftBaseWith (\run -> f (liftM StMSession . run . runSessionM)))
-    restoreM = SessionM . restoreM . unStMSession
