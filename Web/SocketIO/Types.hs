@@ -7,7 +7,6 @@ module Web.SocketIO.Types
     ,   module Web.SocketIO.Types.Layer
     ,   module Web.SocketIO.Types.Log
     ,   module Web.SocketIO.Types.Request
-    ,   module Web.SocketIO.Types.SocketIO
     ,   module Web.SocketIO.Types.String
     ) where
 
@@ -17,4 +16,3 @@ import              Web.SocketIO.Types.Request
 import              Web.SocketIO.Types.Layer
 import              Web.SocketIO.Types.Log
 import              Web.SocketIO.Types.String
-import              Web.SocketIO.Types.SocketIO

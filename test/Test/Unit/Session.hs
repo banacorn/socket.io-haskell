@@ -73,7 +73,7 @@ testHandshake = do
 
     -- timeout
     let closeTimeout' = closeTimeout (envConfiguration env)
-    threadDelay (closeTimeout' * 1000000 + 10000)
+    threadDelay (closeTimeout' * 1000000 + 1000000)
     size'' <- sessionTableSize env
     assertEqual "number of sessions after handshake closing timeout" 0 size''
 --------------------------------------------------------------------------------
@@ -93,7 +93,7 @@ testConnect = do
 
     -- timeout
     let closeTimeout' = closeTimeout (envConfiguration env)
-    threadDelay (closeTimeout' * 1000000 + 10000)
+    threadDelay (closeTimeout' * 1000000 + 1000000)
 
     size <- sessionTableSize env
     assertEqual "number of sessions after connect closing timeout" 0 size

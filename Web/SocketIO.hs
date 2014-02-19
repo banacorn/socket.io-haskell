@@ -22,6 +22,8 @@ module Web.SocketIO
         -- >    -- do some IO
         -- >    on "Kim Jong-Un" $ liftIO launchMissile
         -- >        
+        -- >    -- broadcast
+        -- >    broadcast "UN" "North Korea is best Korea"
 
         -- * Running a standalone server
         server
@@ -36,6 +38,7 @@ module Web.SocketIO
     ,   Publisher(..)
     ,   reply
     ,   Event
+    ,   SessionID
 
         -- ** Special events
         -- | On disconnection

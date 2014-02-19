@@ -6,17 +6,15 @@ module Web.SocketIO.Types.Request where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
+import              Web.SocketIO.Types.Base
 
 --------------------------------------------------------------------------------
-import              Control.Applicative                     (Applicative, (<$>), (<*>))
-import              Data.Aeson                              
 import              Data.List                               (intersperse)
 
 --------------------------------------------------------------------------------
 -- | Path of incoming request
 type Namespace = ByteString
 type Protocol = ByteString
-type SessionID = ByteString 
 
 data Path   = WithSession    Namespace Protocol Transport SessionID
             | WithoutSession Namespace Protocol
@@ -32,35 +30,7 @@ instance Serializable Path where
                                    <> "/" <> serialize p 
                                    <> "/"
 
---------------------------------------------------------------------------------
--- | Now only xhr-polling is supported.
-data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
 
-instance Serializable Transport where
-    serialize WebSocket = "websocket" 
-    serialize XHRPolling = "xhr-polling" 
-    serialize NoTransport = "unknown" 
-
---------------------------------------------------------------------------------
--- | Event
-type EventName = Text
-type Payload = Text
-data Event = Event EventName [Payload] | NoEvent deriving (Show, Eq)
-data EventType = Private | Broadcast SessionID deriving (Show, Eq)
-type Package = (EventType, Event)
-
-instance Serializable Event where
-    serialize = serialize . encode
-
-instance FromJSON Event where
-    parseJSON (Object v) =  Event <$>
-                            v .: "name" <*>
-                            v .: "args"
-    parseJSON _ = return NoEvent
-
-instance ToJSON Event where
-   toJSON (Event name args) = object ["name" .= name, "args" .= args]
-   toJSON NoEvent = object []
 
 --------------------------------------------------------------------------------
 -- | Incoming request
