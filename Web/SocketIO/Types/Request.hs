@@ -7,6 +7,7 @@ module Web.SocketIO.Types.Request where
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.String
 import              Web.SocketIO.Types.Base
+import              Web.SocketIO.Types.Event
 
 --------------------------------------------------------------------------------
 import              Data.List                               (intersperse)

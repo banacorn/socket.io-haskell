@@ -4,18 +4,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Types.Base where
---module Web.SocketIO.Types.Base
---    (   Env(..)
---    ,   Session(..)
---    ,   SessionID
---    ,   SessionState(..)
---    ,   SessionAction(..)
---    ,   Table
---    ) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.Log
 import              Web.SocketIO.Types.String
+import              Web.SocketIO.Types.Event
 
 --------------------------------------------------------------------------------
 import              Control.Applicative
@@ -24,8 +17,6 @@ import              Control.Concurrent.Chan.Lifted
 import              Control.Monad.Reader       
 import              Control.Monad.Writer
 import              Control.Monad.Base
-
-import              Data.Aeson                              
 import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
 
@@ -167,28 +158,7 @@ class Subscriber m where
 instance Subscriber HandlerM where
     on event callback = do
         HandlerM . lift . tell $ [(event, callback)]
-
---------------------------------------------------------------------------------
--- | Event
-type EventName = Text
-type Payload = Text
-data Event = Event EventName [Payload] | NoEvent deriving (Show, Eq)
-data EventType = Private | Broadcast SessionID deriving (Show, Eq)
-type Package = (EventType, Event)
-
-instance Serializable Event where
-    serialize = serialize . encode
-
-instance FromJSON Event where
-    parseJSON (Object v) =  Event <$>
-                            v .: "name" <*>
-                            v .: "args"
-    parseJSON _ = return NoEvent
-
-instance ToJSON Event where
-   toJSON (Event name args) = object ["name" .= name, "args" .= args]
-   toJSON NoEvent = object []
-   
+  
 --------------------------------------------------------------------------------
 -- | Now only xhr-polling is supported.
 data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
