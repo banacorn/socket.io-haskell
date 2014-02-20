@@ -78,6 +78,10 @@ type Port = Int
 type Listener = (EventName, CallbackM ())
 
 --------------------------------------------------------------------------------
+class HasSessionID m where
+    getSessionID :: m SessionID
+
+--------------------------------------------------------------------------------
 data HandlerEnv = HandlerEnv
     {   handlerEnvChannelHub :: ChannelHub
     ,   handlerEnvSessionID :: SessionID
@@ -98,12 +102,18 @@ data CallbackEnv = CallbackEnv
 newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT HandlerEnv (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader HandlerEnv, MonadBase IO)
 
+--instance HasSessionID HandlerM where
+--    getSessionID = handlerEnvSessionID <$> ask
+
 --------------------------------------------------------------------------------
 -- | Capable of only sending events.
 --
 -- Use 'liftIO' if you wanna do some IO here.
 newtype CallbackM a = CallbackM { runCallbackM :: (WriterT [Event] (ReaderT CallbackEnv IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Event], MonadReader CallbackEnv, MonadBase IO)
+
+instance HasSessionID CallbackM where
+    getSessionID = CallbackM . lift $ callbackEnvSessionID <$> ask
 
 --------------------------------------------------------------------------------
 -- | Sending events

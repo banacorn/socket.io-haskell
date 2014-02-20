@@ -7,6 +7,7 @@ module Web.SocketIO.Types.Layer
     ,   SessionM(..)
     ,   ConnectionLayer(..)
     ,   SessionLayer(..)
+    ,   HasSessionID(..)
     ) where
 
 ----------------------------------------------------------------------------------
@@ -30,7 +31,6 @@ class ConnectionLayer m where
 --------------------------------------------------------------------------------
 class SessionLayer m where
     getSession :: m Session
-    getSessionID :: m SessionID
     getSessionState :: m SessionState
     getChannelHub :: m ChannelHub
     getListener :: m [Listener]
@@ -67,11 +67,14 @@ instance ConnectionLayer SessionM where
 --------------------------------------------------------------------------------
 instance SessionLayer SessionM where
     getSession = ask
-    getSessionID = sessionSessionID <$> ask
     getSessionState = sessionState <$> ask
     getChannelHub = sessionChannelHub <$> ask
     getListener = sessionListener <$> ask
     getTimeoutVar = sessionTimeoutVar <$> ask
+
+--------------------------------------------------------------------------------
+instance HasSessionID SessionM where
+    getSessionID = sessionSessionID <$> getSession
 
 --------------------------------------------------------------------------------
 instance (MonadBaseControl IO) SessionM where
