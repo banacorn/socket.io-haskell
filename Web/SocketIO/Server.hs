@@ -32,7 +32,7 @@ serverConfig port config handler = do
     logChannel      <- newLogChannel
     globalChannel   <- newGlobalChannel
 
-    streamToStdout logChannel
+    streamToStderr logChannel
 
     let env = Env tableRef handler config logChannel globalChannel
 

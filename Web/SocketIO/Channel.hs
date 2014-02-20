@@ -4,7 +4,7 @@
 module Web.SocketIO.Channel 
     (   newGlobalChannel
     ,   newLogChannel
-    ,   streamToStdout
+    ,   streamToStderr
     ,   streamBothChannelTo
     ,   makeChannelHub
     ) where
@@ -20,7 +20,7 @@ import              Control.Monad                           (forever, void)
 import              Control.Monad.Base                      (MonadBase)
 import              Control.Monad.Trans.Control             (MonadBaseControl)
 import qualified    Data.ByteString.Char8                   as BC
-
+import              System.IO                               (stderr)
 --------------------------------------------------------------------------------
 newGlobalChannel :: MonadBase IO m => m (Chan Package)
 newGlobalChannel = newChan
@@ -30,9 +30,9 @@ newLogChannel :: MonadBase IO m => m (Chan ByteString)
 newLogChannel = newChan
 
 --------------------------------------------------------------------------------
-streamToStdout :: Chan ByteString -> IO ()
-streamToStdout channel = void . fork . forever $ do
-    readChan channel >>= BC.putStrLn 
+streamToStderr :: Chan ByteString -> IO ()
+streamToStderr channel = void . fork . forever $ do
+    readChan channel >>= BC.hPutStrLn stderr
 
 --------------------------------------------------------------------------------
 makeChannelHub :: SessionID -> ConnectionM ChannelHub
