@@ -89,7 +89,8 @@ data HandlerEnv = HandlerEnv
 
 --------------------------------------------------------------------------------
 data CallbackEnv = CallbackEnv
-    {   callbackEnvPayload :: [Payload]
+    {   callbackEnvEventName :: EventName
+    ,   callbackEnvPayload :: [Payload]
     ,   callbackEnvChannelHub :: ChannelHub
     ,   callbackEnvSessionID :: SessionID
     }

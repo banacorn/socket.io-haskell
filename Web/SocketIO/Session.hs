@@ -75,14 +75,14 @@ handleSession SessionDisconnect = do
 
 --------------------------------------------------------------------------------
 triggerListener :: Event -> ChannelHub -> SessionID -> SessionM ()
-triggerListener (Event event payload) channelHub sessionID = do
+triggerListener (Event eventName payload) channelHub sessionID = do
     -- read
     listeners <- getListener
     -- filter out callbacks to be triggered
-    let correspondingCallbacks = filter ((==) event . fst) listeners
+    let correspondingCallbacks = filter ((==) eventName . fst) listeners
     -- trigger them all
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
-        _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv payload channelHub sessionID)
+        _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv eventName payload channelHub sessionID)
         return ()
 triggerListener NoEvent _ _ = error "trigger listeners with any events"
 

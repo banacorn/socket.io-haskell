@@ -37,6 +37,7 @@ module Web.SocketIO
     ,   Subscriber(..)
     ,   Publisher(..)
     ,   reply
+    ,   getEventName
     ,   Event
     ,   SessionID
 

@@ -17,3 +17,8 @@ import Control.Monad.Reader
 -- @
 reply :: CallbackM [Payload]
 reply = callbackEnvPayload <$> ask
+
+--------------------------------------------------------------------------------
+-- | name of the event
+getEventName :: CallbackM EventName
+getEventName = callbackEnvEventName <$> ask
