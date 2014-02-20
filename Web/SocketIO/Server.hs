@@ -16,7 +16,6 @@ import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
 
-
 --------------------------------------------------------------------------------
 -- | Run a socket.io application, build on top of Warp.
 server :: Port -> HandlerM () -> IO ()
@@ -32,7 +31,7 @@ serverConfig port config handler = do
     logChannel      <- newLogChannel
     globalChannel   <- newGlobalChannel
 
-    streamToStderr logChannel
+    streamToHandle (logTo config) logChannel
 
     let env = Env tableRef handler config logChannel globalChannel
 
@@ -63,6 +62,7 @@ defaultConfig :: Configuration
 defaultConfig = Configuration
     {   transports = [XHRPolling]
     ,   logLevel = 3
+    ,   logTo = stderr
     ,   heartbeats = True
     ,   closeTimeout = 60
     ,   heartbeatTimeout = 60

@@ -22,6 +22,7 @@ testConfig :: Configuration
 testConfig = Configuration
     {   transports = [XHRPolling]
     ,   logLevel = 3
+    ,   logTo = stderr
     ,   heartbeats = True
     ,   closeTimeout = 1
     ,   heartbeatTimeout = 60

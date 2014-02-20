@@ -19,6 +19,7 @@ import              Control.Monad.Writer
 import              Control.Monad.Base
 import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
+import              System.IO                               (Handle)
 
 --------------------------------------------------------------------------------
 type Table = H.HashMap SessionID Session 
@@ -65,6 +66,7 @@ data ChannelHub = ChannelHub
 data Configuration = Configuration
     {   transports :: [Transport]
     ,   logLevel :: Int
+    ,   logTo :: Handle
     ,   heartbeats :: Bool
     ,   closeTimeout :: Int
     ,   heartbeatTimeout :: Int
