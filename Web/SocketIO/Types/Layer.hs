@@ -27,7 +27,7 @@ import              Data.IORef.Lifted
 -- | Getters for Connection Layer
 class ConnectionLayer m where
     getEnv :: m Env
-    getSessionTableRef :: m (IORef Table)
+    getSessionTableRef :: m (IORef SessionTable)
     getHandler :: m (HandlerM ())
     getConfiguration :: m Configuration
 

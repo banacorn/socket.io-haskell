@@ -1,3 +1,5 @@
+--------------------------------------------------------------------------------
+-- | Cluster fuck of unorganized data types
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -22,32 +24,14 @@ import              Data.IORef.Lifted
 import              System.IO                               (Handle)
 
 --------------------------------------------------------------------------------
-type Table = H.HashMap SessionID Session 
-data SessionState = Connecting | Connected deriving (Show, Eq)
-data SessionAction   = SessionHandshake
-                     | SessionConnect
-                     | SessionPolling
-                     | SessionEmit Event
-                     | SessionDisconnect
-
---------------------------------------------------------------------------------
-data Env = Env { 
-    envSessionTableRef :: IORef Table, 
-    envHandler :: HandlerM (), 
-    envConfiguration :: Configuration,
-    envLogChannel :: Chan ByteString,
-    envGlobalChannel :: Chan Package
-}
-
---------------------------------------------------------------------------------
-type SessionID = ByteString 
-data Session = Session { 
-    sessionSessionID :: SessionID, 
-    sessionState :: SessionState, 
-    sessionChannelHub :: ChannelHub, 
-    sessionListener :: [Listener],
-    sessionTimeoutVar :: MVar Bool
-}
+-- | Information of a individual client; established after `Web.SocketIO.Types.Request.Handshake`, torn down after `Web.SocketIO.Types.Request.Disconnect`.
+data Session = Session
+    {   sessionSessionID :: SessionID   -- ^ Identifier
+    ,   sessionState :: SessionState    -- ^ State
+    ,   sessionChannelHub :: ChannelHub -- ^ Output channels
+    ,   sessionListener :: [Listener]   -- ^ Server-side listeners
+    ,   sessionTimeoutVar :: MVar Bool  -- ^ TTL
+    }
 
 instance Show Session where
     show (Session i s _ _ _) = "Session " 
@@ -55,6 +39,39 @@ instance Show Session where
                             ++ " [" ++ show s ++ "]"
 
 --------------------------------------------------------------------------------
+-- | Session ID
+type SessionID = ByteString 
+
+--------------------------------------------------------------------------------
+-- | Session table, consists of `SessionID`, `Session` pairs.
+type SessionTable = H.HashMap SessionID Session
+
+--------------------------------------------------------------------------------
+-- | Session states
+data SessionState = Connecting  -- ^ after `Web.SocketIO.Types.Request.Handshake`
+                  | Connected   -- ^ after `Web.SocketIO.Types.Request.Connect`.
+                  deriving (Show, Eq)
+
+--------------------------------------------------------------------------------
+-- | Fine-grained session layer requests
+data SessionAction   = SessionHandshake
+                     | SessionConnect
+                     | SessionPolling
+                     | SessionEmit Event
+                     | SessionDisconnect
+
+--------------------------------------------------------------------------------
+-- | Server-wide configurations
+data Env = Env { 
+    envSessionTableRef :: IORef SessionTable, 
+    envHandler :: HandlerM (), 
+    envConfiguration :: Configuration,
+    envLogChannel :: Chan ByteString,
+    envGlobalChannel :: Chan Package
+}
+
+--------------------------------------------------------------------------------
+-- | Collection of unbounded FIFO channels.
 data ChannelHub = ChannelHub
     {   channelHubLocal :: Chan Package
     ,   channelHubGlobal :: Chan Package
@@ -63,6 +80,7 @@ data ChannelHub = ChannelHub
     }
 
 --------------------------------------------------------------------------------
+-- | Defines behaviors of a Socket.IO server
 data Configuration = Configuration
     {   transports :: [Transport]
     ,   logLevel :: Int
@@ -74,20 +92,28 @@ data Configuration = Configuration
     ,   pollingDuration :: Int
     } deriving Show
     
+--------------------------------------------------------------------------------
+-- | Port number for a standalone Socket.IO server.
 type Port = Int
+
+--------------------------------------------------------------------------------
+-- | Triggered by an `Web.SocketIO.Types.Request.Event`.
 type Listener = (EventName, CallbackM ())
 
 --------------------------------------------------------------------------------
+-- | Class for handy `SessionID` getter.
 class HasSessionID m where
     getSessionID :: m SessionID
 
 --------------------------------------------------------------------------------
+-- | Environment carried by `HandlerM`
 data HandlerEnv = HandlerEnv
     {   handlerEnvChannelHub :: ChannelHub
     ,   handlerEnvSessionID :: SessionID
     }
 
 --------------------------------------------------------------------------------
+-- | Environment carried by `CallbackM`
 data CallbackEnv = CallbackEnv
     {   callbackEnvEventName :: EventName
     ,   callbackEnvPayload :: [Payload]
@@ -95,7 +121,6 @@ data CallbackEnv = CallbackEnv
     ,   callbackEnvSessionID :: SessionID
     }
 
-   
 --------------------------------------------------------------------------------
 -- | Capable of both sending and receiving events.
 --
@@ -173,7 +198,7 @@ instance Subscriber HandlerM where
         HandlerM . lift . tell $ [(event, callback)]
   
 --------------------------------------------------------------------------------
--- | Now only xhr-polling is supported.
+-- | Now only xhr-polling is supported. <https://github.com/LearnBoost/socket.io-spec#transport-id socket.io-spec#transport-id>
 data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
 
 instance Serializable Transport where

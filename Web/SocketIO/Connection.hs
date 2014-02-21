@@ -34,11 +34,11 @@ import              System.Random                           (randomRIO)
 --                  (OK)        (OK)            (OK)            (OK)
 --                  Noop        x
 --------------------------------------------------------------------------------
-newSessionTableRef :: IO (IORef Table)
+newSessionTableRef :: IO (IORef SessionTable)
 newSessionTableRef = newIORef H.empty
 
 --------------------------------------------------------------------------------
-updateSession :: (Table -> Table) -> ConnectionM ()
+updateSession :: (SessionTable -> SessionTable) -> ConnectionM ()
 updateSession update = do
     tableRef <- getSessionTableRef
     liftIO (modifyIORef tableRef update)
