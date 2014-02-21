@@ -13,10 +13,16 @@ import              Web.SocketIO.Types.Event
 import              Data.List                               (intersperse)
 
 --------------------------------------------------------------------------------
--- | Path of incoming request
+-- | Namespace
 type Namespace = ByteString
+
+--------------------------------------------------------------------------------
+-- | Protocol running
 type Protocol = ByteString
 
+--------------------------------------------------------------------------------
+-- | The URN part of a HTTP request.
+-- Please refer to <https://github.com/LearnBoost/socket.io-spec#socketio-http-requests socket.io-spec#socketio-http-requests>
 data Path   = WithSession    Namespace Protocol Transport SessionID
             | WithoutSession Namespace Protocol
             deriving (Eq, Show)
@@ -31,10 +37,8 @@ instance Serializable Path where
                                    <> "/" <> serialize p 
                                    <> "/"
 
-
-
 --------------------------------------------------------------------------------
--- | Incoming request
+-- | Incoming HTTP request
 data Request    = Handshake
                 | Disconnect SessionID
                 | Connect SessionID 
@@ -42,7 +46,8 @@ data Request    = Handshake
                 deriving (Show)
 
 --------------------------------------------------------------------------------
--- | This is how data are encoded by Socket.IO Protocol
+-- | This is how data are encoded by Socket.IO Protocol.
+-- Please refer to <https://github.com/LearnBoost/socket.io-spec#messages socket.io-spec#messages>
 data Message    = MsgHandshake SessionID Int Int [Transport]
                 | MsgDisconnect Endpoint
                 | MsgConnect Endpoint
@@ -54,32 +59,6 @@ data Message    = MsgHandshake SessionID Int Int [Transport]
                 | MsgError Endpoint Data
                 | MsgNoop
                 deriving (Show, Eq)
-
-data Endpoint   = Endpoint ByteString
-                | NoEndpoint
-                deriving (Show, Eq)
-data ID         = ID Int
-                | IDPlus Int
-                | NoID
-                deriving (Show, Eq)
-data Data       = Data ByteString
-                | NoData
-                deriving (Show, Eq)
-
-
---------------------------------------------------------------------------------
-instance Serializable Endpoint where
-    serialize (Endpoint s) = serialize s
-    serialize NoEndpoint = ""
-
-instance Serializable ID where
-    serialize (ID i) = serialize i
-    serialize (IDPlus i) = serialize i <> "+"
-    serialize NoID = ""
-
-instance Serializable Data where
-    serialize (Data s) = serialize s
-    serialize NoData = ""
 
 instance Serializable Message where
     serialize (MsgHandshake s a b t)        = serialize s <> ":" <>
@@ -106,3 +85,36 @@ instance Serializable Message where
     serialize (MsgError e d)                = "7::" <> serialize e <> 
                                               ":" <> serialize d
     serialize MsgNoop                       = "8:::"
+
+--------------------------------------------------------------------------------
+-- | Message endpoint
+data Endpoint   = Endpoint ByteString
+                | NoEndpoint
+                deriving (Show, Eq)
+
+instance Serializable Endpoint where
+    serialize (Endpoint s) = serialize s
+    serialize NoEndpoint = ""
+
+--------------------------------------------------------------------------------
+-- | The message id is an incremental integer, required for ACKs (can be omitted). 
+-- If the message id is followed by a +, the ACK is not handled by socket.io, but by the user instead.
+data ID         = ID Int
+                | IDPlus Int
+                | NoID
+                deriving (Show, Eq)
+
+instance Serializable ID where
+    serialize (ID i) = serialize i
+    serialize (IDPlus i) = serialize i <> "+"
+    serialize NoID = ""
+
+--------------------------------------------------------------------------------
+-- | Message data body
+data Data       = Data ByteString
+                | NoData
+                deriving (Show, Eq)
+
+instance Serializable Data where
+    serialize (Data s) = serialize s
+    serialize NoData = ""
