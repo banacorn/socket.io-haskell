@@ -1,3 +1,5 @@
+--------------------------------------------------------------------------------
+-- | Event data types
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -19,23 +21,38 @@ import              Control.Applicative
 import              Data.Aeson                              
 
 --------------------------------------------------------------------------------
--- | Event
-type SessionID = ByteString
+-- | Name of an Event
 type EventName = Text
+
+--------------------------------------------------------------------------------
+-- | Payload carried by an Event
 type Payload = Text
-data Event = Event EventName [Payload] | NoEvent deriving (Show, Eq)
-data EventType = Private | Broadcast SessionID deriving (Show, Eq)
-type Package = (EventType, Event)
+
+--------------------------------------------------------------------------------
+-- | Event
+data Event = Event EventName [Payload] 
+           | NoEvent                    -- ^ some malformed shit
+           deriving (Show, Eq)
 
 instance Serializable Event where
-    serialize = serialize . encode
+   serialize = serialize . encode
 
 instance FromJSON Event where
-    parseJSON (Object v) =  Event <$>
-                            v .: "name" <*>
-                            v .: "args"
-    parseJSON _ = return NoEvent
+   parseJSON (Object v) =  Event <$>
+                           v .: "name" <*>
+                           v .: "args"
+   parseJSON _ = return NoEvent
 
 instance ToJSON Event where
-   toJSON (Event name args) = object ["name" .= name, "args" .= args]
-   toJSON NoEvent = object []
+  toJSON (Event name args) = object ["name" .= name, "args" .= args]
+  toJSON NoEvent = object []
+
+--------------------------------------------------------------------------------
+-- | For internal use only, indicates how Events are be triggered.
+data EventType = Private                -- ^ `Web.SocketIO.Types.Base.emit` 
+               | Broadcast ByteString   -- ^ `Web.SocketIO.Types.Base.broadcast`, with `SessionID` of the sender.
+               deriving (Show, Eq)
+
+--------------------------------------------------------------------------------
+-- | Event packed with EventType
+type Package = (EventType, Event)
