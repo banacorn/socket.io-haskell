@@ -1,3 +1,5 @@
+--------------------------------------------------------------------------------
+-- | Session Layer
 {-# LANGUAGE OverloadedStrings #-}
 module Web.SocketIO.Session (runSession) where
 
@@ -13,6 +15,7 @@ import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
+-- | The final stage
 handleSession :: SessionAction -> SessionM Message
 handleSession SessionHandshake = do
     sessionID <- getSessionID
@@ -74,6 +77,7 @@ handleSession SessionDisconnect = do
     return $ MsgNoop
 
 --------------------------------------------------------------------------------
+-- | Trigger corresponding listeners
 triggerListener :: Event -> ChannelHub -> SessionID -> SessionM ()
 triggerListener (Event eventName payload) channelHub sessionID = do
     -- read
@@ -87,5 +91,6 @@ triggerListener (Event eventName payload) channelHub sessionID = do
 triggerListener NoEvent _ _ = error "trigger listeners with any events"
 
 --------------------------------------------------------------------------------
+-- | Wrapper
 runSession :: SessionAction -> Session -> ConnectionM Message
 runSession action session = runReaderT (runSessionM (handleSession action)) session
