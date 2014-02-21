@@ -1,21 +1,26 @@
+--------------------------------------------------------------------------------
+-- | Converts HTTP requests to Socket.IO requests
 {-# LANGUAGE OverloadedStrings #-}
 module Web.SocketIO.Request (processHTTPRequest) where
 
-import Web.SocketIO.Types
+--------------------------------------------------------------------------------
+import              Web.SocketIO.Types
+import              Web.SocketIO.Protocol
 
-import Web.SocketIO.Protocol
+--------------------------------------------------------------------------------
+import              Control.Applicative                     ((<$>))   
+import              Data.Conduit.List                       (consume)
+import              Data.Conduit                            (($$))
+import              Data.Monoid                             (mconcat)
+import qualified    Network.Wai                             as Wai
+import              Network.HTTP.Types                      (Method)
 
-import Control.Applicative          ((<$>))   
-
-import qualified Network.Wai as Wai
-import Network.HTTP.Types           (Method)
-
-import Data.Conduit.List            (consume)
-import Data.Conduit                 (($$))
-import Data.Monoid                  (mconcat)
-
+--------------------------------------------------------------------------------
+-- | Information of a HTTP reqeust we need
 type RequestInfo = (Method, Path, Message)
 
+--------------------------------------------------------------------------------
+-- | Extracts from HTTP reqeusts
 retrieveRequestInfo :: Wai.Request -> IO RequestInfo
 retrieveRequestInfo request = do
 
@@ -29,6 +34,8 @@ retrieveRequestInfo request = do
         ,   body
         )
 
+--------------------------------------------------------------------------------
+-- | Converts to SocketIO request
 processRequestInfo :: RequestInfo -> Request
 processRequestInfo ("GET" , (WithoutSession _ _)         , _                 )  = Handshake 
 processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                 )  = Connect sessionID
@@ -36,8 +43,12 @@ processRequestInfo ("POST", (WithSession _ _ _ sessionID), MsgEvent _ _ event)  
 processRequestInfo (_     , (WithSession _ _ _ sessionID), _                 )  = Disconnect sessionID
 processRequestInfo _    = error "error parsing http request"
  
+--------------------------------------------------------------------------------
+-- | The request part
 processHTTPRequest :: Wai.Request -> IO Request
 processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 
+--------------------------------------------------------------------------------
+-- | The message part
 parseHTTPBody :: Wai.Request -> IO Message
 parseHTTPBody req = parseMessage . fromByteString . mconcat <$> (Wai.requestBody req $$ consume)
