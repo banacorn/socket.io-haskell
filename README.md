@@ -1,5 +1,6 @@
 # [Socket.IO](http://socket.io) server in Haskell.
 
+[![Build Status](https://secure.travis-ci.org/banacorn/socket.io-haskell.png?branch=master)](http://travis-ci.org/banacorn/socket.io-haskell)
 ## Install
 
     cabal install socketio
