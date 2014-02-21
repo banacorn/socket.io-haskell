@@ -1,17 +1,20 @@
 --------------------------------------------------------------------------------
 -- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
+
 module Web.SocketIO.Protocol (parseMessage, parsePath) where
+
+--------------------------------------------------------------------------------
+import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
 import qualified    Data.ByteString.Lazy                    as BL
 import              Text.ParserCombinators.Parsec
---------------------------------------------------------------------------------
-import Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
+-- | Parse raw ByteString to Message
 parseMessage :: BL.ByteString -> Message
 parseMessage raw = case parse parseMessage' "" str of
     Left _  -> MsgNoop
@@ -19,6 +22,7 @@ parseMessage raw = case parse parseMessage' "" str of
     where   str = fromLazyByteString raw
 
 --------------------------------------------------------------------------------
+-- | Parsec version, without wrapper
 parseMessage' :: Parser Message
 parseMessage' = do
     n <- digit
@@ -55,12 +59,16 @@ parseMessage' = do
 endpoint :: Parser String
 endpoint = many1 $ satisfy (/= ':')
 
+--------------------------------------------------------------------------------
+-- | Parser combinator for non-empty text
 text :: Parser String
 text = many1 anyChar
 
+--------------------------------------------------------------------------------
 number :: Parser String
 number = many1 digit
 
+--------------------------------------------------------------------------------
 colon :: Parser Char
 colon = char ':'
 
@@ -94,13 +102,12 @@ parseEvent = try (do
 
 
 --------------------------------------------------------------------------------
-
+-- | Slashes as delimiters
 textWithoutSlash :: Parser String
 textWithoutSlash = many1 $ satisfy (/= '/')
 
 slash :: Parser Char
 slash = char '/'
-
 
 -------------------------------------------------------------------------------
 parseTransport :: Parser Transport
@@ -110,12 +117,14 @@ parseTransport = try (string "websocket" >> return WebSocket)
         <|> return NoTransport
 
 --------------------------------------------------------------------------------               
+-- | With wrapper
 parsePath :: ByteString -> Path
 parsePath path = case parse parsePath' "" (fromByteString path) of
     Left _  -> WithoutSession "" ""
     Right x -> x 
 
 --------------------------------------------------------------------------------
+-- | Raw Parsec combinator, without wrapper
 parsePath' :: Parser Path
 parsePath' = do
     slash
