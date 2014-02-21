@@ -1,7 +1,10 @@
+--------------------------------------------------------------------------------
+-- | Data types for logging
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Types.Log (Log(..), Serializable(..)) where
 
+--------------------------------------------------------------------------------
 import System.Console.ANSI
 import Web.SocketIO.Types.String
 
@@ -20,5 +23,6 @@ instance Serializable Log where
     serialize (Debug message) = fromString $ "    " ++ (paint Black  $ "[debug] " ++ fromByteString message)
 
 --------------------------------------------------------------------------------
+-- | helper function
 paint :: Color -> String -> String
 paint color s = setSGRCode [SetColor Foreground Vivid color] ++ s ++ setSGRCode []
