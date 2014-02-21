@@ -1,3 +1,5 @@
+--------------------------------------------------------------------------------
+-- | Servers, standalone or adapted
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Server
@@ -6,11 +8,13 @@ module Web.SocketIO.Server
     ,   defaultConfig
     ) where
 
+--------------------------------------------------------------------------------
 import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
 import              Web.SocketIO.Types
 
+--------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
 import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
@@ -26,18 +30,21 @@ server p h = serverConfig p defaultConfig h
 serverConfig :: Port -> Configuration -> HandlerM () -> IO ()
 serverConfig port config handler = do
 
+    -- session table
     tableRef <- newSessionTableRef
 
+    -- output channels
     logChannel      <- newLogChannel
     globalChannel   <- newGlobalChannel
-
     streamToHandle (logTo config) logChannel
 
     let env = Env tableRef handler config logChannel globalChannel
 
+    -- run it with Warp
     Warp.run port (httpApp (runConnection env))
 
 --------------------------------------------------------------------------------
+-- | Wrapped as a HTTP app
 httpApp :: (Request -> IO Message) -> Wai.Application
 httpApp runConnection' httpRequest = liftIO $ do
     req <- processHTTPRequest httpRequest
@@ -71,6 +78,7 @@ defaultConfig = Configuration
 }
 
 --------------------------------------------------------------------------------
+-- | Helper function inspired by Scotty
 text :: Monad m => Text -> m Wai.Response
 text = return . Wai.responseLBS status200 header . fromText
     where
