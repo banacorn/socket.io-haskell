@@ -1,3 +1,5 @@
+--------------------------------------------------------------------------------
+-- | Re-exports data types
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
