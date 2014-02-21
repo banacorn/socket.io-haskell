@@ -1,3 +1,6 @@
+--------------------------------------------------------------------------------
+-- | Socket.IO for Haskell folks.
+
 module Web.SocketIO
     (
         -- * How to use this module
@@ -5,7 +8,7 @@ module Web.SocketIO
         --
         -- Note that most of the string literals below are of type Text.
         --
-        -- >{-\# LANGUAGE OverloadedStrings \#-}
+        -- >{-# LANGUAGE OverloadedStrings #-}
         -- >
         -- >import Web.SocketIO
         -- >

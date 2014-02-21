@@ -51,6 +51,7 @@ library
     Other-modules:
         Web.SocketIO.Types
         Web.SocketIO.Types.Base
+        Web.SocketIO.Types.Event
         Web.SocketIO.Types.Layer
         Web.SocketIO.Types.Log
         Web.SocketIO.Types.Request
@@ -59,11 +60,11 @@ library
         Web.SocketIO.Channel
         Web.SocketIO.Event
         Web.SocketIO.Protocol
-        Web.SocketIO.Request
-        Web.SocketIO.Server
-        Web.SocketIO.Session
-        Web.SocketIO.Timeout
-        Web.SocketIO.Util
+        --Web.SocketIO.Request
+        --Web.SocketIO.Server
+        --Web.SocketIO.Session
+        --Web.SocketIO.Timeout
+        --Web.SocketIO.Util
 
     build-depends:    base                  ==4.6.*
                     , text                  ==0.11.*

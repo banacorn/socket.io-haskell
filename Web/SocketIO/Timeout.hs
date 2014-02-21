@@ -1,3 +1,5 @@
+--------------------------------------------------------------------------------
+-- | Timeout management
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Timeout
@@ -21,13 +23,15 @@ import              Control.Monad                           (void)
 import              System.Timeout.Lifted                   (timeout)
 
 --------------------------------------------------------------------------------
+-- | As microseconds
 getTimeoutDuration :: ConnectionM Int
 getTimeoutDuration = toMicroSec . closeTimeout <$> getConfiguration
     where   toMicroSec = (*) 1000000
 
 --------------------------------------------------------------------------------
-extendTimeout' :: Bool -> Session -> ConnectionM ()
-extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
+-- | The first parameter indicates whether it is first set timeout or not
+primTimeout' :: Bool -> Session -> ConnectionM ()
+primTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
 
     duration <- getTimeoutDuration
 
@@ -38,7 +42,7 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
 
     case result of
         -- extend!
-        Just True -> extendTimeout' False session
+        Just True -> primTimeout' False session
         -- die!
         Just False -> clearTimeout session
         Nothing -> do
@@ -48,15 +52,17 @@ extendTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
             tableRef <- getSessionTableRef
             liftIO (modifyIORef tableRef (H.delete sessionID))
 ----------------------------------------------------------------------------------
+-- | Set timeout
 setTimeout :: Session -> ConnectionM ()
-setTimeout = void . fork . extendTimeout' True
+setTimeout = void . fork . primTimeout' True
 
+----------------------------------------------------------------------------------
+-- | Extend timeout
 extendTimeout :: Session -> ConnectionM ()
-extendTimeout (Session _ _ _ _ timeoutVar) = do
-    putMVar timeoutVar True
-
+extendTimeout (Session _ _ _ _ timeoutVar) = putMVar timeoutVar True
 
 --------------------------------------------------------------------------------
+-- | Clear timeout
 clearTimeout :: Session -> ConnectionM ()
 clearTimeout (Session sessionID _ _ _ timeoutVar) = do
     debug Debug $ sessionID <> "    Clear Timeout"
