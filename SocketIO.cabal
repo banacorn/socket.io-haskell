@@ -72,14 +72,11 @@ library
                     , aeson                 ==0.7.*
                     , parsec                ==3.1.*
                     , ansi-terminal         ==0.6.*
-                    , containers            ==0.5.*
                     , unordered-containers  ==0.2.*
-                    , vector                ==0.10.*
                     , random                ==1.0.*
                     , wai                   ==2.0.*
                     , warp                  ==2.0.*
                     , http-types            ==0.8.*
-                    , resourcet             ==0.4.*
                     , conduit               ==1.0.*
                     , mtl                   ==2.1.*
                     , transformers-base     ==0.4.*
@@ -106,14 +103,11 @@ test-suite socketio-test
                     , aeson                 ==0.7.*
                     , parsec                ==3.1.*
                     , ansi-terminal         ==0.6.*
-                    , containers            ==0.5.*
                     , unordered-containers  ==0.2.*
-                    , vector                ==0.10.*
                     , random                ==1.0.*
                     , wai                   ==2.0.*
                     , warp                  ==2.0.*
                     , http-types            ==0.8.*
-                    , resourcet             ==0.4.*
                     , conduit               ==1.0.*
                     , mtl                   ==2.1.*
                     , transformers-base     ==0.4.*
