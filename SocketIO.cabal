@@ -60,14 +60,14 @@ library
         Web.SocketIO.Channel
         Web.SocketIO.Event
         Web.SocketIO.Protocol
-        --Web.SocketIO.Request
-        --Web.SocketIO.Server
-        --Web.SocketIO.Session
-        --Web.SocketIO.Timeout
-        --Web.SocketIO.Util
+        Web.SocketIO.Request
+        Web.SocketIO.Server
+        Web.SocketIO.Session
+        Web.SocketIO.Timeout
+        Web.SocketIO.Util
 
     build-depends:    base                  ==4.6.*
-                    , text                  ==0.11.*
+                    , text                  ==1.1.*
                     , bytestring            ==0.10.*
                     , aeson                 ==0.7.*
                     , parsec                ==3.1.*
@@ -94,13 +94,14 @@ test-suite socketio-test
     ghc-options:    -Wall -fno-warn-unused-do-bind
 
     build-depends:    base                          ==4.6.*
-                    , QuickCheck                    ==2.*
+                    , QuickCheck                    ==2.6.*
                     , HUnit                         ==1.2.*
                     , test-framework                ==0.8.*
                     , test-framework-quickcheck2    ==0.3.*
                     , test-framework-hunit          ==0.3.*
+    
     build-depends:    base                  ==4.6.*
-                    , text                  ==0.11.*
+                    , text                  ==1.1.*
                     , bytestring            ==0.10.*
                     , aeson                 ==0.7.*
                     , parsec                ==3.1.*
