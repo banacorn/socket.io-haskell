@@ -9,9 +9,6 @@ import              Web.SocketIO.Protocol
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))   
-import              Data.Conduit.List                       (consume)
-import              Data.Conduit                            (($$))
-import              Data.Monoid                             (mconcat)
 import qualified    Network.Wai                             as Wai
 import              Network.HTTP.Types                      (Method)
 
@@ -51,4 +48,4 @@ processHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo reques
 --------------------------------------------------------------------------------
 -- | The message part
 parseHTTPBody :: Wai.Request -> IO Message
-parseHTTPBody req = parseMessage . fromByteString . mconcat <$> (Wai.requestBody req $$ consume)
+parseHTTPBody req = parseMessage . fromLazyByteString <$> Wai.lazyRequestBody req

@@ -77,7 +77,6 @@ library
                     , wai                   ==2.0.*
                     , warp                  ==2.0.*
                     , http-types            ==0.8.*
-                    , conduit               ==1.0.*
                     , mtl                   ==2.1.*
                     , transformers-base     ==0.4.*
                     , monad-control         ==0.3.*
@@ -108,7 +107,6 @@ test-suite socketio-test
                     , wai                   ==2.0.*
                     , warp                  ==2.0.*
                     , http-types            ==0.8.*
-                    , conduit               ==1.0.*
                     , mtl                   ==2.1.*
                     , transformers-base     ==0.4.*
                     , monad-control         ==0.3.*
