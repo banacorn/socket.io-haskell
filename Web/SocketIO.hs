@@ -41,6 +41,7 @@ module Web.SocketIO
     ,   Publisher(..)
     ,   reply
     ,   getEventName
+    ,   HasSessionID(..)
     ,   Event
     ,   SessionID
 

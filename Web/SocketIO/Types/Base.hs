@@ -101,7 +101,7 @@ type Port = Int
 type Listener = (EventName, CallbackM ())
 
 --------------------------------------------------------------------------------
--- | Class for handy `SessionID` getter.
+-- | Class for `SessionID` getter.
 class HasSessionID m where
     getSessionID :: m SessionID
 
@@ -128,8 +128,8 @@ data CallbackEnv = CallbackEnv
 newtype HandlerM a = HandlerM { runHandlerM :: (ReaderT HandlerEnv (WriterT [Listener] IO)) a }
     deriving (Monad, Functor, Applicative, MonadIO, MonadWriter [Listener], MonadReader HandlerEnv, MonadBase IO)
 
---instance HasSessionID HandlerM where
---    getSessionID = handlerEnvSessionID <$> ask
+instance HasSessionID HandlerM where
+    getSessionID = handlerEnvSessionID <$> ask
 
 --------------------------------------------------------------------------------
 -- | Capable of only sending events.
