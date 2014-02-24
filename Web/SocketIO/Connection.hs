@@ -145,7 +145,7 @@ handleConnection (Disconnect sessionID, Just (session, _)) = do
     clearTimeout session
 
     updateSession (H.delete sessionID)
-    runSession SessionDisconnect session
+    runSession SessionDisconnectByClient session
 
 handleConnection (Disconnect sessionID, Nothing) = do
     debug Warn $ sessionID <> "    [Disconnect] Session not found" 

@@ -11,6 +11,7 @@ module Web.SocketIO.Timeout
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
 import              Web.SocketIO.Util
+import              Web.SocketIO.Session
 
 --------------------------------------------------------------------------------
 import qualified    Data.HashMap.Strict                     as H
@@ -47,7 +48,7 @@ primTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
         Just False -> clearTimeout session
         Nothing -> do
             debug Debug $ sessionID <> "    Close Session"
-            debug Info $ sessionID <> "    Disconnected by server"
+            runSession SessionDisconnectByServer session
             -- remove session
             tableRef <- getSessionTableRef
             liftIO (modifyIORef tableRef (H.delete sessionID))

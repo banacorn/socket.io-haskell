@@ -58,7 +58,8 @@ data SessionAction   = SessionHandshake
                      | SessionConnect
                      | SessionPolling
                      | SessionEmit Event
-                     | SessionDisconnect
+                     | SessionDisconnectByClient
+                     | SessionDisconnectByServer
 
 --------------------------------------------------------------------------------
 -- | Server-wide configurations

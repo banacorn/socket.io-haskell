@@ -61,25 +61,30 @@ handleSession SessionPolling = do
             return MsgNoop
 
 handleSession (SessionEmit event) = do
-    sessionID <- getSessionID
-    channelHub <- getChannelHub
     case event of
         Event eventName payloads -> debugSession Info $ "<---  " <> serialize eventName <> " " <> serialize payloads
         NoEvent                  -> debugSession Error $ "Event malformed"
-
-    triggerListener event channelHub sessionID
+    triggerEvent event
     return $ MsgConnect NoEndpoint
-handleSession SessionDisconnect = do
-    sessionID <- getSessionID
+
+handleSession SessionDisconnectByClient = do
     debugSession Info $ "Disconnected by client"
-    channelHub <- getChannelHub
-    triggerListener (Event "disconnect" []) channelHub sessionID
+    triggerEvent (Event "disconnect" [])
+    return $ MsgNoop
+
+handleSession SessionDisconnectByServer = do
+    debugSession Info $ "Disconnected by server"
+    triggerEvent (Event "disconnect" [])
     return $ MsgNoop
 
 --------------------------------------------------------------------------------
 -- | Trigger corresponding listeners
-triggerListener :: Event -> ChannelHub -> SessionID -> SessionM ()
-triggerListener (Event eventName payload) channelHub sessionID = do
+triggerEvent :: Event -> SessionM ()
+triggerEvent (Event eventName payload) = do
+
+    sessionID <- getSessionID
+    channelHub <- getChannelHub
+
     -- read
     listeners <- getListener
     -- filter out callbacks to be triggered
@@ -88,7 +93,7 @@ triggerListener (Event eventName payload) channelHub sessionID = do
     forM_ correspondingCallbacks $ \(_, callback) -> fork $ do
         _ <- liftIO $ runReaderT (execWriterT (runCallbackM callback)) (CallbackEnv eventName payload channelHub sessionID)
         return ()
-triggerListener NoEvent _ _ = error "trigger listeners with any events"
+triggerEvent NoEvent = error "triggering malformed event"
 
 --------------------------------------------------------------------------------
 -- | Wrapper
