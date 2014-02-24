@@ -16,6 +16,7 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
+import qualified    Data.ByteString.Lazy            as BL
 import              Network.HTTP.Types              (status200)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
@@ -49,7 +50,7 @@ httpApp :: (Request -> IO Message) -> Wai.Application
 httpApp runConnection' httpRequest = liftIO $ do
     req <- processHTTPRequest httpRequest
     response <- runConnection' req
-    text (serialize response)
+    waiResponse (serialize response)
 
 --------------------------------------------------------------------------------
 -- | Default configurations to be overridden.
@@ -78,13 +79,11 @@ defaultConfig = Configuration
 }
 
 --------------------------------------------------------------------------------
--- | Helper function inspired by Scotty
-text :: Monad m => Text -> m Wai.Response
-text = return . Wai.responseLBS status200 header . fromText
-    where
-            header = [
-                ("Content-Type", "text/plain"),
-                ("Connection", "keep-alive"),
-                ("Access-Control-Allow-Credentials", "true"),
-                ("Access-Control-Allow-Origin", "http://localhost:3000") 
+-- | Make Wai response
+waiResponse :: Monad m => BL.ByteString -> m Wai.Response
+waiResponse = return . Wai.responseLBS status200 header
+    where   header = 
+                [   ("Content-Type", "text/plain")
+                ,   ("Connection", "keep-alive")
+                ,   ("Access-Control-Allow-Origin", "*") 
                 ]
