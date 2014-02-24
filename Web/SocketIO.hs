@@ -42,7 +42,9 @@ module Web.SocketIO
     ,   reply
     ,   getEventName
     ,   HasSessionID(..)
-    ,   Event
+    ,   Event(..)
+    ,   EventName
+    ,   Payload
     ,   SessionID
 
         -- ** Special events
