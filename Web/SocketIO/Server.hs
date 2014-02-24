@@ -49,23 +49,33 @@ serverConfig port config handler = do
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
 httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
-httpApp vorspann runConnection' httpRequest = liftIO $ do
+httpApp headerFields runConnection' httpRequest = liftIO $ do
+    
+    let origin = lookupOrigin httpRequest
+    let headerFields' = insertOrigin headerFields origin
+
     req <- processHTTPRequest httpRequest
     response <- runConnection' req
-    waiResponse vorspann (serialize response)
+    waiResponse headerFields' (serialize response)
 
+    where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
+                Just origin -> origin
+                Nothing     -> "*"
+            insertOrigin fields origin = case lookup "Access-Control-Allow-Origin" fields of
+                Just _  -> fields
+                Nothing -> ("Access-Control-Allow-Origin", origin) : fields
 --------------------------------------------------------------------------------
--- | Default configurations to be overridden.
+-- | Default configurations to be overridden. Add "Access-Control-Allow-Origin" field to the header to override.
         --
         -- > defaultConfig :: Configuration
         -- > defaultConfig = Configuration
         -- >    {   transports = [XHRPolling]
         -- >    ,   logLevel = 2               
         -- >    ,   logTo = stderr        
-        -- >    ,   header = 
+        -- >    ,   header =
         -- >            [   ("Content-Type", "text/plain")
         -- >            ,   ("Connection", "keep-alive")
-        -- >            ,   ("Access-Control-Allow-Origin", "*") 
+        -- >            ,   ("Access-Control-Allow-Credentials", "true") 
         -- >            ]      
         -- >    ,   heartbeats = True
         -- >    ,   closeTimeout = 60
@@ -82,7 +92,7 @@ defaultConfig = Configuration
     ,   header = 
             [   ("Content-Type", "text/plain")
             ,   ("Connection", "keep-alive")
-            ,   ("Access-Control-Allow-Origin", "*") 
+            ,   ("Access-Control-Allow-Credentials", "true") 
             ]
     ,   heartbeats = True
     ,   closeTimeout = 60
