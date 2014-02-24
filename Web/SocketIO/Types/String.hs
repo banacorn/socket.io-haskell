@@ -19,8 +19,8 @@ module Web.SocketIO.Types.String (
 --------------------------------------------------------------------------------
 import qualified    Data.String                             as S
 import qualified    Data.Text                               as T
-import              Data.Text                               (Text)
 import qualified    Data.Text.Lazy                          as TL
+import              Data.Text.Lazy                          (Text)
 import              Data.ByteString                         (ByteString)
 import qualified    Data.ByteString.Lazy                    as BL
 import qualified    Data.ByteString.Char8                   as C
@@ -87,7 +87,7 @@ instance IsText String where
     fromText = T.unpack
 
 -- | to strict Text (identity)
-instance IsText Text where
+instance IsText T.Text where
     fromText = id
 
 -- | to lazy Text
