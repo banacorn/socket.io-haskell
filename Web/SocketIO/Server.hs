@@ -18,6 +18,7 @@ import              Web.SocketIO.Types
 import              Control.Monad.Trans             (liftIO)
 import qualified    Data.ByteString.Lazy            as BL
 import              Network.HTTP.Types              (status200)
+import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
 
@@ -39,18 +40,19 @@ serverConfig port config handler = do
     globalChannel   <- newGlobalChannel
     streamToHandle (logTo config) logChannel
 
+    let vorspann = header config
     let env = Env tableRef handler config logChannel globalChannel
 
     -- run it with Warp
-    Warp.run port (httpApp (runConnection env))
+    Warp.run port (httpApp vorspann (runConnection env))
 
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
-httpApp :: (Request -> IO Message) -> Wai.Application
-httpApp runConnection' httpRequest = liftIO $ do
+httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
+httpApp vorspann runConnection' httpRequest = liftIO $ do
     req <- processHTTPRequest httpRequest
     response <- runConnection' req
-    waiResponse (serialize response)
+    waiResponse vorspann (serialize response)
 
 --------------------------------------------------------------------------------
 -- | Default configurations to be overridden.
@@ -58,19 +60,30 @@ httpApp runConnection' httpRequest = liftIO $ do
         -- > defaultConfig :: Configuration
         -- > defaultConfig = Configuration
         -- >    {   transports = [XHRPolling]
-        -- >    ,   logLevel = 3                
-        -- >    ,   closeTimeout = 60
-        -- >    ,   pollingDuration = 20
+        -- >    ,   logLevel = 2               
+        -- >    ,   logTo = stderr        
+        -- >    ,   header = 
+        -- >            [   ("Content-Type", "text/plain")
+        -- >            ,   ("Connection", "keep-alive")
+        -- >            ,   ("Access-Control-Allow-Origin", "*") 
+        -- >            ]      
         -- >    ,   heartbeats = True
+        -- >    ,   closeTimeout = 60
         -- >    ,   heartbeatTimeout = 60
         -- >    ,   heartbeatInterval = 25
+        -- >    ,   pollingDuration = 20
         -- >    }
         --
 defaultConfig :: Configuration
 defaultConfig = Configuration
     {   transports = [XHRPolling]
-    ,   logLevel = 3
+    ,   logLevel = 2
     ,   logTo = stderr
+    ,   header = 
+            [   ("Content-Type", "text/plain")
+            ,   ("Connection", "keep-alive")
+            ,   ("Access-Control-Allow-Origin", "*") 
+            ]
     ,   heartbeats = True
     ,   closeTimeout = 60
     ,   heartbeatTimeout = 60
@@ -80,10 +93,5 @@ defaultConfig = Configuration
 
 --------------------------------------------------------------------------------
 -- | Make Wai response
-waiResponse :: Monad m => BL.ByteString -> m Wai.Response
-waiResponse = return . Wai.responseLBS status200 header
-    where   header = 
-                [   ("Content-Type", "text/plain")
-                ,   ("Connection", "keep-alive")
-                ,   ("Access-Control-Allow-Origin", "*") 
-                ]
+waiResponse :: Monad m => ResponseHeaders -> BL.ByteString -> m Wai.Response
+waiResponse vorspann = return . Wai.responseLBS status200 vorspann

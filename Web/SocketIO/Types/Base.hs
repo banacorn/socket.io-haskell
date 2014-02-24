@@ -21,6 +21,7 @@ import              Control.Monad.Writer
 import              Control.Monad.Base
 import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
+import              Network.HTTP.Types.Header               (ResponseHeaders)
 import              System.IO                               (Handle)
 
 --------------------------------------------------------------------------------
@@ -87,6 +88,7 @@ data Configuration = Configuration
     ,   logLevel :: Int
     ,   logTo :: Handle
     ,   heartbeats :: Bool
+    ,   header :: ResponseHeaders
     ,   closeTimeout :: Int
     ,   heartbeatTimeout :: Int
     ,   heartbeatInterval :: Int
