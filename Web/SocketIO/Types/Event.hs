@@ -40,10 +40,11 @@ instance Serializable Event where
 instance FromJSON Event where
    parseJSON (Object v) =  Event <$>
                            v .: "name" <*>
-                           v .: "args"
+                           v .:? "args" .!= []
    parseJSON _ = return NoEvent
 
 instance ToJSON Event where
+  toJSON (Event name [])   = object ["name" .= name]
   toJSON (Event name args) = object ["name" .= name, "args" .= args]
   toJSON NoEvent = object []
 
