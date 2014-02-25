@@ -19,11 +19,14 @@ module Web.SocketIO.Types.String (
 --------------------------------------------------------------------------------
 import qualified    Data.String                             as S
 import qualified    Data.Text                               as T
+import qualified    Data.Text.Encoding                      as TE
 import qualified    Data.Text.Lazy                          as TL
 import              Data.Text.Lazy                          (Text)
+import qualified    Data.Text.Lazy.Encoding                 as TLE
 import              Data.ByteString                         (ByteString)
+import qualified    Data.ByteString.Char8                   as BC
 import qualified    Data.ByteString.Lazy                    as BL
-import qualified    Data.ByteString.Char8                   as C
+import qualified    Data.ByteString.Lazy.Char8              as BLC
 import              Data.Monoid                             ((<>), Monoid)
 
 
@@ -34,15 +37,15 @@ class IsByteString a where
 
 -- | to String
 instance IsByteString String where
-    fromByteString = C.unpack
+    fromByteString = BC.unpack
 
 -- | to strict Text
 instance IsByteString T.Text where
-    fromByteString = T.pack . fromByteString
+    fromByteString = TE.decodeUtf8
 
 -- | to lazy Text
 instance IsByteString TL.Text where
-    fromByteString = TL.pack . fromByteString
+    fromByteString = TLE.decodeUtf8 . BL.fromStrict
 
 -- | to strict ByteString (identity)
 instance IsByteString ByteString where
@@ -59,15 +62,15 @@ class IsLazyByteString a where
 
 -- | to String
 instance IsLazyByteString String where
-    fromLazyByteString = fromByteString . BL.toStrict
+    fromLazyByteString = BLC.unpack
 
 -- | to strict Text
 instance IsLazyByteString T.Text where
-    fromLazyByteString = fromByteString . BL.toStrict
+    fromLazyByteString = TE.decodeUtf8 . BL.toStrict
 
 -- | to lazy Text
 instance IsLazyByteString TL.Text where
-    fromLazyByteString = fromByteString . BL.toStrict
+    fromLazyByteString = TLE.decodeUtf8
 
 -- | to strict ByteString
 instance IsLazyByteString ByteString where
@@ -96,11 +99,11 @@ instance IsText TL.Text where
 
 -- | to strict ByteString
 instance IsText ByteString where
-    fromText = C.pack . fromText
+    fromText = TE.encodeUtf8
 
 -- | to lazy ByteString
 instance IsText BL.ByteString where
-    fromText = BL.fromStrict . C.pack . fromText
+    fromText = TLE.encodeUtf8 . TL.fromStrict
 
 --------------------------------------------------------------------------------
 -- | Class for string-like data structures that can be converted from lazy Text
@@ -121,11 +124,11 @@ instance IsLazyText TL.Text where
 
 -- | to strict ByteString
 instance IsLazyText ByteString where
-    fromLazyText = C.pack . fromLazyText
+    fromLazyText = TE.encodeUtf8 . TL.toStrict
 
 -- | to lazy ByteString
 instance IsLazyText BL.ByteString where
-    fromLazyText = BL.fromStrict . C.pack . fromLazyText
+    fromLazyText = TLE.encodeUtf8
 
 --------------------------------------------------------------------------------
 -- | Class for string-like data structures
