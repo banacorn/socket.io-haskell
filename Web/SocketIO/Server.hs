@@ -54,8 +54,8 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
     let origin = lookupOrigin httpRequest
     let headerFields' = insertOrigin headerFields origin
 
-    req <- processHTTPRequest httpRequest
-    response <- runConnection' req
+    reqs <- parseHTTPRequest httpRequest
+    response <- mapM runConnection' reqs
     waiResponse headerFields' (serialize response)
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of

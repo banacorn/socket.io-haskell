@@ -15,10 +15,10 @@ import              Text.ParserCombinators.Parsec
 
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Message
-parseMessage :: BL.ByteString -> Message
+parseMessage :: BL.ByteString -> [Message]
 parseMessage raw = case parse parseMessage' "" str of
-    Left _  -> MsgNoop
-    Right x -> x
+    Left _  -> [MsgNoop]
+    Right x -> [x]
     where   str = fromLazyByteString raw
 
 --------------------------------------------------------------------------------
