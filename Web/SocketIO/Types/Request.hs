@@ -11,6 +11,8 @@ import              Web.SocketIO.Types.Event
 
 --------------------------------------------------------------------------------
 import              Data.List                               (intersperse)
+import              Data.Monoid                             (mconcat)
+import qualified    Data.ByteString                         as B
 
 --------------------------------------------------------------------------------
 -- | Namespace
@@ -44,6 +46,17 @@ data Request    = Handshake
                 | Connect SessionID 
                 | Emit SessionID Event
                 deriving (Show)
+
+--------------------------------------------------------------------------------
+-- | Message Framing
+data FramedMessage = Framed [Message]
+                   deriving (Show, Eq)
+
+instance Serializable FramedMessage where
+    serialize (Framed messages) = mconcat $ map frame messages
+        where   frame message = let serialized = serialize message  
+                                in "�" <> serialize size <> "�" <> serialized
+                                where   size = B.length (serialize message)
 
 --------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol.

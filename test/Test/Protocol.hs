@@ -7,6 +7,7 @@
 
 module Test.Protocol (test) where
 
+import Control.Applicative ((<$>))
 import Test.Framework
 import Test.QuickCheck
 import Test.Framework.Providers.QuickCheck2
@@ -61,6 +62,9 @@ instance Arbitrary Message where
             , MsgNoop
             ]
 
+instance Arbitrary FramedMessage where
+    arbitrary = Framed <$> (listOf arbitrary)
+
 --------------------------------------------------------------------------------
 -- make path instance of arbitrary    
 
@@ -85,10 +89,10 @@ instance Arbitrary Path where
 --------------------------------------------------------------------------------
 -- properties
 
-propParseMessageID :: Property
-propParseMessageID = property $ forAll arbitrary check
+propParseFramedMessageID :: Property
+propParseFramedMessageID = property $ forAll arbitrary check
     where   check msg = msg == msgIdentity msg
-            msgIdentity = parseMessage . serialize
+            msgIdentity = parseFramedMessage . serialize
 
 propParsePathID :: Property
 propParsePathID = property $ forAll arbitrary check
@@ -97,6 +101,16 @@ propParsePathID = property $ forAll arbitrary check
 
 test :: Test
 test = testGroup "Protocol"
-    [ testProperty "parseMessage" propParseMessageID
+    [ testProperty "parseFramedMessage" propParseFramedMessageID
     , testProperty "parsePath"    propParsePathID
     ] 
+
+u = "�"
+
+b :: String
+b = "�3�2::"
+
+s :: IO [ByteString]
+s = do
+    framedMessages <- sample' (arbitrary :: Gen FramedMessage)
+    return $ map serialize framedMessages

@@ -2,7 +2,7 @@
 -- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Protocol (parseMessage, parsePath) where
+module Web.SocketIO.Protocol (parseFramedMessage, parsePath) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -14,17 +14,22 @@ import qualified    Data.ByteString.Lazy                    as BL
 import              Text.ParserCombinators.Parsec
 
 --------------------------------------------------------------------------------
--- | Parse raw ByteString to Message
-parseMessage :: BL.ByteString -> [Message]
-parseMessage raw = case parse parseMessage' "" str of
-    Left _  -> [MsgNoop]
-    Right x -> [x]
+-- | Parse raw ByteString to Messages
+parseFramedMessage :: BL.ByteString -> FramedMessage
+parseFramedMessage raw = case parse parseFramedMessage_ "" str of
+    Left _  -> Framed [MsgNoop]
+    Right x -> x
     where   str = fromLazyByteString raw
 
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- | Parsec version, without wrapper
-parseMessage' :: Parser Message
-parseMessage' = do
+parseFramedMessage_ :: Parser FramedMessage
+parseFramedMessage_ = Framed <$> many (char '�' >> digit >> char '�' >> parseMessage)
+
+--------------------------------------------------------------------------------
+-- | Message, not framed
+parseMessage :: Parser Message
+parseMessage = do
     n <- digit
     case n of
         '0' ->  (parseID >> parseEndpoint >>= return . MsgDisconnect)
@@ -41,7 +46,7 @@ parseMessage' = do
                 string ":::"
                 n' <- read <$> number
                 char '+'
-                d <- fromString <$> text
+                d <- fromString <$> textWithoutReplChar
                 return $ MsgACK (ID n') (Data d)
             ) <|> (do
                 string ":::"
@@ -57,12 +62,7 @@ parseMessage' = do
 
 --------------------------------------------------------------------------------
 endpoint :: Parser String
-endpoint = many1 $ satisfy (/= ':')
-
---------------------------------------------------------------------------------
--- | Parser combinator for non-empty text
-text :: Parser String
-text = many1 anyChar
+endpoint = many1 $ satisfy (\c-> c /= ':' && c /= '�')
 
 --------------------------------------------------------------------------------
 number :: Parser String
@@ -82,18 +82,18 @@ parseID  =  try (colon >> number >>= plus >>= return . IDPlus . read)
 --------------------------------------------------------------------------------
 parseEndpoint :: Parser Endpoint
 parseEndpoint    =  try (colon >> fromString <$> endpoint >>= return . Endpoint)
-                <|>     (colon >>              return   NoEndpoint)
+                <|>     (colon >>                             return   NoEndpoint)
 
 --------------------------------------------------------------------------------
 parseData :: Parser Data
-parseData    =  try (colon >> text >>= return . Data . fromString)
-            <|>     (colon >>          return   NoData)
+parseData    =  try (colon >> textWithoutReplChar >>= return . Data . fromString)
+            <|>     (colon >>                         return   NoData)
 
 --------------------------------------------------------------------------------
 parseEvent :: Parser Event
 parseEvent = try (do
                 colon
-                t <- text
+                t <- textWithoutReplChar
                 case decode (fromString t) of
                     Just e -> return e
                     Nothing -> return NoEvent
@@ -108,6 +108,11 @@ textWithoutSlash = many1 $ satisfy (/= '/')
 
 slash :: Parser Char
 slash = char '/'
+
+--------------------------------------------------------------------------------
+-- | The replacement character (U+FFFD) as delimiters
+textWithoutReplChar :: Parser String
+textWithoutReplChar = many1 $ satisfy (/= '�')
 
 -------------------------------------------------------------------------------
 parseTransport :: Parser Transport
