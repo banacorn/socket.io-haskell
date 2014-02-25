@@ -48,4 +48,4 @@ parseHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 --------------------------------------------------------------------------------
 -- | The message part
 parseHTTPBody :: Wai.Request -> IO FramedMessage
-parseHTTPBody req = parseFramedMessage . fromLazyByteString <$> Wai.lazyRequestBody req
+parseHTTPBody req = parseFramedMessage <$> Wai.lazyRequestBody req

@@ -15,6 +15,8 @@ import Test.Framework.Providers.QuickCheck2
 import Web.SocketIO.Types
 import Web.SocketIO.Protocol
 
+import qualified Data.ByteString.Lazy as BL
+
 --------------------------------------------------------------------------------
 -- make data types of protocol instance of arbitrary    
 
@@ -107,7 +109,7 @@ test = testGroup "Protocol"
 
 u = "�"
 
-b :: String
+b :: BL.ByteString
 b = "�3�2::"
 
 s :: IO [ByteString]

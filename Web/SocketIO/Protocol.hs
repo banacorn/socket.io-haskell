@@ -11,15 +11,15 @@ import              Web.SocketIO.Types
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
 import qualified    Data.ByteString.Lazy                    as BL
-import              Text.ParserCombinators.Parsec
+import              Text.Parsec
+import              Text.Parsec.ByteString.Lazy
 
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
 parseFramedMessage :: BL.ByteString -> FramedMessage
-parseFramedMessage raw = case parse parseFramedMessage_ "" str of
+parseFramedMessage input = case parse parseFramedMessage_ "" input of
     Left _  -> Framed [MsgNoop]
     Right x -> x
-    where   str = fromLazyByteString raw
 
 ------------------------------------------------------------------------------
 -- | Parsec version, without wrapper
