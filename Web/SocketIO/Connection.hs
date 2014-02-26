@@ -94,13 +94,14 @@ handleConnection (Handshake, _) = do
 
     -- establish a session
     session@(Session sessionID _ _ _ _) <- makeSession
+
+    -- session table management
+    updateSession (H.insert sessionID session)
+
     debugLog Debug session "[Handshake]"
     
     -- timeout
     setTimeout session
-
-    -- session table management
-    updateSession (H.insert sessionID session)
 
     -- next stage
     runSession SessionHandshake session
