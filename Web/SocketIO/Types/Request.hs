@@ -11,7 +11,7 @@ import              Web.SocketIO.Types.Event
 
 --------------------------------------------------------------------------------
 import              Data.List                               (intersperse)
-import              Data.Monoid                             (mconcat)
+import              Data.Monoid                             (mconcat, mempty)
 import qualified    Data.ByteString                         as B
 
 --------------------------------------------------------------------------------
@@ -76,11 +76,11 @@ data Message    = MsgHandshake SessionID Int Int [Transport]
 
 instance Serializable Message where
     serialize (MsgHandshake s a b t)        = serialize s <> ":" <>
-                                              serialize a' <> ":" <>
+                                              a'          <> ":" <>
                                               serialize b <> ":" <>
                                               serialize transportType
         where   transportType = fromString $ concat . intersperse "," . map serialize $ t :: ByteString
-                a' = if a == 0 then "" else show a
+                a' = if a == 0 then mempty else serialize a
     serialize (MsgDisconnect NoEndpoint)    = "0"
     serialize (MsgDisconnect e)             = "0::" <> serialize e
     serialize (MsgConnect e)                = "1::" <> serialize e
