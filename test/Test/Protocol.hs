@@ -15,6 +15,7 @@ import qualified    Data.Text.Lazy                          as TL
 import              Test.Framework
 import              Test.QuickCheck
 import              Test.Framework.Providers.QuickCheck2
+
 --------------------------------------------------------------------------------
 -- make data types of protocol instance of arbitrary    
 
@@ -102,4 +103,4 @@ test :: Test
 test = testGroup "Protocol"
     [ testProperty "parseFramedMessage" propParseFramedMessageID
     , testProperty "parsePath"    propParsePathID
-    ] 
+    ]

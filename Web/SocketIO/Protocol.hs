@@ -17,12 +17,14 @@ import              Text.Parsec.ByteString.Lazy
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
 parseFramedMessage :: BL.ByteString -> Framed Message
-parseFramedMessage input = Framed $ map parseMessage' splitted
+parseFramedMessage input = if isSingleton
+    then Framed $ [parseMessage' input]
+    else Framed $ map parseMessage' splitted
     where   splitted = split input
             parseMessage' x = case parse parseMessage "" x of
                 Left _  -> MsgNoop
                 Right a -> a
-
+            isSingleton = not (BL.null input) && BL.head input /= 239
 --------------------------------------------------------------------------------
 -- | Split raw ByteString with U+FFFD as delimiter
 split :: BL.ByteString -> [BL.ByteString]
