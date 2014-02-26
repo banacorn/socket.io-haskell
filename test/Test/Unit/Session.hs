@@ -14,12 +14,13 @@ import              Data.IORef                              (readIORef)
 import qualified    Data.HashMap.Strict                     as H
 --------------------------------------------------------------------------------
 
+import              Web.SocketIO.Server
 import              Web.SocketIO.Types
 import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 --------------------------------------------------------------------------------
 testConfig :: Configuration
-testConfig = Configuration
+testConfig = defaultConfig
     {   transports = [XHRPolling]
     ,   logLevel = 3
     ,   logTo = stderr

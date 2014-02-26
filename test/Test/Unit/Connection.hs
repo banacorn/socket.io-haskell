@@ -9,12 +9,13 @@ import              Test.Framework
 import              Test.HUnit
 import              Test.Framework.Providers.HUnit
 
+import              Web.SocketIO.Server
 import              Web.SocketIO.Types
 import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 --------------------------------------------------------------------------------
 testConfig :: Configuration
-testConfig = Configuration
+testConfig = defaultConfig
     {   transports = [XHRPolling]
     ,   logLevel = 3
     ,   logTo = stderr

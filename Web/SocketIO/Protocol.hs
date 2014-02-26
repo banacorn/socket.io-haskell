@@ -16,7 +16,7 @@ import              Text.Parsec.ByteString.Lazy
 
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
-parseFramedMessage :: BL.ByteString -> FramedMessage
+parseFramedMessage :: BL.ByteString -> Framed Message
 parseFramedMessage input = Framed $ map parseMessage' splitted
     where   splitted = split input
             parseMessage' x = case parse parseMessage "" x of

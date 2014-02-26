@@ -61,7 +61,7 @@ instance Arbitrary Message where
             , MsgNoop
             ]
 
-instance Arbitrary FramedMessage where
+instance Arbitrary a => Arbitrary (Framed a) where
     arbitrary = Framed <$> (listOf arbitrary)
 
 --------------------------------------------------------------------------------

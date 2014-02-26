@@ -49,10 +49,11 @@ data Request    = Handshake
 
 --------------------------------------------------------------------------------
 -- | Message Framing
-data FramedMessage = Framed [Message]
-                   deriving (Show, Eq)
+data Framed a = Framed [a]
+              deriving (Show, Eq)
 
-instance Serializable FramedMessage where
+instance (Show a, Serializable a) => Serializable (Framed a) where
+    serialize (Framed [message]) = serialize message
     serialize (Framed messages) = mconcat $ map frame messages
         where   frame message = let serialized = serialize message  
                                 in "�" <> serialize size <> "�" <> serialized

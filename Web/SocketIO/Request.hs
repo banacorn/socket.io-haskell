@@ -14,7 +14,7 @@ import              Network.HTTP.Types                      (Method)
 
 --------------------------------------------------------------------------------
 -- | Information of a HTTP reqeust we need
-type RequestInfo = (Method, Path, FramedMessage)
+type RequestInfo = (Method, Path, Framed Message)
 
 --------------------------------------------------------------------------------
 -- | Extracts from HTTP reqeusts
@@ -47,5 +47,5 @@ parseHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 
 --------------------------------------------------------------------------------
 -- | The message part
-parseHTTPBody :: Wai.Request -> IO FramedMessage
+parseHTTPBody :: Wai.Request -> IO (Framed Message)
 parseHTTPBody req = parseFramedMessage <$> Wai.lazyRequestBody req
