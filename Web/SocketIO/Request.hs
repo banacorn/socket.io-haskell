@@ -34,10 +34,13 @@ retrieveRequestInfo request = do
 --------------------------------------------------------------------------------
 -- | Converts to SocketIO request
 processRequestInfo :: RequestInfo -> [Request]
-processRequestInfo ("GET" , (WithoutSession _ _)         , _                 )  = [Handshake]
-processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _                 )  = [Connect sessionID]
-processRequestInfo ("POST", (WithSession _ _ _ sessionID), Framed ((MsgEvent _ _ event):_)) = [Emit sessionID event]
-processRequestInfo (_     , (WithSession _ _ _ sessionID), _                 )  = [Disconnect sessionID]
+processRequestInfo ("GET" , (WithoutSession _ _)         , _              ) = [Handshake]
+processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _              ) = [Connect sessionID]
+processRequestInfo ("POST", (WithSession _ _ _ sessionID), Framed messages) = requests
+    where   requests = foldr extractEvent [] messages
+            extractEvent (MsgEvent _ _ event) acc = Emit sessionID event : acc
+            extractEvent _                    acc = acc
+processRequestInfo (_     , (WithSession _ _ _ sessionID), _              ) = [Disconnect sessionID]
 processRequestInfo _    = error "error parsing http request"
  
 --------------------------------------------------------------------------------
