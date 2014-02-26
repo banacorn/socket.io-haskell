@@ -7,22 +7,19 @@
 
 module Test.Protocol (test) where
 
-import Control.Applicative ((<$>))
-import Test.Framework
-import Test.QuickCheck
-import Test.Framework.Providers.QuickCheck2
-
-import Web.SocketIO.Types
-import Web.SocketIO.Protocol
-
-import qualified Data.ByteString.Lazy as BL
-
+import              Web.SocketIO.Types
+import              Web.SocketIO.Protocol
+--------------------------------------------------------------------------------
+import              Control.Applicative                     ((<$>))
+import qualified    Data.Text.Lazy                          as TL
+import              Test.Framework
+import              Test.QuickCheck
+import              Test.Framework.Providers.QuickCheck2
 --------------------------------------------------------------------------------
 -- make data types of protocol instance of arbitrary    
 
-friendlyStringGen :: IsString a => Gen a
-friendlyStringGen = fmap (fromString . map replaceColon) (listOf1 arbitrary)
-    where replaceColon c = if c == ':' then '.' else c
+friendlyStringGen :: IsLazyText a => Gen a
+friendlyStringGen = fmap (fromLazyText . TL.cons 'a' . TL.replace ":" ".") (arbitrary)
 
 instance Arbitrary Endpoint where
     arbitrary = do
@@ -94,7 +91,7 @@ instance Arbitrary Path where
 propParseFramedMessageID :: Property
 propParseFramedMessageID = property $ forAll arbitrary check
     where   check msg = msg == msgIdentity msg
-            msgIdentity = parseFramedMessage . serialize
+            msgIdentity msg = parseFramedMessage $ serialize (serialize msg :: Text)
 
 propParsePathID :: Property
 propParsePathID = property $ forAll arbitrary check
@@ -106,13 +103,3 @@ test = testGroup "Protocol"
     [ testProperty "parseFramedMessage" propParseFramedMessageID
     , testProperty "parsePath"    propParsePathID
     ] 
-
-u = "�"
-
-b :: BL.ByteString
-b = "�3�2::"
-
-s :: IO [ByteString]
-s = do
-    framedMessages <- sample' (arbitrary :: Gen FramedMessage)
-    return $ map serialize framedMessages

@@ -29,7 +29,6 @@ import qualified    Data.ByteString.Lazy                    as BL
 import qualified    Data.ByteString.Lazy.Char8              as BLC
 import              Data.Monoid                             ((<>), Monoid)
 
-
 --------------------------------------------------------------------------------
 -- | Class for string-like data structures that can be converted from strict ByteString
 class IsByteString a where

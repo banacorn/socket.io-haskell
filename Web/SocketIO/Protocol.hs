@@ -17,14 +17,22 @@ import              Text.Parsec.ByteString.Lazy
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
 parseFramedMessage :: BL.ByteString -> FramedMessage
-parseFramedMessage input = case parse parseFramedMessage_ "" input of
-    Left _  -> Framed [MsgNoop]
-    Right x -> x
+parseFramedMessage input = Framed $ map parseMessage' splitted
+    where   splitted = split input
+            parseMessage' x = case parse parseMessage "" x of
+                Left _  -> MsgNoop
+                Right a -> a
 
-------------------------------------------------------------------------------
--- | Parsec version, without wrapper
-parseFramedMessage_ :: Parser FramedMessage
-parseFramedMessage_ = Framed <$> many (char '�' >> digit >> char '�' >> parseMessage)
+--------------------------------------------------------------------------------
+-- | Split raw ByteString with U+FFFD as delimiter
+split :: BL.ByteString -> [BL.ByteString]
+split str = map (BL.drop 2) . skipOddIndexed True . filter isDelimiter . BL.split 239 $ str
+    where   isDelimiter x = not (BL.null x)
+                             && (BL.head x == 191)
+                             && (BL.head (BL.tail x) == 189)
+            skipOddIndexed _ [] = []
+            skipOddIndexed True (_:xs) = skipOddIndexed False xs
+            skipOddIndexed False (x:xs) = x : skipOddIndexed True xs
 
 --------------------------------------------------------------------------------
 -- | Message, not framed
@@ -46,7 +54,7 @@ parseMessage = do
                 string ":::"
                 n' <- read <$> number
                 char '+'
-                d <- fromString <$> textWithoutReplChar
+                d <- fromString <$> text
                 return $ MsgACK (ID n') (Data d)
             ) <|> (do
                 string ":::"
@@ -62,7 +70,7 @@ parseMessage = do
 
 --------------------------------------------------------------------------------
 endpoint :: Parser String
-endpoint = many1 $ satisfy (\c-> c /= ':' && c /= '�')
+endpoint = many1 $ satisfy (/= ':')
 
 --------------------------------------------------------------------------------
 number :: Parser String
@@ -86,14 +94,14 @@ parseEndpoint    =  try (colon >> fromString <$> endpoint >>= return . Endpoint)
 
 --------------------------------------------------------------------------------
 parseData :: Parser Data
-parseData    =  try (colon >> textWithoutReplChar >>= return . Data . fromString)
-            <|>     (colon >>                         return   NoData)
+parseData    =  try (colon >> text >>= return . Data . fromString)
+            <|>     (colon >>      return   NoData)
 
 --------------------------------------------------------------------------------
 parseEvent :: Parser Event
 parseEvent = try (do
                 colon
-                t <- textWithoutReplChar
+                t <- text
                 case decode (fromString t) of
                     Just e -> return e
                     Nothing -> return NoEvent
@@ -110,9 +118,9 @@ slash :: Parser Char
 slash = char '/'
 
 --------------------------------------------------------------------------------
--- | The replacement character (U+FFFD) as delimiters
-textWithoutReplChar :: Parser String
-textWithoutReplChar = many1 $ satisfy (/= '�')
+-- | Non-empty text
+text :: Parser String
+text = many1 anyChar
 
 -------------------------------------------------------------------------------
 parseTransport :: Parser Transport
