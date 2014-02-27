@@ -45,16 +45,16 @@ handleSession SessionPolling = do
     case result of
         -- private
         Just (Private, Event eventName payloads) -> do
-            debugSession Info $ "--->  " <> serialize eventName <> " " <> serialize payloads
+            debugSession Info $ "Emit: " <> serialize eventName
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- broadcast
         Just (Broadcast _, Event eventName payloads) -> do
             -- this log will cause massive overhead, need to be removed
-            debugSession Info $ "*-->  " <> serialize eventName <> " " <> serialize payloads
+            debugSession Info $ "Broadcast: " <> serialize eventName
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- wtf
         Just (_, NoEvent) -> do
-            debugSession Error $ "No Emit"
+            debugSession Error $ "Event malformed"
             return $ MsgEvent NoID NoEndpoint NoEvent
         -- no output, keep polling
         Nothing -> do
@@ -62,8 +62,8 @@ handleSession SessionPolling = do
 
 handleSession (SessionEmit event) = do
     case event of
-        Event eventName payloads -> debugSession Info $ "<---  " <> serialize eventName <> " " <> serialize payloads
-        NoEvent                  -> debugSession Error $ "Event malformed"
+        Event eventName _ -> debugSession Info $ "On: " <> serialize eventName
+        NoEvent           -> debugSession Error $ "Event malformed"
     triggerEvent event
     return $ MsgConnect NoEndpoint
 

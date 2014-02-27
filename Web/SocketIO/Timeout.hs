@@ -37,8 +37,8 @@ primTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
     duration <- getTimeoutDuration
 
     if firstTime 
-        then debug Debug $ sessionID <> "    Set Timeout"
-        else debug Debug $ sessionID <> "    Extend Timeout"
+        then debug Debug $ sessionID <> "    [Session] Set timeout"
+        else debug Debug $ sessionID <> "    [Session] Extend timeout"
     result <- timeout duration $ takeMVar timeoutVar
 
     case result of
@@ -47,11 +47,12 @@ primTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
         -- die!
         Just False -> clearTimeout session
         Nothing -> do
-            debug Debug $ sessionID <> "    Close Session"
             runSession SessionDisconnectByServer session
             -- remove session
             tableRef <- getSessionTableRef
             liftIO (modifyIORef tableRef (H.delete sessionID))
+            debug Debug $ sessionID <> "    [Session] Destroyed: close timeout"
+
 ----------------------------------------------------------------------------------
 -- | Set timeout
 setTimeout :: Session -> ConnectionM ()
@@ -65,7 +66,6 @@ extendTimeout (Session _ _ _ _ timeoutVar) = putMVar timeoutVar True
 --------------------------------------------------------------------------------
 -- | Clear timeout
 clearTimeout :: Session -> ConnectionM ()
-clearTimeout (Session sessionID _ _ _ timeoutVar) = do
-    debug Debug $ sessionID <> "    Clear Timeout"
+clearTimeout (Session _ _ _ _ timeoutVar) = do
     putMVar timeoutVar False
 
