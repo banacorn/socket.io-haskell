@@ -11,7 +11,9 @@ module Web.SocketIO.Types.String (
     ,   IsLazyText(..)
     ,   Serializable(..)
     ,   Text
+    ,   StrictText
     ,   ByteString
+    ,   LazyByteString
     ,   (<>)
     ) where
 
@@ -21,13 +23,24 @@ import qualified    Data.String                             as S
 import qualified    Data.Text                               as T
 import qualified    Data.Text.Encoding                      as TE
 import qualified    Data.Text.Lazy                          as TL
-import              Data.Text.Lazy                          (Text)
 import qualified    Data.Text.Lazy.Encoding                 as TLE
 import              Data.ByteString                         (ByteString)
 import qualified    Data.ByteString.Char8                   as BC
 import qualified    Data.ByteString.Lazy                    as BL
 import qualified    Data.ByteString.Lazy.Char8              as BLC
 import              Data.Monoid                             ((<>), Monoid)
+
+--------------------------------------------------------------------------------
+-- | Lazy Text as default Text
+type Text = TL.Text
+
+--------------------------------------------------------------------------------
+-- | Type synonym of Strict Text
+type StrictText = T.Text
+
+--------------------------------------------------------------------------------
+-- | Type synonym of Lazy ByteString
+type LazyByteString = BL.ByteString
 
 --------------------------------------------------------------------------------
 -- | Class for string-like data structures that can be converted from strict ByteString
