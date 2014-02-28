@@ -72,11 +72,7 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
         -- >    {   transports = [XHRPolling]
         -- >    ,   logLevel = 2               
         -- >    ,   logTo = stderr        
-        -- >    ,   header =
-        -- >            [   ("Content-Type", "text/plain")
-        -- >            ,   ("Connection", "keep-alive")
-        -- >            ,   ("Access-Control-Allow-Credentials", "true") 
-        -- >            ]      
+        -- >    ,   header = [("Access-Control-Allow-Credentials", "true")]      
         -- >    ,   heartbeats = True
         -- >    ,   closeTimeout = 60
         -- >    ,   heartbeatTimeout = 60
@@ -89,11 +85,7 @@ defaultConfig = Configuration
     {   transports = [XHRPolling]
     ,   logLevel = 2
     ,   logTo = stderr
-    ,   header = 
-            [   ("Content-Type", "text/plain")
-            ,   ("Connection", "keep-alive")
-            ,   ("Access-Control-Allow-Credentials", "true") 
-            ]
+    ,   header = [("Access-Control-Allow-Credentials", "true")]
     ,   heartbeats = True
     ,   closeTimeout = 60
     ,   heartbeatTimeout = 60
