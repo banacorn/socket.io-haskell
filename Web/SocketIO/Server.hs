@@ -63,9 +63,8 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
                 Just _  -> fields
                 Nothing -> ("Access-Control-Allow-Origin", origin) : fields
 --------------------------------------------------------------------------------
--- | Default configurations to be overridden. Add "Access-Control-Allow-Origin" field to the header to override.
+-- | Default configuration.
         --
-        -- > defaultConfig :: Configuration
         -- > defaultConfig = Configuration
         -- >    {   transports = [XHRPolling]
         -- >    ,   logLevel = 2               
@@ -77,6 +76,17 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
         -- >    ,   heartbeatInterval = 25
         -- >    ,   pollingDuration = 20
         -- >    }
+        --
+-- You can override it like so:
+        --
+        -- > myConfig = defaultConfig { logLevel = 0 }
+        --
+-- Unless specified, the header will be modified to enable cross-origin resource sharing (CORS) like this.
+        --
+        -- > header = 
+        -- >    [   ("Access-Control-Allow-Origin", <origin-of-the-reqeust>)]      
+        -- >    ,   ("Access-Control-Allow-Credentials", "true")
+        -- >    ]      
         --
 defaultConfig :: Configuration
 defaultConfig = Configuration

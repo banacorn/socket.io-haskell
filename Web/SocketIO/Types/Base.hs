@@ -85,7 +85,7 @@ data ChannelHub = ChannelHub
 -- | Defines behaviors of a Socket.IO server
 data Configuration = Configuration
     {   transports :: [Transport]
-    ,   logLevel :: Int
+    ,   logLevel :: Int             -- ^ there are 4 levels, from 0 to 3: Error, Warn, Info, Debug
     ,   logTo :: Handle
     ,   heartbeats :: Bool
     ,   header :: ResponseHeaders
@@ -145,7 +145,7 @@ instance HasSessionID CallbackM where
     getSessionID = CallbackM . lift $ callbackEnvSessionID <$> ask
 
 --------------------------------------------------------------------------------
--- | Sending events
+-- | Sends events
 class Publisher m where
     -- | Sends a message to the socket that starts it.
     --
@@ -153,16 +153,16 @@ class Publisher m where
     -- `emit` \"launch\" [\"missile\", \"nuke\"] 
     -- @
     emit    :: EventName            -- ^ name of event to trigger
-            -> [Text]               -- ^ message to carry with
+            -> [Text]               -- ^ payload to carry with
             -> m ()
 
-    -- | Sends a message to everyone else except for the socket that starts it.
+    -- | Sends a message to everybody except for the socket that starts it.
     --
     -- @
     -- `broadcast` \"hide\" [\"nukes coming!\"] 
     -- @
     broadcast   :: EventName        -- ^ name of event to trigger
-                -> [Text]           -- ^ message to carry with
+                -> [Text]           -- ^ payload to carry with
                 -> m ()
 
     -- | 
@@ -186,7 +186,7 @@ instance Publisher CallbackM where
         writeChan channel (Broadcast sessionID, Event event reply)
 
 --------------------------------------------------------------------------------
--- | Receiving events.
+-- | Receives events.
 class Subscriber m where
     -- @
     -- 'on' \"ping\" $ do

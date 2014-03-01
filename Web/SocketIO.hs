@@ -6,7 +6,7 @@ module Web.SocketIO
         -- * How to use this module
         -- |
         --
-        -- Note that most of the string literals below are of type Text.
+        -- Note that most of the string literals below are of type Lazy Text.
         --
         -- >{-# LANGUAGE OverloadedStrings #-}
         -- >
@@ -42,9 +42,7 @@ module Web.SocketIO
     ,   reply
     ,   getEventName
     ,   HasSessionID(..)
-    ,   Event(..)
     ,   EventName
-    ,   Payload
     ,   SessionID
 
         -- ** Special events

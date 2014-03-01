@@ -12,17 +12,18 @@ import Control.Applicative ((<$>))
 import Control.Monad.Reader
 
 --------------------------------------------------------------------------------
--- | Messages carried with the event
+-- | Extracts payload carried by the event
 --
 -- @
 -- `on` \"echo\" $ do
---     messages <- reply
---     liftIO $ print messages
+--     payload <- reply
+--     liftIO $ print payload
+--     emit "echo" payload 
 -- @
-reply :: CallbackM [Payload]
+reply :: CallbackM [Text]
 reply = callbackEnvPayload <$> ask
 
 --------------------------------------------------------------------------------
--- | Get EventName
+-- | Name of the event
 getEventName :: CallbackM EventName
 getEventName = callbackEnvEventName <$> ask
