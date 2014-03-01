@@ -139,7 +139,7 @@ handleConnection (Connect _, Just (session, Connected)) = do
 
 handleConnection (Connect sessionID, Nothing) = do
     debug Warn $ sessionID <> "    [Request] Connect: Session not found" 
-    return $ MsgDisconnect NoEndpoint
+    return $ MsgError NoEndpoint NoData
 
 handleConnection (Disconnect sessionID, Just (session, _)) = do
     

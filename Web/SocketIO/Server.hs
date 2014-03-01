@@ -16,8 +16,7 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
-import qualified    Data.ByteString.Lazy            as BL
-import              Network.HTTP.Types              (status200)
+import              Network.HTTP.Types              (Status, status200, status403)
 import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
@@ -55,8 +54,7 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
     let headerFields' = insertOrigin headerFields origin
 
     reqs <- parseHTTPRequest httpRequest
-    responses <- mapM runConnection' reqs
-    waiResponse headerFields' (serialize (Framed responses))
+    mapM runConnection' reqs >>= waiResponse headerFields' 
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin
@@ -95,5 +93,15 @@ defaultConfig = Configuration
 
 --------------------------------------------------------------------------------
 -- | Make Wai response
-waiResponse :: Monad m => ResponseHeaders -> BL.ByteString -> m Wai.Response
-waiResponse vorspann = return . Wai.responseLBS status200 vorspann
+waiResponse :: Monad m => ResponseHeaders -> [Message] -> m Wai.Response
+waiResponse vorspann messages = do
+    return . Wai.responseLBS status vorspann . serialize . Framed $ messages
+    where   status = if status403 `elem` (map toHTTPStatus messages)
+                        then status403
+                        else status200
+
+--------------------------------------------------------------------------------
+-- | Maps SocketIO respond message to HTTP status code
+toHTTPStatus :: Message -> Status
+toHTTPStatus (MsgError _ _) = status403
+toHTTPStatus _ = status200
