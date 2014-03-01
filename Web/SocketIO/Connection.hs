@@ -15,6 +15,7 @@ import              Web.SocketIO.Types
 import              Web.SocketIO.Util
 
 --------------------------------------------------------------------------------
+import              Control.Applicative                     ((<$>))
 import              Control.Concurrent.MVar.Lifted
 import              Control.Monad.Reader       
 import              Control.Monad.Writer       
@@ -108,8 +109,7 @@ handleConnection (Handshake, _) = do
     runSession SessionHandshake session
 
 
-    where   genSessionID = liftIO $ fmap (fromString . show) (randomRIO (10000000000000000000, 99999999999999999999 :: Integer)) :: ConnectionM ByteString
-    
+    where   genSessionID = liftIO $ serialize <$> randomRIO (100000000000, 999999999999 :: Integer)
             makeSession = do
 
                 sessionID <- genSessionID
@@ -122,58 +122,44 @@ handleConnection (Handshake, _) = do
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
     debugLog Debug session "[Request] Connect: ACK"
-
     extendTimeout session
-
     let session' = session { sessionState = Connected }
     updateSession (H.insert sessionID session')
-
     runSession SessionConnect session'
 
 handleConnection (Connect _, Just (session, Connected)) = do
     debugLog Debug session "[Request] Connect: Polling"
-
-    extendTimeout session
-    
+    extendTimeout session  
     runSession SessionPolling session
 
 handleConnection (Connect sessionID, Nothing) = do
     debug Warn $ sessionID <> "    [Request] Connect: Session not found" 
     return $ MsgError NoEndpoint NoData
 
-handleConnection (Disconnect sessionID, Just (session, _)) = do
-    
+handleConnection (Disconnect sessionID, Just (session, _)) = do 
     debugLog Debug session "[Request] Disconnect: By client"
-
     clearTimeout session
-
     updateSession (H.delete sessionID)
     debugLog Debug session "[Session] Destroyed"
-
     runSession SessionDisconnectByClient session
 
 handleConnection (Disconnect sessionID, Nothing) = do
     debug Warn $ sessionID <> "    [Request] Disconnect: Session not found" 
-
     return MsgNoop
 
 handleConnection (Emit _ _, Just (session, Connecting)) = do
     extendTimeout session
-
     debugLog Warn session "[Request] Emit: Session still connecting, not ACKed" 
     return $ MsgError NoEndpoint NoData
 
-handleConnection (Emit _ emitter, Just (session, Connected)) = do
+handleConnection (Emit _ event@(Event eventName payloads), Just (session, Connected)) = do
+    debugLog Debug session $ "[Request] Emit: " <> serialize eventName <> " " <> serialize payloads
+    runSession (SessionEmit event) session
 
-    case emitter of
-        Event eventName payloads -> debugLog Debug session $ "[Request] Emit: " <> serialize eventName <> " " <> serialize payloads
-        NoEvent                  -> debugLog Warn session $ "[Request] Emit: event malformed"
-    
+handleConnection (Emit _ NoEvent, Just (session, Connected)) = do
+    debugLog Warn session $ "[Request] Emit: event malformed"
+    return $ MsgError NoEndpoint NoData
 
-    extendTimeout session
-
-    runSession (SessionEmit emitter) session
-
-handleConnection (Emit _ _, Nothing) = do
-    debug Warn $ "                    " <> "    [Request] Emit: Session not found" 
+handleConnection (Emit sessionID _, Nothing) = do
+    debug Warn $ sessionID <> "    [Request] Emit: Session not found" 
     return $ MsgError NoEndpoint NoData
