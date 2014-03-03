@@ -9,6 +9,8 @@ module Test.Protocol (test) where
 
 import              Web.SocketIO.Types
 import              Web.SocketIO.Protocol
+
+import              Test.Instances.Value
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))
 import qualified    Data.Text.Lazy                          as TL
@@ -41,8 +43,8 @@ instance Arbitrary Text where
 instance Arbitrary Event where
     arbitrary = do
         eventName <- arbitrary
-        payloads <- listOf arbitrary
-        elements [NoEvent, Event eventName payloads]
+        --payload <- arbitrary
+        elements [NoEvent, Event eventName (Payload [])]
 
 instance Arbitrary Message where
     arbitrary = do

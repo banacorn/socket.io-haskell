@@ -66,7 +66,7 @@ testEmit = do
     env <- makeEnvironment
     MsgHandshake sessionID _ _ _ <- runConnection env Handshake
     runConnection env (Connect sessionID)
-    res <- runConnection env (Emit sessionID (Event "event name" ["payload"]))
+    res <- runConnection env (Emit sessionID (Event "event name" (Payload ["payload"])))
     assertEqual "respond with (MsgConnect NoEndpoint)" (MsgConnect NoEndpoint) (res)
     
 --------------------------------------------------------------------------------
