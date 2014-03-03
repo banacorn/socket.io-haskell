@@ -19,7 +19,9 @@ import              Web.SocketIO.Types.String
 ----------------------------------------------------------------------------------
 import              Control.Applicative
 import              Data.Aeson                              
-
+import              Data.Aeson.Encode               (encodeToTextBuilder)
+import              Data.Text.Internal.Builder      (toLazyText)
+import              Data.Vector                     (toList)                         
 --------------------------------------------------------------------------------
 -- | Name of an Event
 type EventName = Text
@@ -38,9 +40,14 @@ instance Serializable Event where
    serialize = serialize . encode
 
 instance FromJSON Event where
-   parseJSON (Object v) =  Event <$>
-                           v .: "name" <*>
-                           v .:? "args" .!= []
+   parseJSON (Object v) = Event <$>
+                          v .: "name" <*>
+                          (toArgumentList <$> v .:? "args")
+        where   toArgumentList :: Maybe Value -> [Payload]
+                toArgumentList Nothing          = []
+                toArgumentList (Just (Array a)) = filter (/= "null") $ map (toLazyText . encodeToTextBuilder) $ toList a
+                toArgumentList _                = []
+
    parseJSON _ = return NoEvent
 
 instance ToJSON Event where

@@ -81,7 +81,7 @@ library
                     , transformers-base     ==0.4.*
                     , monad-control         ==0.3.*
                     , lifted-base           ==0.2.*
-
+                    , vector                ==0.10.*
 
 test-suite socketio-test
     type:           exitcode-stdio-1.0
@@ -111,3 +111,4 @@ test-suite socketio-test
                     , transformers-base     ==0.4.*
                     , monad-control         ==0.3.*
                     , lifted-base           ==0.2.*
+                    , vector                ==0.10.*
