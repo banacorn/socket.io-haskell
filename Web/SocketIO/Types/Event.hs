@@ -8,8 +8,8 @@
 module Web.SocketIO.Types.Event
     (   Event(..)
     ,   EventName
+    ,   Payload(..)
     ,   EventType(..)
-    ,   Payload
     ,   Package
     ) where
 
@@ -28,11 +28,11 @@ type EventName = Text
 
 --------------------------------------------------------------------------------
 -- | Payload carried by an Event
-type Payload = Text
+data Payload = Payload [Text] deriving (Eq, Show)
 
 --------------------------------------------------------------------------------
 -- | Event
-data Event = Event EventName [Payload] 
+data Event = Event EventName Payload
            | NoEvent                    -- ^ some malformed shit
            deriving (Show, Eq)
 
@@ -43,16 +43,16 @@ instance FromJSON Event where
    parseJSON (Object v) = Event <$>
                           v .: "name" <*>
                           (toArgumentList <$> v .:? "args")
-        where   toArgumentList :: Maybe Value -> [Payload]
-                toArgumentList Nothing          = []
-                toArgumentList (Just (Array a)) = filter (/= "null") $ map (toLazyText . encodeToTextBuilder) $ toList a
-                toArgumentList _                = []
+        where   toArgumentList :: Maybe Value -> Payload
+                toArgumentList Nothing          = Payload []
+                toArgumentList (Just (Array a)) = Payload $ filter (/= "null") . map (toLazyText . encodeToTextBuilder) . toList $ a
+                toArgumentList _                = Payload []
 
    parseJSON _ = return NoEvent
 
 instance ToJSON Event where
-  toJSON (Event name [])   = object ["name" .= name]
-  toJSON (Event name args) = object ["name" .= name, "args" .= args]
+  toJSON (Event name (Payload []))   = object ["name" .= name]
+  toJSON (Event name (Payload args)) = object ["name" .= name, "args" .= args]
   toJSON NoEvent = object []
 
 --------------------------------------------------------------------------------

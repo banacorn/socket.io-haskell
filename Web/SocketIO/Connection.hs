@@ -152,7 +152,7 @@ handleConnection (Emit _ _, Just (session, Connecting)) = do
     debugLog Warn session "[Request] Emit: Session still connecting, not ACKed" 
     return $ MsgError NoEndpoint NoData
 
-handleConnection (Emit _ event@(Event eventName payloads), Just (session, Connected)) = do
+handleConnection (Emit _ event@(Event eventName (Payload payloads)), Just (session, Connected)) = do
     debugLog Debug session $ "[Request] Emit: " <> serialize eventName <> " " <> serialize payloads
     runSession (SessionEmit event) session
 

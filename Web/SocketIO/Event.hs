@@ -21,7 +21,9 @@ import Control.Monad.Reader
 --     emit "echo" payload 
 -- @
 reply :: CallbackM [Text]
-reply = callbackEnvPayload <$> ask
+reply = do
+    Payload p <- callbackEnvPayload <$> ask
+    return p
 
 --------------------------------------------------------------------------------
 -- | Name of the event

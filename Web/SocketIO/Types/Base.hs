@@ -119,7 +119,7 @@ data HandlerEnv = HandlerEnv
 -- | Environment carried by `CallbackM`
 data CallbackEnv = CallbackEnv
     {   callbackEnvEventName :: EventName
-    ,   callbackEnvPayload :: [Payload]
+    ,   callbackEnvPayload :: Payload
     ,   callbackEnvChannelHub :: ChannelHub
     ,   callbackEnvSessionID :: SessionID
     }
@@ -168,22 +168,22 @@ class Publisher m where
     -- | 
 
 instance Publisher HandlerM where
-    emit event reply = do
+    emit eventName reply = do
         channel <- channelHubLocal . handlerEnvChannelHub <$> ask
-        writeChan channel (Private, Event event reply)
-    broadcast event reply = do
+        writeChan channel (Private, Event eventName (Payload reply))
+    broadcast eventName reply = do
         channel <- channelHubGlobal . handlerEnvChannelHub <$> ask
         sessionID <- handlerEnvSessionID <$> ask
-        writeChan channel (Broadcast sessionID, Event event reply)
+        writeChan channel (Broadcast sessionID, Event eventName (Payload reply))
 
 instance Publisher CallbackM where
-    emit event reply = do
+    emit eventName reply = do
         channel <- CallbackM . lift $ channelHubLocal . callbackEnvChannelHub <$> ask
-        writeChan channel (Private, Event event reply)
-    broadcast event reply = do
+        writeChan channel (Private, Event eventName (Payload reply))
+    broadcast eventName reply = do
         channel <- CallbackM . lift $ channelHubGlobal . callbackEnvChannelHub <$> ask
         sessionID <- CallbackM . lift $ callbackEnvSessionID <$> ask
-        writeChan channel (Broadcast sessionID, Event event reply)
+        writeChan channel (Broadcast sessionID, Event eventName (Payload reply))
 
 --------------------------------------------------------------------------------
 -- | Receives events.

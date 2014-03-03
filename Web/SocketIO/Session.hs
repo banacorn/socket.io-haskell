@@ -69,12 +69,12 @@ handleSession (SessionEmit event) = do
 
 handleSession SessionDisconnectByClient = do
     debugSession Info $ "Disconnected by client"
-    triggerEvent (Event "disconnect" [])
+    triggerEvent (Event "disconnect" (Payload []))
     return $ MsgNoop
 
 handleSession SessionDisconnectByServer = do
     debugSession Info $ "Disconnected by server"
-    triggerEvent (Event "disconnect" [])
+    triggerEvent (Event "disconnect" (Payload []))
     return $ MsgNoop
 
 --------------------------------------------------------------------------------
