@@ -20,8 +20,10 @@ import              Web.SocketIO.Types.String
 import              Control.Applicative
 import              Data.Aeson                              
 import              Data.Aeson.Encode               (encodeToTextBuilder)
+import              Data.List                       (intersperse)                              
 import              Data.Text.Internal.Builder      (toLazyText)
-import              Data.Vector                     (toList)                         
+import qualified    Data.Text.Lazy                  as TL
+import              Data.Vector                     (toList)
 --------------------------------------------------------------------------------
 -- | Name of an Event
 type EventName = Text
@@ -30,6 +32,9 @@ type EventName = Text
 -- | Payload carried by an Event
 data Payload = Payload [Text] deriving (Eq, Show)
 
+instance Serializable Payload where
+    serialize (Payload payload) = serialize $ '[' `TL.cons` (TL.concat $ intersperse "," payload) `TL.snoc` ']'
+
 --------------------------------------------------------------------------------
 -- | Event
 data Event = Event EventName Payload
@@ -37,7 +42,9 @@ data Event = Event EventName Payload
            deriving (Show, Eq)
 
 instance Serializable Event where
-   serialize = serialize . encode
+   serialize (Event name (Payload [])) = serialize $ "{\"name\":\"" `TL.append` name `TL.append` "\"}"
+   serialize (Event name payload) = serialize $ "{\"name\":\"" `TL.append` name `TL.append` "\",\"args\":" `TL.append` serialize payload `TL.append` "}"
+   serialize NoEvent = ""
 
 instance FromJSON Event where
    parseJSON (Object v) = Event <$>
@@ -51,8 +58,8 @@ instance FromJSON Event where
    parseJSON _ = return NoEvent
 
 instance ToJSON Event where
-  toJSON (Event name (Payload []))   = object ["name" .= name]
-  toJSON (Event name (Payload args)) = object ["name" .= name, "args" .= args]
+  toJSON (Event name (Payload []))      = object ["name" .= name]
+  toJSON (Event name (Payload payload)) = object ["name" .= name, "args" .= payload]
   toJSON NoEvent = object []
 
 --------------------------------------------------------------------------------

@@ -10,6 +10,7 @@ module Test.Protocol (test) where
 import              Web.SocketIO.Types
 import              Web.SocketIO.Protocol
 
+import Data.Aeson
 import              Test.Instances.Value
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))
@@ -37,14 +38,16 @@ instance Arbitrary Data where
         d <- friendlyStringGen
         elements [NoData, Data d]
 
-instance Arbitrary Text where
-    arbitrary = fmap fromString arbitrary
+instance Arbitrary Payload where
+    arbitrary = do
+        payload <- map serialize <$> listOf (arbitrary :: Gen Value)
+        return $ Payload payload
 
 instance Arbitrary Event where
     arbitrary = do
-        eventName <- arbitrary
-        --payload <- arbitrary
-        elements [NoEvent, Event eventName (Payload [])]
+        eventName <- arbitraryJSONString
+        payload <- arbitrary
+        elements [NoEvent, Event eventName payload]
 
 instance Arbitrary Message where
     arbitrary = do
