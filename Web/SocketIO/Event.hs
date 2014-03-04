@@ -8,22 +8,30 @@ module Web.SocketIO.Event where
 import Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
-import Control.Applicative ((<$>))
-import Control.Monad.Reader
+import              Control.Applicative ((<$>))
+import              Control.Monad.Reader
+import qualified    Data.ByteString.Lazy                as BL
 
 --------------------------------------------------------------------------------
 -- | Extracts payload carried by the event
 --
 -- @
 -- `on` \"echo\" $ do
---     payload <- reply
+--     payload <- msg
 --     liftIO $ print payload
 --     emit "echo" payload 
 -- @
-reply :: CallbackM [Text]
-reply = do
+msg :: CallbackM [Text]
+msg = do
     Payload p <- callbackEnvPayload <$> ask
     return p
+
+--------------------------------------------------------------------------------
+-- | Lazy ByteString version of `msg`, convenient for Aeson decoding.
+msg' :: CallbackM [BL.ByteString]
+msg' = do
+    Payload p <- callbackEnvPayload <$> ask
+    return (map serialize p)
 
 --------------------------------------------------------------------------------
 -- | Name of the event
