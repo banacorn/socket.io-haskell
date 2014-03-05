@@ -12,6 +12,14 @@ import              Control.Applicative ((<$>))
 import              Control.Monad.Reader
 import qualified    Data.ByteString.Lazy                as BL
 
+{-# DEPRECATED reply "use msg instead" #-}
+--------------------------------------------------------------------------------
+-- | This function is deprecated; use 'msg' instead
+reply :: CallbackM [Text]
+reply = do
+    Payload p <- callbackEnvPayload <$> ask
+    return p
+
 --------------------------------------------------------------------------------
 -- | Extracts payload carried by the event
 --

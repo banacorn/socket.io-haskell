@@ -39,6 +39,7 @@ module Web.SocketIO
         -- * Sending and receiving events
     ,   Subscriber(..)
     ,   Publisher(..)
+    ,   reply
     ,   msg
     ,   msg'
     ,   getEventName
