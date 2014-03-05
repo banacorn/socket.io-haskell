@@ -25,4 +25,4 @@ instance Serializable Log where
 --------------------------------------------------------------------------------
 -- | helper function
 paint :: Color -> String -> String
-paint color s = setSGRCode [SetColor Foreground Vivid color] ++ s ++ setSGRCode []
+paint color s = "\r" ++ setSGRCode [SetColor Foreground Vivid color] ++ s ++ setSGRCode []

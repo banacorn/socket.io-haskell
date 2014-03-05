@@ -2,7 +2,7 @@
 -- | Exports some logging utilities and other useful functions
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Util ((<>), debugLog, debugSession, debug) where
+module Web.SocketIO.Util ((<>), debugLog, debugSession, debug, showStatusBar) where
 
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types
@@ -10,7 +10,7 @@ import Web.SocketIO.Types
 --------------------------------------------------------------------------------
 import Control.Concurrent.Chan
 import Control.Monad.Trans                  (liftIO, MonadIO)
-
+    
 --------------------------------------------------------------------------------
 -- | Write log to channel according to log level and configurations
 debug :: (Functor m, MonadIO m, ConnectionLayer m) => (ByteString -> Log) -> ByteString -> m ()
@@ -36,3 +36,8 @@ debugSession :: (Functor m, MonadIO m, ConnectionLayer m, SessionLayer m) => (By
 debugSession logType message = do
     Session sessionID _ _ _ _ <- getSession
     debug logType $ fromByteString (sessionID <> "    " <> message)
+
+--------------------------------------------------------------------------------
+-- | Show status bar
+showStatusBar :: IO ()
+showStatusBar = return ()
