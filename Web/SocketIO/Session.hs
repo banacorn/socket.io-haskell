@@ -5,7 +5,7 @@ module Web.SocketIO.Session (runSession) where
 
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types
-import Web.SocketIO.Util
+import Web.SocketIO.Log
 
 --------------------------------------------------------------------------------
 import Control.Monad.Reader       

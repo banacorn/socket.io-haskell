@@ -64,7 +64,7 @@ library
         Web.SocketIO.Server
         Web.SocketIO.Session
         Web.SocketIO.Timeout
-        Web.SocketIO.Util
+        Web.SocketIO.Log
 
     build-depends:    base                  ==4.6.*
                     , text                  ==1.1.*

@@ -10,7 +10,7 @@ module Web.SocketIO.Timeout
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
-import              Web.SocketIO.Util
+import              Web.SocketIO.Log
 import              Web.SocketIO.Session
 
 --------------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 --------------------------------------------------------------------------------
--- | Exports some logging utilities and other useful functions
+-- | Exports some logging utilities.
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Util ((<>), debugLog, debugSession, debug, showStatusBar) where
+module Web.SocketIO.Log ((<>), debugLog, debugSession, debug, showStatusBar) where
 
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types

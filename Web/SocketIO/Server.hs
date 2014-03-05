@@ -13,7 +13,7 @@ import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
 import              Web.SocketIO.Types
-import              Web.SocketIO.Util
+import              Web.SocketIO.Log
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)

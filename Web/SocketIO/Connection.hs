@@ -12,7 +12,7 @@ import              Web.SocketIO.Channel
 import              Web.SocketIO.Session
 import              Web.SocketIO.Timeout
 import              Web.SocketIO.Types
-import              Web.SocketIO.Util
+import              Web.SocketIO.Log
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))
