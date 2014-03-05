@@ -2,7 +2,7 @@
 -- | Exports some logging utilities.
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Log ((<>), debugLog, debugSession, debug, showStatusBar) where
+module Web.SocketIO.Log ((<>), logRaw, logWithSession, logWithSessionID, showStatusBar) where
 
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types
@@ -13,8 +13,8 @@ import Control.Monad.Trans                  (liftIO, MonadIO)
     
 --------------------------------------------------------------------------------
 -- | Write log to channel according to log level and configurations
-debug :: (Functor m, MonadIO m, ConnectionLayer m) => (ByteString -> Log) -> ByteString -> m ()
-debug logType message = do
+logRaw :: (Functor m, MonadIO m, ConnectionLayer m) => (ByteString -> Log) -> ByteString -> m ()
+logRaw logType message = do
     logLevel' <- fmap logLevel getConfiguration
     logChannel <- fmap envLogChannel getEnv
     if level <= logLevel' then liftIO $ writeChan logChannel (serialize log') else return ()
@@ -27,15 +27,15 @@ debug logType message = do
 
 --------------------------------------------------------------------------------
 -- | Attaches `Web.SocketIO.Types.Base.SessionID`
-debugLog :: (Functor m, MonadIO m, ConnectionLayer m) => (ByteString -> Log) -> Session -> ByteString -> m ()
-debugLog logType (Session sessionID _ _ _ _) message = debug logType (sessionID <> "    " <> serialize message) 
+logWithSessionID :: (Functor m, MonadIO m, ConnectionLayer m) => (ByteString -> Log) -> SessionID -> ByteString -> m ()
+logWithSessionID logType sessionID message = logRaw logType (sessionID <> "    " <> serialize message) 
 
 --------------------------------------------------------------------------------
 -- | Attaches `Web.SocketIO.Types.Base.SessionID` automatically
-debugSession :: (Functor m, MonadIO m, ConnectionLayer m, SessionLayer m) => (ByteString -> Log) -> ByteString -> m ()
-debugSession logType message = do
+logWithSession :: (Functor m, MonadIO m, ConnectionLayer m, SessionLayer m) => (ByteString -> Log) -> ByteString -> m ()
+logWithSession logType message = do
     Session sessionID _ _ _ _ <- getSession
-    debug logType $ fromByteString (sessionID <> "    " <> message)
+    logRaw logType $ fromByteString (sessionID <> "    " <> message)
 
 --------------------------------------------------------------------------------
 -- | Show status bar

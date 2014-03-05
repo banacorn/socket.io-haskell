@@ -37,8 +37,8 @@ primTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
     duration <- getTimeoutDuration
 
     if firstTime 
-        then debug Debug $ sessionID <> "    [Session] Set timeout"
-        else debug Debug $ sessionID <> "    [Session] Extend timeout"
+        then logWithSessionID Debug sessionID "[Session] Set timeout"
+        else logWithSessionID Debug sessionID "[Session] Extend timeout"
     result <- timeout duration $ takeMVar timeoutVar
 
     case result of
@@ -51,7 +51,7 @@ primTimeout' firstTime session@(Session sessionID _ _ _ timeoutVar) = do
             -- remove session
             tableRef <- getSessionTableRef
             liftIO (modifyIORef tableRef (H.delete sessionID))
-            debug Debug $ sessionID <> "    [Session] Destroyed: close timeout"
+            logWithSessionID Debug sessionID "[Session] Destroyed: close timeout"
 
 ----------------------------------------------------------------------------------
 -- | Set timeout

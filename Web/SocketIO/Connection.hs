@@ -54,7 +54,6 @@ lookupSession :: SessionID -> ConnectionM (Maybe Session)
 lookupSession sessionID = do
     tableRef <- getSessionTableRef
     table <- liftIO (readIORef tableRef)
-    --debug Debug $ sessionID <> "    [Session] Lookup"
     return (H.lookup sessionID table)
 
 --------------------------------------------------------------------------------
@@ -99,8 +98,8 @@ handleConnection (Handshake, _) = do
 
     -- session table management
     updateSession (H.insert sessionID session)
-    debugLog Debug session "[Session] Created"
-    debugLog Debug session "[Request] Handshake"
+    logWithSessionID Debug sessionID "[Session] Created"
+    logWithSessionID Debug sessionID "[Request] Handshake"
     
     -- timeout
     setTimeout session
@@ -121,45 +120,45 @@ handleConnection (Handshake, _) = do
                 return $ Session sessionID Connecting channelHub listeners timeoutVar
 
 handleConnection (Connect sessionID, Just (session, Connecting)) = do
-    debugLog Debug session "[Request] Connect: ACK"
+    logWithSessionID Debug sessionID "[Request] Connect: ACK"
     extendTimeout session
     let session' = session { sessionState = Connected }
     updateSession (H.insert sessionID session')
     runSession SessionConnect session'
 
-handleConnection (Connect _, Just (session, Connected)) = do
-    debugLog Debug session "[Request] Connect: Polling"
+handleConnection (Connect sessionID, Just (session, Connected)) = do
+    logWithSessionID Debug sessionID "[Request] Connect: Polling"
     extendTimeout session  
     runSession SessionPolling session
 
 handleConnection (Connect sessionID, Nothing) = do
-    debug Warn $ sessionID <> "    [Request] Connect: Session not found" 
+    logWithSessionID Warn sessionID "[Request] Connect: Session not found" 
     return $ MsgError NoEndpoint NoData
 
 handleConnection (Disconnect sessionID, Just (session, _)) = do 
-    debugLog Debug session "[Request] Disconnect: By client"
+    logWithSessionID Debug sessionID "[Request] Disconnect: By client"
     clearTimeout session
     updateSession (H.delete sessionID)
-    debugLog Debug session "[Session] Destroyed"
+    logWithSessionID Debug sessionID "[Session] Destroyed"
     runSession SessionDisconnectByClient session
 
 handleConnection (Disconnect sessionID, Nothing) = do
-    debug Warn $ sessionID <> "    [Request] Disconnect: Session not found" 
+    logWithSessionID Warn sessionID "[Request] Disconnect: Session not found" 
     return MsgNoop
 
-handleConnection (Emit _ _, Just (session, Connecting)) = do
+handleConnection (Emit sessionID _, Just (session, Connecting)) = do
     extendTimeout session
-    debugLog Warn session "[Request] Emit: Session still connecting, not ACKed" 
+    logWithSessionID Warn sessionID "[Request] Emit: Session still connecting, not ACKed" 
     return $ MsgError NoEndpoint NoData
 
-handleConnection (Emit _ event@(Event eventName (Payload payloads)), Just (session, Connected)) = do
-    debugLog Debug session $ "[Request] Emit: " <> serialize eventName <> " " <> serialize payloads
+handleConnection (Emit sessionID event@(Event eventName (Payload payloads)), Just (session, Connected)) = do
+    logWithSessionID Debug sessionID $ "[Request] Emit: " <> serialize eventName <> " " <> serialize payloads
     runSession (SessionEmit event) session
 
-handleConnection (Emit _ NoEvent, Just (session, Connected)) = do
-    debugLog Warn session $ "[Request] Emit: event malformed"
+handleConnection (Emit sessionID NoEvent, Just (_, Connected)) = do
+    logWithSessionID Warn sessionID "[Request] Emit: event malformed"
     return $ MsgError NoEndpoint NoData
 
 handleConnection (Emit sessionID _, Nothing) = do
-    debug Warn $ sessionID <> "    [Request] Emit: Session not found" 
+    logWithSessionID Warn sessionID "[Request] Emit: Session not found" 
     return $ MsgError NoEndpoint NoData

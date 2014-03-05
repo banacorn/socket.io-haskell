@@ -33,7 +33,7 @@ handleSession SessionHandshake = do
     
 
 handleSession SessionConnect = do
-    debugSession Info $ "Connected"
+    logWithSession Info $ "Connected"
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
@@ -45,16 +45,16 @@ handleSession SessionPolling = do
     case result of
         -- private
         Just (Private, Event eventName payloads) -> do
-            debugSession Info $ "Emit: " <> serialize eventName
+            logWithSession Info $ "Emit: " <> serialize eventName
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- broadcast
         Just (Broadcast _, Event eventName payloads) -> do
             -- this log will cause massive overhead, need to be removed
-            debugSession Info $ "Broadcast: " <> serialize eventName
+            logWithSession Info $ "Broadcast: " <> serialize eventName
             return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
         -- wtf
         Just (_, NoEvent) -> do
-            debugSession Error $ "Event malformed"
+            logWithSession Error $ "Event malformed"
             return $ MsgEvent NoID NoEndpoint NoEvent
         -- no output, keep polling
         Nothing -> do
@@ -62,18 +62,18 @@ handleSession SessionPolling = do
 
 handleSession (SessionEmit event) = do
     case event of
-        Event eventName _ -> debugSession Info $ "On: " <> serialize eventName
-        NoEvent           -> debugSession Error $ "Event malformed"
+        Event eventName _ -> logWithSession Info $ "On: " <> serialize eventName
+        NoEvent           -> logWithSession Error $ "Event malformed"
     triggerEvent event
     return $ MsgConnect NoEndpoint
 
 handleSession SessionDisconnectByClient = do
-    debugSession Info $ "Disconnected by client"
+    logWithSession Info $ "Disconnected by client"
     triggerEvent (Event "disconnect" (Payload []))
     return $ MsgNoop
 
 handleSession SessionDisconnectByServer = do
-    debugSession Info $ "Disconnected by server"
+    logWithSession Info $ "Disconnected by server"
     triggerEvent (Event "disconnect" (Payload []))
     return $ MsgNoop
 
