@@ -1,4 +1,4 @@
-# Prezi's fork of Socket.IO-Haskell
+# Temporary fork of Socket.IO-Haskell
 
 See original repo at:
 https://github.com/banacorn/socket.io-haskell
