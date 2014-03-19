@@ -30,10 +30,10 @@ handleSession SessionHandshake = do
                 heartbeatTimeout'
                 (closeTimeout configuration)
                 (transports configuration)
-    
 
 handleSession SessionConnect = do
     debugSession Info $ "Connected"
+    triggerEvent (Event "connection" (Payload []))
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
