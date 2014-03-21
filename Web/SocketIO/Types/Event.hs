@@ -18,10 +18,7 @@ import              Web.SocketIO.Types.String
 
 ----------------------------------------------------------------------------------
 import              Control.Applicative
-import              Data.Aeson                              
-import              Data.Aeson.Encode               (encodeToTextBuilder)
-import              Data.List                       (intersperse)                              
-import              Data.Text.Internal.Builder      (toLazyText)
+import              Data.Aeson                      as Aeson
 import qualified    Data.Text.Lazy                  as TL
 import              Data.Vector                     (toList)
 --------------------------------------------------------------------------------
@@ -30,10 +27,10 @@ type EventName = Text
 
 --------------------------------------------------------------------------------
 -- | Payload carried by an Event
-data Payload = Payload [Text] deriving (Eq, Show)
+data Payload = Payload [Aeson.Value] deriving (Eq, Show)
 
 instance Serializable Payload where
-    serialize (Payload payload) = serialize $ '[' `TL.cons` (TL.concat $ intersperse "," payload) `TL.snoc` ']'
+    serialize (Payload payload) = serialize $ Aeson.encode payload
 
 --------------------------------------------------------------------------------
 -- | Event
@@ -52,7 +49,7 @@ instance FromJSON Event where
                           (toArgumentList <$> v .:? "args")
         where   toArgumentList :: Maybe Value -> Payload
                 toArgumentList Nothing          = Payload []
-                toArgumentList (Just (Array a)) = Payload $ filter (/= "null") . map (toLazyText . encodeToTextBuilder) . toList $ a
+                toArgumentList (Just (Array a)) = Payload $ filter (/= Aeson.Null) . toList $ a
                 toArgumentList _                = Payload []
 
    parseJSON _ = return NoEvent

@@ -10,12 +10,13 @@ import Web.SocketIO.Types
 --------------------------------------------------------------------------------
 import              Control.Applicative ((<$>))
 import              Control.Monad.Reader
+import qualified    Data.Aeson                          as Aeson
 import qualified    Data.ByteString.Lazy                as BL
 
 {-# DEPRECATED reply "use msg instead" #-}
 --------------------------------------------------------------------------------
 -- | This function is deprecated; use 'msg' instead
-reply :: CallbackM [Text]
+reply :: CallbackM [Aeson.Value]
 reply = do
     Payload p <- callbackEnvPayload <$> ask
     return p
@@ -29,7 +30,7 @@ reply = do
 --     liftIO $ print payload
 --     emit "echo" payload 
 -- @
-msg :: CallbackM [Text]
+msg :: CallbackM [Aeson.Value]
 msg = do
     Payload p <- callbackEnvPayload <$> ask
     return p

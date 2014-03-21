@@ -19,6 +19,7 @@ module Web.SocketIO.Types.String (
 
 
 --------------------------------------------------------------------------------
+import qualified    Data.Aeson                              as Aeson
 import qualified    Data.String                             as S
 import qualified    Data.Text                               as T
 import qualified    Data.Text.Encoding                      as TE
@@ -155,6 +156,9 @@ class Serializable a where
                  , Show a) => a -> s
     serialize = S.fromString . show
 
+instance Serializable Aeson.Value where
+    serialize = fromLazyByteString . Aeson.encode
+
 instance Serializable T.Text where
     serialize = fromText
 
@@ -163,7 +167,7 @@ instance Serializable TL.Text where
 
 instance Serializable ByteString where
     serialize = fromByteString
-    
+
 instance Serializable BL.ByteString where
     serialize = fromLazyByteString
 
