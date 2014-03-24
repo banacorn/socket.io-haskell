@@ -13,7 +13,6 @@ import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Request
 import              Web.SocketIO.Types
-import              Web.SocketIO.Log
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
@@ -39,8 +38,6 @@ serverConfig port config handler = do
     logChannel      <- newLogChannel
     globalChannel   <- newGlobalChannel
     streamToHandle (logTo config) logChannel
-
-    showStatusBar
 
     let vorspann = header config
     let env = Env tableRef handler config logChannel globalChannel
