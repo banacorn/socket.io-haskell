@@ -19,6 +19,7 @@ import              Control.Concurrent.Chan.Lifted
 import              Control.Monad.Reader       
 import              Control.Monad.Writer
 import              Control.Monad.Base
+import qualified    Data.Aeson                              as Aeson
 import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
 import              Network.HTTP.Types.Header               (ResponseHeaders)
@@ -153,7 +154,7 @@ class Publisher m where
     -- `emit` \"launch\" [\"missile\", \"nuke\"] 
     -- @
     emit    :: EventName            -- ^ name of event to trigger
-            -> [Text]               -- ^ payload to carry with
+            -> [Aeson.Value]        -- ^ payload to carry with
             -> m ()
 
     -- | Sends a message to everybody except for the socket that starts it.
@@ -162,7 +163,7 @@ class Publisher m where
     -- `broadcast` \"hide\" [\"nukes coming!\"] 
     -- @
     broadcast   :: EventName        -- ^ name of event to trigger
-                -> [Text]           -- ^ payload to carry with
+                -> [Aeson.Value]    -- ^ payload to carry with
                 -> m ()
 
     -- | 
