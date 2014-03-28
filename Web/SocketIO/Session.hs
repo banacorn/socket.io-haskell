@@ -32,7 +32,7 @@ handleSession SessionHandshake = do
                 (transports configuration)
 
 handleSession SessionConnect = do
-    debugSession Info $ "Connected"
+    logWithSession Info $ "Connected"
     triggerEvent (Event "connection" (Payload []))
     return $ MsgConnect NoEndpoint
 

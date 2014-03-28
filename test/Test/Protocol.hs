@@ -40,7 +40,7 @@ instance Arbitrary Data where
 
 instance Arbitrary Payload where
     arbitrary = do
-        payload <- map serialize <$> listOf (arbitrary :: Gen Value)
+        payload <- listOf (arbitrary :: Gen Value)
         return $ Payload payload
 
 instance Arbitrary Event where

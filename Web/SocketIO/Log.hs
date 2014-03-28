@@ -2,7 +2,7 @@
 -- | Exports some logging utilities.
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Log ((<>), logRaw, logWithSession, logWithSessionID) where
+module Web.SocketIO.Log ((<>), logRaw, logWithSession, logWithSessionID, showStatusBar) where
 
 --------------------------------------------------------------------------------
 import Web.SocketIO.Types
@@ -36,3 +36,8 @@ logWithSession :: (Functor m, MonadIO m, ConnectionLayer m, SessionLayer m) => (
 logWithSession logType message = do
     Session sessionID _ _ _ _ <- getSession
     logRaw logType $ fromByteString (sessionID <> "    " <> message)
+
+--------------------------------------------------------------------------------
+-- | Show status bar
+showStatusBar :: IO ()
+showStatusBar = return ()

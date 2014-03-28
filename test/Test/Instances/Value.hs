@@ -11,17 +11,11 @@ import              Web.SocketIO.Types.String
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))
 import              Data.Aeson.Types
-import              Data.Aeson.Encode                       (encode)
 import qualified    Data.HashMap.Strict                     as H
 import              Data.Scientific                         (Scientific, scientific)
 import qualified    Data.Text.Lazy                          as TL
 import              Data.Vector                             (fromList)
 import              Test.QuickCheck
-
---------------------------------------------------------------------------------
--- Data.Aeson.Value instance of Serializable
-instance Serializable Value where
-    serialize = serialize . (encode :: Value -> LazyByteString)
 
 --------------------------------------------------------------------------------
 -- Data.Aeson.Value instance of arbitrary    
