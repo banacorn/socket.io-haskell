@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- | Converts HTTP requests to Socket.IO requests
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Request (parseHTTPRequest) where
+module Web.SocketIO.Request (parseHTTPRequest, parseWSPath, parseWSBody) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -10,6 +10,7 @@ import              Web.SocketIO.Protocol
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))   
 import qualified    Network.Wai                             as Wai
+import qualified    Network.WebSockets                      as WS
 import              Network.HTTP.Types                      (Method)
 
 --------------------------------------------------------------------------------
@@ -42,13 +43,29 @@ processRequestInfo ("POST", (WithSession _ _ _ sessionID), Framed messages) = re
             extractEvent _                    acc = acc
 processRequestInfo (_     , (WithSession _ _ _ sessionID), _              ) = [Disconnect sessionID]
 processRequestInfo _    = error "error parsing http request"
- 
---------------------------------------------------------------------------------
--- | The request part
-parseHTTPRequest :: Wai.Request -> IO [Request]
-parseHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
 
 --------------------------------------------------------------------------------
 -- | The message part
 parseHTTPBody :: Wai.Request -> IO (Framed Message)
 parseHTTPBody req = parseFramedMessage <$> Wai.lazyRequestBody req
+ 
+--------------------------------------------------------------------------------
+-- | The request part
+parseHTTPRequest :: Wai.Request -> IO [Request]
+parseHTTPRequest request = processRequestInfo <$> retrieveRequestInfo request
+
+--------------------------------------------------------------------------------
+-- | peaks only the RequestHead
+parseWSPath :: WS.PendingConnection -> IO Request
+parseWSPath pendingConn = do
+    let path = parsePath (WS.requestPath (WS.pendingRequest pendingConn))
+    case path of
+        WithSession _ _ _ sessionID -> return (Connect sessionID)
+        _ -> error "error parsing ws request"
+
+--------------------------------------------------------------------------------
+parseWSBody :: SessionID -> WS.Connection -> IO Request
+parseWSBody sessionID conn = do
+    msg <- WS.receiveData conn :: IO LazyByteString
+    let Framed [MsgEvent _ _ event] = parseFramedMessage msg
+    return (Emit sessionID event)

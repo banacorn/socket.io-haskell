@@ -34,7 +34,7 @@ module Web.SocketIO
     ,   defaultConfig
     ,   Configuration(..)
     ,   Port
-    ,   Transport(XHRPolling)
+    ,   Transport(XHRPolling, WebSocket)
         
         -- * Sending and receiving events
     ,   Subscriber(..)

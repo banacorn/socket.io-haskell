@@ -16,10 +16,14 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
+import              Control.Monad                   (forever)
 import              Network.HTTP.Types              (Status, status200, status403)
 import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
+import qualified    Network.Wai.Handler.WebSockets  as WaiWS
+import qualified    Network.WebSockets              as WS
+
 
 --------------------------------------------------------------------------------
 -- | Run a socket.io application, build on top of Warp.
@@ -41,9 +45,9 @@ serverConfig port config handler = do
 
     let vorspann = header config
     let env = Env tableRef handler config logChannel globalChannel
-
+    
     -- run it with Warp
-    Warp.run port (httpApp vorspann (runConnection env))
+    Warp.run port $ WaiWS.websocketsOr WS.defaultConnectionOptions (wsApp (runConnection env)) (httpApp vorspann (runConnection env))
 
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
@@ -62,6 +66,32 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
             insertOrigin fields origin = case lookup "Access-Control-Allow-Origin" fields of
                 Just _  -> fields
                 Nothing -> ("Access-Control-Allow-Origin", origin) : fields
+
+--------------------------------------------------------------------------------
+wsApp :: (Request -> IO Message) -> WS.ServerApp
+wsApp runConnection' pendingReq = do
+    conn <- WS.acceptRequest pendingReq
+
+    req <- parseWSPath pendingReq
+
+    case req of
+        Connect sessionID -> do
+            runConnection' (Connect sessionID) >>= WS.sendDataMessage conn . WS.Text . serialize
+            loopForever sessionID conn
+        _ -> return ()
+    
+    
+    where   loopForever sessionID conn = forever $ do
+                req <- parseWSBody sessionID conn
+                --msg <- WS.receiveData conn :: IO LazyByteString
+                msg <- runConnection' req
+
+                print msg
+                WS.sendDataMessage conn . WS.Text $ serialize msg
+
+--wsApp' :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
+--wsApp' = undefined
+
 --------------------------------------------------------------------------------
 -- | Default configuration.
         --
