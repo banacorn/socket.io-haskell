@@ -10,146 +10,127 @@ import              Web.SocketIO.Types
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
+import qualified    Data.ByteString                         as B
 import qualified    Data.ByteString.Lazy                    as BL
-import              Text.Parsec
-import              Text.Parsec.ByteString.Lazy
+import              Data.Attoparsec.ByteString.Lazy
+import              Data.Attoparsec.ByteString.Char8        (digit, decimal)
+import              Prelude                                 hiding (take, takeWhile)
 
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
 parseFramedMessage :: BL.ByteString -> Framed Message
-parseFramedMessage input = if isSingleton
-    then Framed $ [parseMessage' input]
-    else Framed $ map parseMessage' splitted
-    where   splitted = split input
-            parseMessage' x = case parse parseMessage "" x of
-                Left _  -> MsgNoop
+parseFramedMessage input = case (eitherResult . parse framedMessageParser) input of
+                Left _  -> Framed [MsgNoop]
                 Right a -> a
-            isSingleton = not (BL.null input) && BL.head input /= 239
+
 --------------------------------------------------------------------------------
--- | Split raw ByteString with U+FFFD as delimiter
-split :: BL.ByteString -> [BL.ByteString]
-split str = map (BL.drop 2) . skipOddIndexed True . filter isDelimiter . BL.split 239 $ str
-    where   isDelimiter x = not (BL.null x)
-                             && (BL.head x == 191)
-                             && (BL.head (BL.tail x) == 189)
-            skipOddIndexed _ [] = []
-            skipOddIndexed True (_:xs) = skipOddIndexed False xs
-            skipOddIndexed False (x:xs) = x : skipOddIndexed True xs
+-- | Using U+FFFD as delimiter
+framedMessageParser :: Parser (Framed Message)
+framedMessageParser = choice
+    [   messageParser >>= return . Framed . (\ x -> [x])
+    ,   many' (frameParser messageParser) >>= return . Framed
+    ]
+
+frameParser :: Parser a -> Parser a
+frameParser parser = do
+    string "\253"
+    len <- decimal
+    string "\253"
+    x <- take len
+    case parseOnly parser x of
+        Left e  -> error e
+        Right r -> return r
 
 --------------------------------------------------------------------------------
 -- | Message, not framed
-parseMessage :: Parser Message
-parseMessage = do
+messageParser :: Parser Message
+messageParser = do
     n <- digit
     case n of
-        '0' ->  (parseID >> parseEndpoint >>= return . MsgDisconnect)
-            <|> (                  return $ MsgDisconnect NoEndpoint)
-        '1' ->  (parseID >> parseEndpoint >>= return . MsgConnect)
-            <|> (                  return $ MsgConnect NoEndpoint)
-        '2' ->  return MsgHeartbeat
-        '3' ->  parseRegularMessage Msg
-        '4' ->  parseRegularMessage MsgJSON
-        '5' ->  MsgEvent    <$> parseID 
-                            <*> parseEndpoint 
-                            <*> parseEvent
-        '6' ->  try (do 
-                string ":::"
-                n' <- read <$> number
-                char '+'
-                d <- fromString <$> text
-                return $ MsgACK (ID n') (Data d)
-            ) <|> (do
-                string ":::"
-                n' <- read <$> number
-                return $ MsgACK (ID n') NoData
-            )
-        '7' -> colon >> MsgError <$> parseEndpoint <*> parseData
-        '8' ->  return $ MsgNoop
-        _   ->  return $ MsgNoop
-    where   parseRegularMessage ctr = ctr <$> parseID 
-                                          <*> parseEndpoint 
-                                          <*> parseData
+        '0' -> choice
+            [   idParser >> endpointParser >>= return . MsgDisconnect
+            ,                                  return $ MsgDisconnect NoEndpoint
+            ]
+        '1' -> choice
+            [   idParser >> endpointParser >>= return . MsgConnect
+            ,                                  return $ MsgConnect NoEndpoint 
+            ]
+        '2' -> return MsgHeartbeat
+        '3' -> Msg          <$> idParser 
+                            <*> endpointParser 
+                            <*> dataParser
+        '4' -> MsgJSON      <$> idParser 
+                            <*> endpointParser 
+                            <*> dataParser
+        '5' -> MsgEvent     <$> idParser 
+                            <*> endpointParser 
+                            <*> eventParser
+        '6' -> choice
+            [   do  string ":::"
+                    d <- decimal
+                    string "+"
+                    x <- takeWhile (const True)
+                    
+                    return $ MsgACK (ID d) (if B.null x then NoData else Data x)
+                    
+            ,   do  string ":::"
+                    d <- decimal
+                    return $ MsgACK (ID d) NoData
+            ]
+        '7' -> string ":" >> MsgError <$> endpointParser <*> dataParser
+        '8' -> return MsgNoop
+        _   -> return MsgNoop
 
---------------------------------------------------------------------------------
-endpoint :: Parser String
-endpoint = many1 $ satisfy (/= ':')
+idParser :: Parser ID
+idParser = choice
+    [   string ":" >> decimal >>= plus >>= return . IDPlus
+    ,   string ":" >> decimal          >>= return . ID
+    ,   string ":" >>                      return   NoID
+    ]
+    where   plus n = string "+" >> return n
 
---------------------------------------------------------------------------------
-number :: Parser String
-number = many1 digit
+endpointParser :: Parser Endpoint
+endpointParser = do
+    string ":"
+    option NoEndpoint (takeWhile1 (/= 58) >>= return . Endpoint)
 
---------------------------------------------------------------------------------
-colon :: Parser Char
-colon = char ':'
+dataParser :: Parser Data
+dataParser = do
+    string ":"
+    option NoData (takeWhile1 (/= 58) >>= return . Data)
 
---------------------------------------------------------------------------------
-parseID :: Parser ID
-parseID  =  try (colon >> number >>= plus >>= return . IDPlus . read)
-        <|> try (colon >> number          >>= return . ID . read)
-        <|>     (colon >>                     return   NoID)
-        where   plus n = char '+' >> return n 
+eventParser :: Parser Event
+eventParser = do
+    string ":"
+    t <- takeWhile (const True)
+    case decode (serialize t) of
+        Just e  -> return e
+        Nothing -> return NoEvent
 
---------------------------------------------------------------------------------
-parseEndpoint :: Parser Endpoint
-parseEndpoint    =  try (colon >> fromString <$> endpoint >>= return . Endpoint)
-                <|>     (colon >>                             return   NoEndpoint)
-
---------------------------------------------------------------------------------
-parseData :: Parser Data
-parseData    =  try (colon >> text >>= return . Data . fromString)
-            <|>     (colon >>      return   NoData)
-
---------------------------------------------------------------------------------
-parseEvent :: Parser Event
-parseEvent = try (do
-                colon
-                t <- text
-                case decode (fromString t) of
-                    Just e -> return e
-                    Nothing -> return NoEvent
-            )
-            <|>     (colon >>          return   NoEvent)
-
-
---------------------------------------------------------------------------------
--- | Slashes as delimiters
-textWithoutSlash :: Parser String
-textWithoutSlash = many1 $ satisfy (/= '/')
-
-slash :: Parser Char
-slash = char '/'
-
---------------------------------------------------------------------------------
--- | Non-empty text
-text :: Parser String
-text = many1 anyChar
-
--------------------------------------------------------------------------------
-parseTransport :: Parser Transport
-parseTransport = try (string "websocket" >> return WebSocket) 
-        <|> (string "xhr-polling" >> return XHRPolling)
-        <|> (string "unknown" >> return NoTransport)
-        <|> return NoTransport
-
---------------------------------------------------------------------------------               
--- | With wrapper
+------------------------------------------------------------------------------               
+-- | Parse given HTTP request
 parsePath :: ByteString -> Path
-parsePath path = case parse parsePath' "" (fromByteString path) of
+parsePath p = case parseOnly pathParser p of
     Left _  -> WithoutSession "" ""
     Right x -> x 
 
---------------------------------------------------------------------------------
--- | Raw Parsec combinator, without wrapper
-parsePath' :: Parser Path
-parsePath' = do
-    slash
-    namespace <- fromString <$> textWithoutSlash
-    slash
-    protocol <- fromString <$> textWithoutSlash
-    slash
-    try (do
-        transport <- parseTransport
-        slash
-        sessionID <- fromString <$> textWithoutSlash
+pathParser :: Parser Path
+pathParser = do
+    string "/"
+    namespace <- takeTill (== 47) -- 0x47: slash
+    take 1  -- slip the second slash
+    protocol <- takeTill (== 47)
+    take 1  -- slip the third slash
+    option (WithoutSession namespace protocol) $ do
+        transport <- transportParser
+        string "/"
+        sessionID <- takeTill (== 47)
         return $ WithSession namespace protocol transport sessionID
-        ) <|> (return $ WithoutSession namespace protocol)
+
+transportParser :: Parser Transport
+transportParser = choice
+    [   string "websocket"      >> return WebSocket
+    ,   string "xhr-polling"    >> return XHRPolling
+    ,   string "unknown"        >> return NoTransport
+    ,   skipWhile (/= 47)       >> return NoTransport
+    ]

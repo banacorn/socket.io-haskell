@@ -97,7 +97,7 @@ instance Arbitrary Path where
 propParseFramedMessageID :: Property
 propParseFramedMessageID = property $ forAll arbitrary check
     where   check msg = msg == msgIdentity msg
-            msgIdentity msg = parseFramedMessage $ serialize (serialize msg :: Text)
+            msgIdentity msg = parseFramedMessage $ serialize msg
 
 propParsePathID :: Property
 propParsePathID = property $ forAll arbitrary check
