@@ -119,7 +119,7 @@ pathParser = do
     option (WithoutSession namespace protocol) $ do
         transport <- transportParser
         string "/"
-        sessionID <- takeTillEnd
+        sessionID <- takeTill (== 47)
         return $ WithSession namespace protocol transport sessionID
 
 transportParser :: Parser Transport
