@@ -10,37 +10,39 @@ import              Web.SocketIO.Types
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
+import qualified    Data.ByteString                         as B
 import qualified    Data.ByteString.Lazy                    as BL
---import              Text.Parsec
---import              Text.Parsec.ByteString.Lazy
 import              Data.Attoparsec.ByteString.Lazy
 import              Data.Attoparsec.ByteString.Char8        (digit, decimal)
-import              Prelude                                 hiding (take)
+import              Prelude                                 hiding (take, takeWhile)
 
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
 parseFramedMessage :: BL.ByteString -> Framed Message
-parseFramedMessage input = if isSingleton
-    then Framed $ [parseMessage' input]
-    else Framed $ map parseMessage' splitted
-    where   splitted = split input
-            parseMessage' x = case (eitherResult . parse messageParser) x of
-                Left _  -> MsgNoop
+parseFramedMessage input = case (eitherResult . parse framedMessageParser) input of
+                Left _  -> Framed [MsgNoop]
                 Right a -> a
-            isSingleton = not (BL.null input) && BL.head input /= 239
---------------------------------------------------------------------------------
--- | Split raw ByteString with U+FFFD as delimiter
-split :: BL.ByteString -> [BL.ByteString]
-split str = map (BL.drop 2) . skipOddIndexed True . filter isDelimiter . BL.split 239 $ str
-    where   isDelimiter x = not (BL.null x)
-                             && (BL.head x == 191)
-                             && (BL.head (BL.tail x) == 189)
-            skipOddIndexed _ [] = []
-            skipOddIndexed True (_:xs) = skipOddIndexed False xs
-            skipOddIndexed False (x:xs) = x : skipOddIndexed True xs
 
-----------------------------------------------------------------------------------
----- | Message, not framed
+--------------------------------------------------------------------------------
+-- | Using U+FFFD as delimiter
+framedMessageParser :: Parser (Framed Message)
+framedMessageParser = choice
+    [   messageParser >>= return . Framed . (\ x -> [x])
+    ,   many' (frameParser messageParser) >>= return . Framed
+    ]
+
+frameParser :: Parser a -> Parser a
+frameParser parser = do
+    string "\253"
+    len <- decimal
+    string "\253"
+    x <- take len
+    case parseOnly parser x of
+        Left e  -> error e
+        Right r -> return r
+
+--------------------------------------------------------------------------------
+-- | Message, not framed
 messageParser :: Parser Message
 messageParser = do
     n <- digit
@@ -66,8 +68,11 @@ messageParser = do
         '6' -> choice
             [   do  string ":::"
                     d <- decimal
-                    x <- takeTillEnd
-                    return $ MsgACK (ID d) (Data x)
+                    string "+"
+                    x <- takeWhile (const True)
+                    
+                    return $ MsgACK (ID d) (if B.null x then NoData else Data x)
+                    
             ,   do  string ":::"
                     d <- decimal
                     return $ MsgACK (ID d) NoData
@@ -97,7 +102,7 @@ dataParser = do
 eventParser :: Parser Event
 eventParser = do
     string ":"
-    t <- takeTillEnd
+    t <- takeWhile (const True)
     case decode (serialize t) of
         Just e  -> return e
         Nothing -> return NoEvent
@@ -129,6 +134,3 @@ transportParser = choice
     ,   string "unknown"        >> return NoTransport
     ,   skipWhile (/= 47)       >> return NoTransport
     ]
-
-takeTillEnd :: Parser ByteString
-takeTillEnd = takeTill (== 0)
