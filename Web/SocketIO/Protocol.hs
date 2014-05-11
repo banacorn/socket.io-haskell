@@ -2,7 +2,7 @@
 -- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Protocol (messageParserConduit, parseFramedMessage, parsePath) where
+module Web.SocketIO.Protocol (parseMessage, parseFramedMessage, parsePath) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -22,8 +22,8 @@ import              Prelude                                 hiding (take, takeWh
 
 --------------------------------------------------------------------------------
 -- | Attoparsec Conduit
-messageParserConduit :: Conduit ByteString (ResourceT IO) Message
-messageParserConduit = do
+parseMessage :: Conduit ByteString (ResourceT IO) Message
+parseMessage = do
     conduitParserEither framedOrNot =$= awaitForever go
     where   framedOrNot = choice [frameParser messageParser, messageParser]
             go (Left s) = error $ show s
