@@ -2,19 +2,32 @@
 -- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Protocol (parseFramedMessage, parsePath) where
+module Web.SocketIO.Protocol (messageParserConduit, parseFramedMessage, parsePath) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
+import              Control.Monad.Trans.Resource
+
 import              Data.Aeson
 import qualified    Data.ByteString                         as B
 import qualified    Data.ByteString.Lazy                    as BL
+import              Data.Conduit
+import              Data.Conduit.Attoparsec                 (conduitParserEither)
 import              Data.Attoparsec.ByteString.Lazy
 import              Data.Attoparsec.ByteString.Char8        (digit, decimal)
 import              Prelude                                 hiding (take, takeWhile)
+
+--------------------------------------------------------------------------------
+-- | Attoparsec Conduit
+messageParserConduit :: Conduit ByteString (ResourceT IO) Message
+messageParserConduit = do
+    conduitParserEither framedOrNot =$= awaitForever go
+    where   framedOrNot = choice [frameParser messageParser, messageParser]
+            go (Left s) = error $ show s
+            go (Right (_, p)) = yield p
 
 --------------------------------------------------------------------------------
 -- | Parse raw ByteString to Messages
