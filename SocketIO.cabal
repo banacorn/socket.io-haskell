@@ -69,6 +69,7 @@ library
     build-depends:    base                  >=4.6   && <5.0
                     , text                  >=1.1   && <2.0
                     , bytestring            >=0.10  && <1.0
+                    , blaze-builder         >=0.3   && <1.0
                     , aeson                 >=0.7   && <1.0
                     , conduit               >=1.1   && <2.0
                     , conduit-extra         >=1.1   && <2.0
@@ -102,6 +103,7 @@ test-suite socketio-test
     build-depends:    base                  >=4.6   && <5.0
                     , text                  >=1.1   && <2.0
                     , bytestring            >=0.10  && <1.0
+                    , blaze-builder         >=0.3   && <1.0
                     , aeson                 >=0.7   && <1.0
                     , conduit               >=1.1   && <2.0
                     , conduit-extra         >=1.1   && <2.0
