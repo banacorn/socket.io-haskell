@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- | Converts HTTP requests to Socket.IO requests
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Request (parseHTTPRequest) where
+module Web.SocketIO.Request (sourceRequest, parseHTTPRequest) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -9,9 +9,27 @@ import              Web.SocketIO.Protocol
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))   
+import              Data.Conduit
 import qualified    Network.Wai                             as Wai
 import              Network.HTTP.Types                      (Method)
 
+sourceRequest :: Wai.Request -> Source IO Request
+sourceRequest request = do
+    let path = parsePath (Wai.rawPathInfo request)
+    let method = Wai.requestMethod request
+
+    case (method, path) of
+        ("GET", (WithoutSession _ _)) -> yield Handshake
+        ("GET", (WithSession _ _ _ sessionID)) -> yield (Connect sessionID)
+        ("POST", (WithSession _ _ _ sessionID)) -> do
+            Wai.requestBody request $= parseMessage =$= filterMsgEvent sessionID
+        (_, (WithSession _ _ _ sessionID)) -> yield (Disconnect sessionID)
+        _ -> error "error handling http request"
+    where   filterMsgEvent sessionID = do
+                message <- await
+                case message of
+                    Just (MsgEvent _ _ event) -> yield (Emit sessionID event)
+                    _ -> return ()
 --------------------------------------------------------------------------------
 -- | Information of a HTTP reqeust we need
 type RequestInfo = (Method, Path, Framed Message)

@@ -22,7 +22,7 @@ import              Prelude                                 hiding (take, takeWh
 
 --------------------------------------------------------------------------------
 -- | Attoparsec Conduit
-parseMessage :: Conduit ByteString (ResourceT IO) Message
+parseMessage :: Conduit ByteString IO Message
 parseMessage = do
     conduitParserEither framedOrNot =$= awaitForever go
     where   framedOrNot = choice [frameParser messageParser, messageParser]
