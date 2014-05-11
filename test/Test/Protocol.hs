@@ -10,7 +10,7 @@ module Test.Protocol (test) where
 import              Web.SocketIO.Types
 import              Web.SocketIO.Protocol
 
-import Data.Aeson
+import              Data.Aeson
 import              Test.Instances.Value
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>))

@@ -22,64 +22,68 @@ import              Web.SocketIO.Types
 import              Web.SocketIO.Connection
 import              Web.SocketIO.Channel
 
-scheme :: Scheme
-scheme = Scheme ["#rema","#gbdj","#dznb"] [OpEmit (Event "#dznb" [">pfbgqwosid",">hqrcrqtcwh",">sggwvouqay"])]
+--data State = State
+--    {   sessionTable :: SessionTable
+--    }
 
-translate :: SessionID -> Operation -> Request
-translate i OpConnect = Connect i
-translate i OpDisconnect = Disconnect i
-translate i (OpEmit emitter) = Emit i emitter
+--scheme :: Scheme
+--scheme = Scheme ["#rema","#gbdj","#dznb"] [OpEmit (Event "#dznb" [">pfbgqwosid",">hqrcrqtcwh",">sggwvouqay"])]
 
-testConfig :: Configuration
-testConfig = Configuration
-    {   transports = [XHRPolling]
-    ,   logLevel = 3
-    ,   logTo = stderr
-    ,   heartbeats = True
-    ,   closeTimeout = 2
-    ,   heartbeatTimeout = 60
-    ,   heartbeatInterval = 25
-    ,   pollingDuration = 1
-    }
+--translate :: SessionID -> Operation -> Request
+--translate i OpConnect = Connect i
+--translate i OpDisconnect = Disconnect i
+--translate i (OpEmit emitter) = Emit i emitter
 
-makeEnvironment :: IO Env
-makeEnvironment = do 
+--testConfig :: Configuration
+--testConfig = Configuration
+--    {   transports = [XHRPolling]
+--    ,   logLevel = 3
+--    ,   logTo = stderr
+--    ,   heartbeats = True
+--    ,   closeTimeout = 2
+--    ,   heartbeatTimeout = 60
+--    ,   heartbeatInterval = 25
+--    ,   pollingDuration = 1
+--    }
 
-    tableRef <- newSessionTableRef
+--makeEnvironment :: IO Env
+--makeEnvironment = do 
 
-    let handler = return ()
+--    tableRef <- newSessionTableRef
 
-    logChhannel <- newLogChannel
-    globalChannel <- newGlobalChannel
+--    let handler = return ()
 
-    --streamToStdout logChhannel
+--    logChhannel <- newLogChannel
+--    globalChannel <- newGlobalChannel
 
-    return $ Env tableRef handler testConfig logChhannel globalChannel
+--    --streamToStdout logChhannel
+
+--    return $ Env tableRef handler testConfig logChhannel globalChannel
 
 
-runScheme :: Scheme -> IO Bool
-runScheme (Scheme _ operations) = do
+--runScheme :: Scheme -> IO Bool
+--runScheme (Scheme _ operations) = do
 
-    env <- makeEnvironment
+--    env <- makeEnvironment
 
-    MsgHandshake sessionID _ _ _ <- runConnection env Handshake
+--    MsgHandshake sessionID _ _ _ <- runConnection env Handshake
 
-    res <- mapM (runConnection env . translate sessionID) operations
-    print res
+--    res <- mapM (runConnection env . translate sessionID) operations
+--    print res
 
-    return True
+--    return True
 
-a :: Scheme
-a = Scheme [] [OpConnect, OpConnect]
+--a :: Scheme
+--a = Scheme [] [OpConnect, OpConnect]
 
-testScheme :: Property
-testScheme = monadicIO $ do
-    run $ runScheme a
---testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
+--testScheme :: Property
+--testScheme = monadicIO $ do
+--    run $ runScheme a
+----testScheme = monadicIO $ forAllM arbitrary (run . runScheme)
 
-test :: Framework.Test
-test = testProperty "Schemes" testScheme
---test = undefined
+--test :: Framework.Test
+--test = testProperty "Schemes" testScheme
+----test = undefined
 
-go :: IO Bool
-go = runScheme a
+--go :: IO Bool
+--go = runScheme a

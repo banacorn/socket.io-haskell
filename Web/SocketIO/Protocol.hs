@@ -9,8 +9,6 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Applicative                     ((<$>), (<*>))
-import              Control.Monad.Trans.Resource
-
 import              Data.Aeson
 import qualified    Data.ByteString                         as B
 import qualified    Data.ByteString.Lazy                    as BL
