@@ -1,18 +1,27 @@
 --------------------------------------------------------------------------------
--- | Converts HTTP requests to Socket.IO requests
+-- | Converts HTTP requests to Socket.IO requests and run them
 {-# LANGUAGE OverloadedStrings #-}
-module Web.SocketIO.Request (sourceRequest, parseHTTPRequest) where
+
+module Web.SocketIO.Request
+    (   sourceRequest
+    ,   runRequest
+    ,   serializeMessage
+    ) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
 import              Web.SocketIO.Protocol
 
 --------------------------------------------------------------------------------
-import              Control.Applicative                     ((<$>))   
+import              Blaze.ByteString.Builder        (Builder)
+import qualified    Blaze.ByteString.Builder        as Builder
+import qualified    Data.ByteString                 as B
 import              Data.Conduit
-import qualified    Network.Wai                             as Wai
-import              Network.HTTP.Types                      (Method)
+import qualified    Data.Conduit.List               as CL
+import qualified    Network.Wai                     as Wai
 
+--------------------------------------------------------------------------------
+-- | Extracts and identifies Requests from Wai.Request
 sourceRequest :: Wai.Request -> Source IO Request
 sourceRequest request = do
     let path = parsePath (Wai.rawPathInfo request)
@@ -30,43 +39,35 @@ sourceRequest request = do
                 case message of
                     Just (MsgEvent _ _ event) -> yield (Emit sessionID event)
                     _ -> return ()
---------------------------------------------------------------------------------
--- | Information of a HTTP reqeust we need
-type RequestInfo = (Method, Path, Framed Message)
 
 --------------------------------------------------------------------------------
--- | Extracts from HTTP reqeusts
-retrieveRequestInfo :: Wai.Request -> IO RequestInfo
-retrieveRequestInfo request = do
-
-    framedMessages <- parseHTTPBody request
-
-    let path = parsePath (Wai.rawPathInfo request)
-
-    return 
-        (   Wai.requestMethod request
-        ,   path 
-        ,   framedMessages
-        )
+-- | Run every Request
+runRequest :: (Request -> IO Message) -> Conduit Request IO Message
+runRequest runner = CL.mapM runner
 
 --------------------------------------------------------------------------------
--- | Converts to SocketIO request
-processRequestInfo :: RequestInfo -> [Request]
-processRequestInfo ("GET" , (WithoutSession _ _)         , _              ) = [Handshake]
-processRequestInfo ("GET" , (WithSession _ _ _ sessionID), _              ) = [Connect sessionID]
-processRequestInfo ("POST", (WithSession _ _ _ sessionID), Framed messages) = requests
-    where   requests = foldr extractEvent [] messages
-            extractEvent (MsgEvent _ _ event) acc = Emit sessionID event : acc
-            extractEvent _                    acc = acc
-processRequestInfo (_     , (WithSession _ _ _ sessionID), _              ) = [Disconnect sessionID]
-processRequestInfo _    = error "error parsing http request"
- 
---------------------------------------------------------------------------------
--- | The request part
-parseHTTPRequest :: Wai.Request -> IO [Request]
-parseHTTPRequest request = fmap processRequestInfo (retrieveRequestInfo request)
-
---------------------------------------------------------------------------------
--- | The message part
-parseHTTPBody :: Wai.Request -> IO (Framed Message)
-parseHTTPBody req = parseFramedMessage <$> Wai.lazyRequestBody req
+-- | Convert Framed Message to Flush Builder so that `Wai.responseSource` can consume it
+serializeMessage :: Conduit Message IO (Flush Builder)
+serializeMessage = toByteString =$= toFlushBuilder
+    where   toByteString = do
+                m <- await
+                n <- await
+                case (m, n) of
+                    -- []
+                    (Nothing, Nothing) -> yield (serialize (Framed [] :: Framed Message))
+                    -- [m'], singleton
+                    (Just m', Nothing) -> yield (serialize m')
+                    -- WTF
+                    (Nothing, Just _ ) -> return ()
+                    -- [m', n'], frame m', leftover n'
+                    (Just m', Just n') -> do
+                        yield ("�" <> serialize size <> "�" <> m'')
+                        leftover n'
+                        toByteString
+                        where   m'' = serialize m'
+                                size = B.length m''
+            toFlushBuilder = do
+                b <- await
+                case b of
+                    Just b' -> yield $ Chunk (Builder.fromByteString b')
+                    Nothing -> yield $ Flush
