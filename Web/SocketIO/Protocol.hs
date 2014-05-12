@@ -2,7 +2,7 @@
 -- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Protocol (parseMessage, parseFramedMessage, parsePath) where
+module Web.SocketIO.Protocol (demultiplexMessage, parsePath) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -11,7 +11,6 @@ import              Web.SocketIO.Types
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
 import qualified    Data.ByteString                         as B
-import qualified    Data.ByteString.Lazy                    as BL
 import              Data.Conduit
 import              Data.Conduit.Attoparsec                 (conduitParserEither)
 import              Data.Attoparsec.ByteString.Lazy
@@ -19,28 +18,16 @@ import              Data.Attoparsec.ByteString.Char8        (digit, decimal)
 import              Prelude                                 hiding (take, takeWhile)
 
 --------------------------------------------------------------------------------
--- | Attoparsec Conduit
-parseMessage :: Conduit ByteString IO Message
-parseMessage = do
+-- | Demultiplexing messages
+demultiplexMessage :: Conduit ByteString IO Message
+demultiplexMessage = do
     conduitParserEither framedOrNot =$= awaitForever go
-    where   framedOrNot = choice [frameParser messageParser, messageParser]
+    where   framedOrNot = choice [many1 (frameParser messageParser), many' messageParser]
             go (Left s) = error $ show s
-            go (Right (_, p)) = yield p
+            go (Right (_, p)) = mapM yield p
 
---------------------------------------------------------------------------------
--- | Parse raw ByteString to Messages
-parseFramedMessage :: BL.ByteString -> Framed Message
-parseFramedMessage input = case (eitherResult . parse framedMessageParser) input of
-                Left _  -> Framed [MsgNoop]
-                Right a -> a
-
---------------------------------------------------------------------------------
--- | Using U+FFFD as delimiter
-framedMessageParser :: Parser (Framed Message)
-framedMessageParser = choice
-    [   messageParser >>= return . Framed . (\ x -> [x])
-    ,   many' (frameParser messageParser) >>= return . Framed
-    ]
+----------------------------------------------------------------------------------
+---- | Using U+FFFD as delimiter
 
 frameParser :: Parser a -> Parser a
 frameParser parser = do

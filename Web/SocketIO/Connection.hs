@@ -150,8 +150,17 @@ handleConnection (Request sessionID _, Just (session, Connecting)) = do
     extendTimeout session
     logWithSessionID Warn sessionID "[Request] Request: Session still connecting, not ACKed" 
     return $ MsgError NoEndpoint NoData
-    
-handleConnection (Request sessionID message, Just (session, Connected)) = do
+
+
+handleConnection (Request sessionID (MsgEvent _ _ event@(Event eventName (Payload payloads))), Just (session, Connected)) = do
+    logWithSessionID Debug sessionID $ "[Request] Request: MsgEvent " <> serialize eventName <> " " <> serialize payloads
+    runSession (SessionEmit event) session
+
+handleConnection (Request sessionID (MsgEvent _ _ NoEvent), Just (_, Connected)) = do
+    logWithSessionID Warn sessionID "[Request] Request: MsgEvent malformed"
+    return $ MsgError NoEndpoint NoData
+
+handleConnection (Request sessionID message, Just (_, Connected)) = do
     logWithSessionID Debug sessionID $ "[Request] Request: " <> serialize message
     return MsgNoop
     --runSession (SessionEmit event) session

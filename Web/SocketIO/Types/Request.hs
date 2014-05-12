@@ -40,11 +40,11 @@ instance Serializable Path where
                                    <> "/"
 
 --------------------------------------------------------------------------------
--- | Incoming HTTP request
+-- | Incoming request
 data Request    = Handshake
                 | Disconnect SessionID
                 | Connect SessionID 
-                | Request SessionID ByteString
+                | Request SessionID Message
                 deriving (Show)
 
 --------------------------------------------------------------------------------

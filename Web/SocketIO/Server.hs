@@ -16,6 +16,7 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
+import              Data.Conduit
 import              Network.HTTP.Types              (status200)
 import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
@@ -54,7 +55,7 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
     let origin = lookupOrigin httpRequest
     let headerFields' = insertOrigin headerFields origin
 
-    let sourceBody = runRequest httpRequest runConnection'
+    let sourceBody = sourceHTTPRequest httpRequest $= runRequest runConnection'
 
     return $ Wai.responseSource status200 headerFields' sourceBody
 
