@@ -84,9 +84,9 @@ retrieveSession (Connect sessionID) = do
 retrieveSession (Disconnect sessionID) = do
     result <- lookupSession sessionID
     return (Disconnect sessionID, split result)
-retrieveSession (Emit sessionID e) = do
+retrieveSession (Request sessionID e) = do
     result <- lookupSession sessionID
-    return (Emit sessionID e, split result)
+    return (Request sessionID e, split result)
 
 --------------------------------------------------------------------------------
 -- | Big time
@@ -146,19 +146,25 @@ handleConnection (Disconnect sessionID, Nothing) = do
     logWithSessionID Warn sessionID "[Request] Disconnect: Session not found" 
     return MsgNoop
 
-handleConnection (Emit sessionID _, Just (session, Connecting)) = do
+handleConnection (Request sessionID _, Just (session, Connecting)) = do
     extendTimeout session
-    logWithSessionID Warn sessionID "[Request] Emit: Session still connecting, not ACKed" 
+    logWithSessionID Warn sessionID "[Request] Request: Session still connecting, not ACKed" 
     return $ MsgError NoEndpoint NoData
+    
+handleConnection (Request sessionID message, Just (session, Connected)) = do
+    logWithSessionID Debug sessionID $ "[Request] Request: " <> serialize message
+    return MsgNoop
+    --runSession (SessionEmit event) session
 
-handleConnection (Emit sessionID event@(Event eventName (Payload payloads)), Just (session, Connected)) = do
-    logWithSessionID Debug sessionID $ "[Request] Emit: " <> serialize eventName <> " " <> serialize payloads
-    runSession (SessionEmit event) session
 
-handleConnection (Emit sessionID NoEvent, Just (_, Connected)) = do
-    logWithSessionID Warn sessionID "[Request] Emit: event malformed"
-    return $ MsgError NoEndpoint NoData
+--handleConnection (Request sessionID event@(Event eventName (Payload payloads)), Just (session, Connected)) = do
+--    logWithSessionID Debug sessionID $ "[Request] Request: " <> serialize eventName <> " " <> serialize payloads
+--    runSession (SessionEmit event) session
 
-handleConnection (Emit sessionID _, Nothing) = do
-    logWithSessionID Warn sessionID "[Request] Emit: Session not found" 
+--handleConnection (Request sessionID NoEvent, Just (_, Connected)) = do
+--    logWithSessionID Warn sessionID "[Request] Request: malformed"
+--    return $ MsgError NoEndpoint NoData
+
+handleConnection (Request sessionID _, Nothing) = do
+    logWithSessionID Warn sessionID "[Request] Request: Session not found" 
     return $ MsgError NoEndpoint NoData

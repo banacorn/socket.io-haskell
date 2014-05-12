@@ -2,7 +2,7 @@
 -- | Converts HTTP requests to Socket.IO requests and run them
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Request (runRequest) where
+module Web.SocketIO.Request (sourceHTTPRequest, runRequest) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -19,27 +19,40 @@ import qualified    Network.Wai                     as Wai
 --------------------------------------------------------------------------------
 -- | Run!
 runRequest :: Wai.Request -> (Request -> IO Message) -> Source IO (Flush Builder)
-runRequest request runner = sourceRequest request $= CL.mapM runner =$= serializeMessage =$= toFlushBuilder
+runRequest request runner = sourceHTTPRequest request $= CL.mapM runner =$= serializeMessage =$= toFlushBuilder
 
 --------------------------------------------------------------------------------
--- | Extracts and identifies Requests from Wai.Request
-sourceRequest :: Wai.Request -> Source IO Request
-sourceRequest request = do
+-- | Extracts HTTP requests
+sourceHTTPRequest :: Wai.Request -> Source IO Request
+sourceHTTPRequest request = do
     let path = parsePath (Wai.rawPathInfo request)
     let method = Wai.requestMethod request
 
     case (method, path) of
         ("GET", (WithoutSession _ _)) -> yield Handshake
         ("GET", (WithSession _ _ _ sessionID)) -> yield (Connect sessionID)
-        ("POST", (WithSession _ _ _ sessionID)) -> do
-            Wai.requestBody request $= parseMessage =$= filterMsgEvent sessionID
+        ("POST", (WithSession _ _ _ sessionID)) -> Wai.requestBody request $= CL.map (Request sessionID)
         (_, (WithSession _ _ _ sessionID)) -> yield (Disconnect sessionID)
         _ -> error "error handling http request"
-    where   filterMsgEvent sessionID = do
-                message <- await
-                case message of
-                    Just (MsgEvent _ _ event) -> yield (Emit sessionID event)
-                    _ -> return ()
+----------------------------------------------------------------------------------
+---- | Extracts and identifies Requests from Wai.Request
+--sourceRequest :: Wai.Request -> Source IO Request
+--sourceRequest request = do
+--    let path = parsePath (Wai.rawPathInfo request)
+--    let method = Wai.requestMethod request
+
+--    case (method, path) of
+--        ("GET", (WithoutSession _ _)) -> yield Handshake
+--        ("GET", (WithSession _ _ _ sessionID)) -> yield (Connect sessionID)
+--        ("POST", (WithSession _ _ _ sessionID)) -> do
+--            Wai.requestBody request $= parseMessage =$= filterMsgEvent sessionID
+--        (_, (WithSession _ _ _ sessionID)) -> yield (Disconnect sessionID)
+--        _ -> error "error handling http request"
+--    where   filterMsgEvent sessionID = do
+--                message <- await
+--                case message of
+--                    Just (MsgEvent _ _ event) -> yield (Emit sessionID event)
+--                    _ -> return ()
 
 --------------------------------------------------------------------------------
 -- | Serialize Messages, frame when necessary.

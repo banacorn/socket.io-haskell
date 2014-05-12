@@ -44,7 +44,7 @@ instance Serializable Path where
 data Request    = Handshake
                 | Disconnect SessionID
                 | Connect SessionID 
-                | Emit SessionID Event
+                | Request SessionID ByteString
                 deriving (Show)
 
 --------------------------------------------------------------------------------
