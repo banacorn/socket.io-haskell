@@ -61,12 +61,12 @@ testConnect = do
     assertEqual "respond with (MsgConnect NoEndpoint)" (MsgConnect NoEndpoint) res
 
 --------------------------------------------------------------------------------
-testEmit :: Assertion
-testEmit = do
+testRequest :: Assertion
+testRequest = do
     env <- makeEnvironment
     MsgHandshake sessionID _ _ _ <- runConnection env Handshake
     runConnection env (Connect sessionID)
-    res <- runConnection env (Emit sessionID (Event "event name" (Payload ["payload"])))
+    res <- runConnection env (Request sessionID (MsgEvent NoID NoEndpoint (Event "event name" (Payload ["payload"]))))
     assertEqual "respond with (MsgConnect NoEndpoint)" (MsgConnect NoEndpoint) (res)
     
 --------------------------------------------------------------------------------
@@ -83,6 +83,6 @@ test :: Framework.Test
 test = testGroup "Connection" 
     [ testCase "Handshake"  testHandshake
     , testCase "Connect"    testConnect
-    , testCase "Emit"       testEmit
+    , testCase "Request"    testRequest
     , testCase "Disconnect" testDisconnect
     ]

@@ -2,7 +2,11 @@
 -- | Socket.IO Protocol 1.0
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Protocol (demultiplexMessage, parsePath) where
+module Web.SocketIO.Protocol 
+    (   demultiplexMessage
+    ,   parseFramedMessage
+    ,   parsePath
+    ) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -21,14 +25,12 @@ import              Prelude                                 hiding (take, takeWh
 -- | Demultiplexing messages
 demultiplexMessage :: Conduit ByteString IO Message
 demultiplexMessage = do
-    conduitParserEither framedOrNot =$= awaitForever go
-    where   framedOrNot = choice [many1 (frameParser messageParser), many' messageParser]
-            go (Left s) = error $ show s
+    conduitParserEither framedMessageParser =$= awaitForever go
+    where   go (Left s) = error $ show s
             go (Right (_, p)) = mapM yield p
 
 ----------------------------------------------------------------------------------
 ---- | Using U+FFFD as delimiter
-
 frameParser :: Parser a -> Parser a
 frameParser parser = do
     string "\253"
@@ -38,6 +40,20 @@ frameParser parser = do
     case parseOnly parser x of
         Left e  -> error e
         Right r -> return r
+
+--------------------------------------------------------------------------------
+-- | Message, framed with List
+framedMessageParser :: Parser [Message]
+framedMessageParser = choice [many1 (frameParser messageParser), many' messageParser]
+
+--------------------------------------------------------------------------------
+-- | Wrapped for testing
+parseFramedMessage :: ByteString -> Framed Message
+parseFramedMessage input = case parseOnly framedMessageParser input of
+    Left e -> error e
+    Right r -> Framed r
+
+
 
 --------------------------------------------------------------------------------
 -- | Message, not framed
