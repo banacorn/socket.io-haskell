@@ -19,7 +19,7 @@ import qualified    Network.Wai                     as Wai
 --------------------------------------------------------------------------------
 -- | Run!
 runRequest :: Wai.Request -> (Request -> IO Message) -> Source IO (Flush Builder)
-runRequest request runner = sourceRequest request $= CL.mapM runner =$= serializeMessage
+runRequest request runner = sourceRequest request $= CL.mapM runner =$= serializeMessage =$= toFlushBuilder
 
 --------------------------------------------------------------------------------
 -- | Extracts and identifies Requests from Wai.Request
@@ -42,29 +42,37 @@ sourceRequest request = do
                     _ -> return ()
 
 --------------------------------------------------------------------------------
--- | Convert Framed Message to Flush Builder so that `Wai.responseSource` can consume it
-serializeMessage :: Conduit Message IO (Flush Builder)
-serializeMessage = toByteString =$= toFlushBuilder
-    where   toByteString = do
+-- | Serialize Messages, frame when necessary.
+serializeMessage :: Conduit Message IO ByteString
+serializeMessage = toByteString 0
+    where   toByteString :: Int -> Conduit Message IO ByteString
+            toByteString i = do
                 m <- await
                 n <- await
                 case (m, n) of
                     -- []
                     (Nothing, Nothing) -> yield (serialize (Framed [] :: Framed Message))
                     -- [m'], singleton
-                    (Just m', Nothing) -> yield (serialize m')
+                    (Just m', Nothing) -> if i == 0
+                        then yield (serialize m') -- true singleton
+                        else yield (frame m') -- just a recursion base case 
                     -- WTF
                     (Nothing, Just _ ) -> return ()
                     -- [m', n'], frame m', leftover n'
                     (Just m', Just n') -> do
-                        yield ("�" <> serialize size <> "�" <> m'')
+                        yield (frame m')
                         leftover n'
-                        toByteString
-                        where   m'' = serialize m'
-                                size = B.length m''
-            toFlushBuilder = do
-                b <- await
-                case b of
-                    Just b' -> yield $ Chunk (Builder.fromByteString b')
-                    Nothing -> yield $ Flush
+                        toByteString (i + 1)
+                        
+            frame b = "�" <> serialize size <> "�" <> b'
+                where   b' = serialize b
+                        size = B.length b'
 
+--------------------------------------------------------------------------------
+-- | Convert Framed Message to Flush Builder so that `Wai.responseSource` can consume it
+toFlushBuilder :: Conduit ByteString IO (Flush Builder)
+toFlushBuilder = do 
+    b <- await
+    case b of
+        Just b' -> yield $ Chunk (Builder.fromByteString b')
+        Nothing -> yield $ Flush
