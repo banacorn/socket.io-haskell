@@ -16,7 +16,6 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
-import              Data.Conduit
 import              Network.HTTP.Types              (status200)
 import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
@@ -55,8 +54,9 @@ httpApp headerFields runConnection' httpRequest = liftIO $ do
     let origin = lookupOrigin httpRequest
     let headerFields' = insertOrigin headerFields origin
 
-    return $ Wai.responseSource status200 headerFields'
-        (sourceRequest httpRequest $= runRequest runConnection' =$= serializeMessage)
+    let sourceBody = runRequest httpRequest runConnection'
+
+    return $ Wai.responseSource status200 headerFields' sourceBody
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin

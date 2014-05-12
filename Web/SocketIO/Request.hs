@@ -2,11 +2,7 @@
 -- | Converts HTTP requests to Socket.IO requests and run them
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Request
-    (   sourceRequest
-    ,   runRequest
-    ,   serializeMessage
-    ) where
+module Web.SocketIO.Request (runRequest) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -19,6 +15,11 @@ import qualified    Data.ByteString                 as B
 import              Data.Conduit
 import qualified    Data.Conduit.List               as CL
 import qualified    Network.Wai                     as Wai
+
+--------------------------------------------------------------------------------
+-- | Run!
+runRequest :: Wai.Request -> (Request -> IO Message) -> Source IO (Flush Builder)
+runRequest request runner = sourceRequest request $= CL.mapM runner =$= serializeMessage
 
 --------------------------------------------------------------------------------
 -- | Extracts and identifies Requests from Wai.Request
@@ -39,11 +40,6 @@ sourceRequest request = do
                 case message of
                     Just (MsgEvent _ _ event) -> yield (Emit sessionID event)
                     _ -> return ()
-
---------------------------------------------------------------------------------
--- | Run every Request
-runRequest :: (Request -> IO Message) -> Conduit Request IO Message
-runRequest runner = CL.mapM runner
 
 --------------------------------------------------------------------------------
 -- | Convert Framed Message to Flush Builder so that `Wai.responseSource` can consume it
@@ -71,3 +67,4 @@ serializeMessage = toByteString =$= toFlushBuilder
                 case b of
                     Just b' -> yield $ Chunk (Builder.fromByteString b')
                     Nothing -> yield $ Flush
+
