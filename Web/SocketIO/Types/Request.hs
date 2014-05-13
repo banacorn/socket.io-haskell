@@ -56,7 +56,7 @@ instance (Show a, Serializable a) => Serializable (Framed a) where
     serialize (Framed [message]) = serialize message
     serialize (Framed messages) = mconcat $ map frame messages
         where   frame message = let serialized = serialize message  
-                                in "�" <> serialize size <> "�" <> serialized
+                                in "ï¿½" <> serialize size <> "ï¿½" <> serialized
                                 where   size = B.length (serialize message)
 
 --------------------------------------------------------------------------------

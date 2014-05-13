@@ -33,9 +33,9 @@ demultiplexMessage = do
 ---- | Using U+FFFD as delimiter
 frameParser :: Parser a -> Parser a
 frameParser parser = do
-    string "\253"
+    string "ï¿½"
     len <- decimal
-    string "\253"
+    string "ï¿½"
     x <- take len
     case parseOnly parser x of
         Left e  -> error e
@@ -52,8 +52,6 @@ parseFramedMessage :: ByteString -> Framed Message
 parseFramedMessage input = case parseOnly framedMessageParser input of
     Left e -> error e
     Right r -> Framed r
-
-
 
 --------------------------------------------------------------------------------
 -- | Message, not framed

@@ -58,7 +58,7 @@ serializeMessage = toByteString 0
                         leftover n'
                         toByteString (i + 1)
                         
-            frame b = "�" <> serialize size <> "�" <> b'
+            frame b = "ï¿½" <> serialize size <> "ï¿½" <> b'
                 where   b' = serialize b
                         size = B.length b'
 
