@@ -68,5 +68,7 @@ toFlushBuilder :: Conduit ByteString IO (Flush Builder)
 toFlushBuilder = do 
     b <- await
     case b of
-        Just b' -> yield $ Chunk (Builder.fromByteString b')
+        Just b' -> do
+            yield $ Chunk (Builder.fromByteString b')
+            toFlushBuilder
         Nothing -> yield $ Flush
