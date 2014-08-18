@@ -8,6 +8,8 @@ module Web.SocketIO.Protocol
     ,   parsePath
     ) where
 
+import Data.Maybe (fromJust)
+
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
 
@@ -123,26 +125,43 @@ eventParser = do
 -- | Parse given HTTP request
 parsePath :: ByteString -> Path
 parsePath p = case parseOnly pathParser p of
-    Left _  -> WithoutSession "" ""
+    Left _  -> Path XHRPolling (Just "Web.SocketIO.Protocol.parsePath_got_wrong")
     Right x -> x 
 
 pathParser :: Parser Path
 pathParser = do
     string "/"
-    namespace <- takeTill (== 47) -- 0x47: slash
-    take 1  -- slip the second slash
-    protocol <- takeTill (== 47)
-    take 1  -- slip the third slash
-    option (WithoutSession namespace protocol) $ do
-        transport <- transportParser
-        string "/"
-        sessionID <- takeTill (== 47)
-        return $ WithSession namespace protocol transport sessionID
+    _ <- takeTill (== 47) -- 0x47: slash
+    take 2  -- skip "/?"
+    pairs <- queryString
+
+    --let transport = case parseOnly transportParser (fromJust (lookup "transport" pairs)) of
+    --    Left _ -> NoTransport
+    --    Just x -> x
+    return (Path XHRPolling (lookup "sid" pairs))
+
+
+    --option (WithoutSession namespace protocol) $ do
+    --    transport <- transportParser
+    --    string "/"
+    --    sessionID <- takeTill (== 47)
+    --    return $ WithSession namespace protocol transport sessionID
+
+
+queryString :: Parser [(ByteString, ByteString)]
+queryString = pair `sepBy1` word8 38
+    where   field = takeTill (== 61)
+            value = takeTill (\ c -> c == 38 || c == 0)
+            pair = do
+                f <- field
+                take 1
+                v <- value
+                return (f, v)
 
 transportParser :: Parser Transport
 transportParser = choice
     [   string "websocket"      >> return WebSocket
-    ,   string "xhr-polling"    >> return XHRPolling
+    ,   string "polling"    >> return XHRPolling
     ,   string "unknown"        >> return NoTransport
     ,   skipWhile (/= 47)       >> return NoTransport
     ]

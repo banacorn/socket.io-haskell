@@ -25,12 +25,12 @@ import qualified    Network.Wai.Handler.Warp        as Warp
 --------------------------------------------------------------------------------
 -- | Run a socket.io application, build on top of Warp.
 server :: Port -> HandlerM () -> IO ()
-server p h = serverConfig p defaultConfig h
+server = serverConfig defaultConfig
 
 --------------------------------------------------------------------------------
 -- | Run a socket.io application with configurations applied.
-serverConfig :: Port -> Configuration -> HandlerM () -> IO ()
-serverConfig port config handler = do
+serverConfig :: Configuration -> Port -> HandlerM () -> IO ()
+serverConfig config port handler = do
 
     -- session table
     tableRef <- newSessionTableRef

@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Request (sourceHTTPRequest, runRequest) where
+import              Control.Monad.Trans             (liftIO)
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
@@ -25,14 +26,17 @@ runRequest runner = CL.mapM runner =$= serializeMessage =$= toFlushBuilder
 -- | Extracts HTTP requests
 sourceHTTPRequest :: Wai.Request -> Source IO Request
 sourceHTTPRequest request = do
+
+
+    liftIO $ print (Wai.rawPathInfo request)
     let path = parsePath (Wai.rawPathInfo request)
     let method = Wai.requestMethod request
 
     case (method, path) of
-        ("GET", (WithoutSession _ _)) -> yield Handshake
-        ("GET", (WithSession _ _ _ sessionID)) -> yield (Connect sessionID)
-        ("POST", (WithSession _ _ _ sessionID)) -> Wai.requestBody request $= demultiplexMessage =$= awaitForever (yield . Request sessionID)
-        (_, (WithSession _ _ _ sessionID)) -> yield (Disconnect sessionID)
+        ("GET", (Path _ Nothing)) -> yield Handshake
+        ("GET", (Path _ (Just sessionID))) -> yield (Connect sessionID)
+        ("POST", (Path _ (Just sessionID))) -> Wai.requestBody request $= demultiplexMessage =$= awaitForever (yield . Request sessionID)
+        (_, (Path _ (Just sessionID))) -> yield (Disconnect sessionID)
         _ -> error "error handling http request"
 
 --------------------------------------------------------------------------------

@@ -25,19 +25,16 @@ type Protocol = ByteString
 --------------------------------------------------------------------------------
 -- | The URN part of a HTTP request.
 -- Please refer to <https://github.com/LearnBoost/socket.io-spec#socketio-http-requests socket.io-spec#socketio-http-requests>
-data Path   = WithSession    Namespace Protocol Transport SessionID
-            | WithoutSession Namespace Protocol
+--data Request = Request Transport (Maybe SID)
+
+type SID = ByteString
+
+data Path   = Path Transport (Maybe SID)
             deriving (Eq, Show)
 
 instance Serializable Path where
-    serialize (WithSession n p t s) = "/" <> serialize n 
-                                   <> "/" <> serialize p 
-                                   <> "/" <> serialize t
-                                   <> "/" <> serialize s
-                                   <> "/"
-    serialize (WithoutSession n p)  = "/" <> serialize n
-                                   <> "/" <> serialize p 
-                                   <> "/"
+    serialize (Path t s) = "?transport=" <> serialize t
+                                   <> "&sid=" <> serialize s
 
 --------------------------------------------------------------------------------
 -- | Incoming request
