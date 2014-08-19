@@ -71,8 +71,6 @@ library
                     , bytestring            >=0.10  && <1.0
                     , blaze-builder         >=0.3   && <1.0
                     , aeson                 >=0.8   && <1.0
-                    , conduit               >=1.1   && <2.0
-                    , conduit-extra         >=1.1   && <2.0
                     , attoparsec            >=0.12  && <1.0
                     , ansi-terminal         >=0.6   && <1.0
                     , unordered-containers  >=0.2   && <1.0

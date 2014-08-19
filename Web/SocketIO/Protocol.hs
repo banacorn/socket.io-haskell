@@ -18,8 +18,6 @@ import              Web.SocketIO.Types
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
 import qualified    Data.ByteString                         as B
---import              Data.Conduit
---import              Data.Conduit.Attoparsec                 (conduitParserEither)
 import              Data.Attoparsec.ByteString.Lazy
 import              Data.Attoparsec.ByteString.Char8        (digit, decimal)
 import              Prelude                                 hiding (take, takeWhile)
