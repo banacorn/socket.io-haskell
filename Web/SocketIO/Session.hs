@@ -33,7 +33,7 @@ handleSession SessionHandshake = do
 
 handleSession SessionConnect = do
     logWithSession Info $ "Connected"
-    triggerEvent (Event "connection" (Payload []))
+    triggerEvent (Event "connection" (Payload_ []))
     return $ MsgConnect NoEndpoint
 
 handleSession SessionPolling = do
@@ -69,12 +69,12 @@ handleSession (SessionEmit event) = do
 
 handleSession SessionDisconnectByClient = do
     logWithSession Info $ "Disconnected by client"
-    triggerEvent (Event "disconnect" (Payload []))
+    triggerEvent (Event "disconnect" (Payload_ []))
     return $ MsgNoop
 
 handleSession SessionDisconnectByServer = do
     logWithSession Info $ "Disconnected by server"
-    triggerEvent (Event "disconnect" (Payload []))
+    triggerEvent (Event "disconnect" (Payload_ []))
     return $ MsgNoop
 
 --------------------------------------------------------------------------------

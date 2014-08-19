@@ -48,18 +48,17 @@ data Request    = Handshake
 --------------------------------------------------------------------------------
 -- | Encoding, https://github.com/Automattic/engine.io-protocol#encoding
 
---data Packet = Packet PacketType Data
---data PacketType = Open      -- 0
---                | Close     -- 1
---                | Ping      -- 2
---                | Pong      -- 3
---                | Message   -- 4
---                | Upgrade   -- 5
---                | Noop      -- 6
---data Data = ByteString
+data Packet = Packet PacketType Data
+data PacketType = Open      -- 0
+                | Close     -- 1
+                | Ping      -- 2
+                | Pong      -- 3
+                | Message   -- 4
+                | Upgrade   -- 5
+                | Noop      -- 6
+data Data = ByteString
 
---data NonEmptyList a = Singleton a | Cons a (NonEmptyList a)
---type Payload = NonEmptyList (Int , Packet)
+type Payload = [Packet]
 
 --------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol.
@@ -68,14 +67,14 @@ data Message    = MsgHandshake SessionID Int Int [Transport]
                 | MsgDisconnect Endpoint
                 | MsgConnect Endpoint
                 | MsgHeartbeat
-                | Msg ID Endpoint Data
-                | MsgJSON ID Endpoint Data
+                | Msg ID Endpoint Data_
+                | MsgJSON ID Endpoint Data_
                 | MsgEvent ID Endpoint Event
-                | MsgACK ID Data
-                | MsgError Endpoint Data
+                | MsgACK ID Data_
+                | MsgError Endpoint Data_
                 | MsgNoop
                 deriving (Show, Eq)
-                
+
 instance Serializable Message where
     serialize (MsgHandshake s a b t)        = serialize (0 `B.cons` 8 `B.cons` 6 `B.cons` 255 `B.cons` "0{\"sid\":\"tDbNkKKtAahP1yFkAAAC\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":60000}" :: ByteString)
         --where   transportType = fromString $ concat . intersperse "," . map serialize $ t :: ByteString
@@ -122,12 +121,12 @@ instance Serializable ID where
     serialize (IDPlus i) = serialize i <> "+"
     serialize NoID = ""
 
---------------------------------------------------------------------------------
+------------------------------------------------------------------------------
 -- | Message data body
-data Data       = Data ByteString
+data Data_       = Data_ ByteString
                 | NoData
                 deriving (Show, Eq)
 
-instance Serializable Data where
-    serialize (Data s) = serialize s
+instance Serializable Data_ where
+    serialize (Data_ s) = serialize s
     serialize NoData = ""

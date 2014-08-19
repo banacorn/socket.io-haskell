@@ -55,7 +55,7 @@ messageParser = do
                     string "+"
                     x <- takeWhile (const True)
                     
-                    return $ MsgACK (ID d) (if B.null x then NoData else Data x)
+                    return $ MsgACK (ID d) (if B.null x then NoData else Data_ x)
                     
             ,   do  string ":::"
                     d <- decimal
@@ -78,10 +78,10 @@ endpointParser = do
     string ":"
     option NoEndpoint (takeWhile1 (/= 58) >>= return . Endpoint)
 
-dataParser :: Parser Data
+dataParser :: Parser Data_
 dataParser = do
     string ":"
-    option NoData (takeWhile1 (/= 58) >>= return . Data)
+    option NoData (takeWhile1 (/= 58) >>= return . Data_)
 
 eventParser :: Parser Event
 eventParser = do

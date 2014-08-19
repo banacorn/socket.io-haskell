@@ -152,7 +152,7 @@ handleConnection (Request sessionID _, Just (session, Connecting)) = do
     return $ MsgError NoEndpoint NoData
 
 
-handleConnection (Request sessionID (MsgEvent _ _ event@(Event eventName (Payload payloads))), Just (session, Connected)) = do
+handleConnection (Request sessionID (MsgEvent _ _ event@(Event eventName (Payload_ payloads))), Just (session, Connected)) = do
     logWithSessionID Debug sessionID $ "[Request] Request: MsgEvent " <> serialize eventName <> " " <> serialize payloads
     runSession (SessionEmit event) session
 
