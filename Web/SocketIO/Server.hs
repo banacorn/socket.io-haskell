@@ -40,31 +40,42 @@ serverConfig config port handler = do
     globalChannel   <- newGlobalChannel
     streamToHandle (logTo config) logChannel
 
-    let vorspann = header config
+    let responseHeaders = header config
     let env = Env tableRef handler config logChannel globalChannel
 
     -- run it with Warp
-    Warp.run port (httpApp vorspann (runConnection env))
+    Warp.run port (httpApp responseHeaders (runConnection env))
 
 
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
 httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
-httpApp headerFields runConnection' httpRequest = liftIO $ do
+httpApp responseHeaders runConnection' httpRequest = liftIO $ do
     
     let origin = lookupOrigin httpRequest
-    let headerFields' = insertOrigin headerFields origin
+
+    -- http response headers
+    let responseHeaders' = responseHeaders  -==|- ("Access-Control-Allow-Origin", origin) 
+                                            -==|- ("Connection", "keep-alive")
+                                            -==|- ("Set-Cookie", "io=tDbNkKKtAahP1yFkAAAC")
+                                            -==|- ("Content-Length", "90")
+                                            -==|- ("Content-Type", "application/octet-stream")
+
+
+
 
     let sourceBody = sourceHTTPRequest httpRequest $= runRequest runConnection'
 
-    return $ Wai.responseSource status200 headerFields' sourceBody
+    return $ Wai.responseSource status200 responseHeaders' sourceBody
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin
                 Nothing     -> "*"
-            insertOrigin fields origin = case lookup "Access-Control-Allow-Origin" fields of
-                Just _  -> fields
-                Nothing -> ("Access-Control-Allow-Origin", origin) : fields
+
+            -- inject header only when absent
+            headers -==|- (name, value) = case lookup name headers of
+                Just _ -> headers -- already in headers
+                Nothing -> (name, value) : headers
 --------------------------------------------------------------------------------
 -- | Default configuration.
         --

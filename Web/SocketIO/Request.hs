@@ -28,8 +28,8 @@ sourceHTTPRequest :: Wai.Request -> Source IO Request
 sourceHTTPRequest request = do
 
 
-    liftIO $ print (Wai.rawPathInfo request)
-    let path = parsePath (Wai.rawPathInfo request)
+    liftIO $ print (Wai.rawQueryString request)
+    let path = parsePath (Wai.rawQueryString request)
     let method = Wai.requestMethod request
 
     case (method, path) of

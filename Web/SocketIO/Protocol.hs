@@ -130,9 +130,7 @@ parsePath p = case parseOnly pathParser p of
 
 pathParser :: Parser Path
 pathParser = do
-    string "/"
-    _ <- takeTill (== 47) -- 0x47: slash
-    take 2  -- skip "/?"
+    take 1 -- skip '&'
     pairs <- queryString
 
     --let transport = case parseOnly transportParser (fromJust (lookup "transport" pairs)) of

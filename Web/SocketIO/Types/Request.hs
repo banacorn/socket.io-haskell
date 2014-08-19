@@ -70,14 +70,10 @@ data Message    = MsgHandshake SessionID Int Int [Transport]
                 | MsgError Endpoint Data
                 | MsgNoop
                 deriving (Show, Eq)
-
 instance Serializable Message where
-    serialize (MsgHandshake s a b t)        = serialize s <> ":" <>
-                                              a'          <> ":" <>
-                                              serialize b <> ":" <>
-                                              serialize transportType
-        where   transportType = fromString $ concat . intersperse "," . map serialize $ t :: ByteString
-                a' = if a == 0 then mempty else serialize a
+    serialize (MsgHandshake s a b t)        = serialize (0 `B.cons` 8 `B.cons` 6 `B.cons` 255 `B.cons` "0{\"sid\":\"tDbNkKKtAahP1yFkAAAC\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":60000}" :: ByteString)
+        --where   transportType = fromString $ concat . intersperse "," . map serialize $ t :: ByteString
+        --        a' = if a == 0 then mempty else serialize a
     serialize (MsgDisconnect NoEndpoint)    = "0"
     serialize (MsgDisconnect e)             = "0::" <> serialize e
     serialize (MsgConnect e)                = "1::" <> serialize e
