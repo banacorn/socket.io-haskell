@@ -3,9 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Protocol 
-    (   demultiplexMessage
-    ,   parseFramedMessage
-    ,   parseMessage
+    (   parseMessage
     ,   parsePath
     ) where
 
@@ -27,37 +25,6 @@ parseMessage input = case parseOnly messageParser input of
     Left err -> error $ show err
     Right msg -> msg
     
---------------------------------------------------------------------------------
--- | Demultiplexing messages
-demultiplexMessage :: ByteString -> [Message]
-demultiplexMessage input = case parseOnly framedMessageParser input of
-    Left err -> error $ show err
-    Right msg -> msg
-
-----------------------------------------------------------------------------------
----- | Using U+FFFD as delimiter
-frameParser :: Parser a -> Parser a
-frameParser parser = do
-    string "ï¿½"
-    len <- decimal
-    string "ï¿½"
-    x <- take len
-    case parseOnly parser x of
-        Left e  -> error e
-        Right r -> return r
-
---------------------------------------------------------------------------------
--- | Message, framed with List
-framedMessageParser :: Parser [Message]
-framedMessageParser = choice [many1 (frameParser messageParser), many' messageParser]
-
---------------------------------------------------------------------------------
--- | Wrapped for testing
-parseFramedMessage :: ByteString -> Framed Message
-parseFramedMessage input = case parseOnly framedMessageParser input of
-    Left e -> error e
-    Right r -> Framed r
-
 --------------------------------------------------------------------------------
 -- | Message, not framed
 messageParser :: Parser Message

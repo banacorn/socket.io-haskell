@@ -2,7 +2,7 @@
 -- | Converts HTTP requests to Socket.IO requests and run them
 {-# LANGUAGE OverloadedStrings #-}
 
-module Web.SocketIO.Request (extractHTTPRequest, runRequest) where
+module Web.SocketIO.Request (extractHTTPRequest) where
 import              Control.Monad.Trans             (liftIO)
 
 --------------------------------------------------------------------------------
@@ -16,11 +16,6 @@ import              Web.SocketIO.Protocol
 --import              Data.Conduit
 --import qualified    Data.Conduit.List               as CL
 import qualified    Network.Wai                     as Wai
-
---------------------------------------------------------------------------------
--- | Run!
-runRequest :: (Request -> IO Message) -> Request -> IO ByteString
-runRequest runner request = runner request >>= return . serialize
 
 --------------------------------------------------------------------------------
 -- | Extracts HTTP requests

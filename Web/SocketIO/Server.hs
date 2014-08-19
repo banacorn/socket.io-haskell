@@ -21,6 +21,8 @@ import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
 
+import qualified    Data.ByteString                 as B
+
 --------------------------------------------------------------------------------
 -- | Run a socket.io application, build on top of Warp.
 server :: Port -> HandlerM () -> IO ()
@@ -51,23 +53,22 @@ serverConfig config port handler = do
 httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
 httpApp responseHeaders runConnection' httpRequest respond = do
     
+    -- http response body
+    message <- extractHTTPRequest httpRequest >>= runConnection'
+    
+    let body = serialize message
     let origin = lookupOrigin httpRequest
+
+    let contentLength = B.length body
 
     -- http response headers
     let responseHeaders' = responseHeaders  -==|- ("Access-Control-Allow-Origin", origin) 
                                             -==|- ("Connection", "keep-alive")
                                             -==|- ("Set-Cookie", "io=tDbNkKKtAahP1yFkAAAC")
-                                            -==|- ("Content-Length", "90")
+                                            -==|- ("Content-Length", serialize contentLength)
                                             -==|- ("Content-Type", "application/octet-stream")
 
-
-
-
-    sourceBody <- extractHTTPRequest httpRequest >>= runRequest runConnection'
-
-    
-
-    respond (Wai.responseLBS status200 responseHeaders' (serialize sourceBody))
+    respond (Wai.responseLBS status200 responseHeaders' (serialize body))
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin

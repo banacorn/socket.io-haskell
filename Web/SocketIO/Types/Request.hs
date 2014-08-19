@@ -45,18 +45,6 @@ data Request    = Handshake
                 deriving (Show)
 
 --------------------------------------------------------------------------------
--- | Message Framing
-data Framed a = Framed [a]
-              deriving (Show, Eq)
-
-instance (Show a, Serializable a) => Serializable (Framed a) where
-    serialize (Framed [message]) = serialize message
-    serialize (Framed messages) = mconcat $ map frame messages
-        where   frame message = let serialized = serialize message  
-                                in "ï¿½" <> serialize size <> "ï¿½" <> serialized
-                                where   size = B.length (serialize message)
-
---------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol.
 -- Please refer to <https://github.com/LearnBoost/socket.io-spec#messages socket.io-spec#messages>
 data Message    = MsgHandshake SessionID Int Int [Transport]
