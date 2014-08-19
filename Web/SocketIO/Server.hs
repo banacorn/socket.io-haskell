@@ -16,7 +16,6 @@ import              Web.SocketIO.Types
 
 --------------------------------------------------------------------------------
 import              Control.Monad.Trans             (liftIO)
-import              Data.Conduit
 import              Network.HTTP.Types              (status200)
 import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
@@ -50,7 +49,7 @@ serverConfig config port handler = do
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
 httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
-httpApp responseHeaders runConnection' httpRequest = liftIO $ do
+httpApp responseHeaders runConnection' httpRequest respond = do
     
     let origin = lookupOrigin httpRequest
 
@@ -64,9 +63,11 @@ httpApp responseHeaders runConnection' httpRequest = liftIO $ do
 
 
 
-    let sourceBody = sourceHTTPRequest httpRequest $= runRequest runConnection'
+    sourceBody <- extractHTTPRequest httpRequest >>= runRequest runConnection'
 
-    return $ Wai.responseSource status200 responseHeaders' sourceBody
+    
+
+    respond (Wai.responseLBS status200 responseHeaders' (serialize sourceBody))
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin

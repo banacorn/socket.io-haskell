@@ -5,6 +5,7 @@
 module Web.SocketIO.Protocol 
     (   demultiplexMessage
     ,   parseFramedMessage
+    ,   parseMessage
     ,   parsePath
     ) where
 
@@ -17,19 +18,23 @@ import              Web.SocketIO.Types
 import              Control.Applicative                     ((<$>), (<*>))
 import              Data.Aeson
 import qualified    Data.ByteString                         as B
-import              Data.Conduit
-import              Data.Conduit.Attoparsec                 (conduitParserEither)
+--import              Data.Conduit
+--import              Data.Conduit.Attoparsec                 (conduitParserEither)
 import              Data.Attoparsec.ByteString.Lazy
 import              Data.Attoparsec.ByteString.Char8        (digit, decimal)
 import              Prelude                                 hiding (take, takeWhile)
 
+parseMessage :: ByteString -> Message
+parseMessage input = case parseOnly messageParser input of
+    Left err -> error $ show err
+    Right msg -> msg
+    
 --------------------------------------------------------------------------------
 -- | Demultiplexing messages
-demultiplexMessage :: Conduit ByteString IO Message
-demultiplexMessage = do
-    conduitParserEither framedMessageParser =$= awaitForever go
-    where   go (Left s) = error $ show s
-            go (Right (_, p)) = mapM yield p
+demultiplexMessage :: ByteString -> [Message]
+demultiplexMessage input = case parseOnly framedMessageParser input of
+    Left err -> error $ show err
+    Right msg -> msg
 
 ----------------------------------------------------------------------------------
 ---- | Using U+FFFD as delimiter
