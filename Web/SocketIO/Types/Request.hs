@@ -46,21 +46,6 @@ data Request    = Handshake
 
 
 --------------------------------------------------------------------------------
--- | Encoding, https://github.com/Automattic/engine.io-protocol#encoding
-
-data Packet = Packet PacketType Data
-data PacketType = Open      -- 0
-                | Close     -- 1
-                | Ping      -- 2
-                | Pong      -- 3
-                | Message   -- 4
-                | Upgrade   -- 5
-                | Noop      -- 6
-data Data = ByteString
-
-type Payload = [Packet]
-
---------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol.
 -- Please refer to <https://github.com/LearnBoost/socket.io-spec#messages socket.io-spec#messages>
 data Message    = MsgHandshake SessionID Int Int [Transport]
