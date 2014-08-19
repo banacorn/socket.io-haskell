@@ -44,6 +44,23 @@ data Request    = Handshake
                 | Request SessionID Message
                 deriving (Show)
 
+
+--------------------------------------------------------------------------------
+-- | Encoding, https://github.com/Automattic/engine.io-protocol#encoding
+
+--data Packet = Packet PacketType Data
+--data PacketType = Open      -- 0
+--                | Close     -- 1
+--                | Ping      -- 2
+--                | Pong      -- 3
+--                | Message   -- 4
+--                | Upgrade   -- 5
+--                | Noop      -- 6
+--data Data = ByteString
+
+--data NonEmptyList a = Singleton a | Cons a (NonEmptyList a)
+--type Payload = NonEmptyList (Int , Packet)
+
 --------------------------------------------------------------------------------
 -- | This is how data are encoded by Socket.IO Protocol.
 -- Please refer to <https://github.com/LearnBoost/socket.io-spec#messages socket.io-spec#messages>
@@ -58,6 +75,7 @@ data Message    = MsgHandshake SessionID Int Int [Transport]
                 | MsgError Endpoint Data
                 | MsgNoop
                 deriving (Show, Eq)
+                
 instance Serializable Message where
     serialize (MsgHandshake s a b t)        = serialize (0 `B.cons` 8 `B.cons` 6 `B.cons` 255 `B.cons` "0{\"sid\":\"tDbNkKKtAahP1yFkAAAC\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":60000}" :: ByteString)
         --where   transportType = fromString $ concat . intersperse "," . map serialize $ t :: ByteString
