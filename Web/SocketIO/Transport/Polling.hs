@@ -7,7 +7,7 @@ module Web.SocketIO.Transport.Polling where
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
 import              Web.SocketIO.Parser
---import              Web.SocketIO.Connection
+import              Web.SocketIO.Connection
 --import              Web.SocketIO.Protocol
 --import              Web.SocketIO.Protocol
 
@@ -25,6 +25,9 @@ httpApp env httpHequest continuation = do
     let request = parse requestP (Wai.rawQueryString httpHequest)
     let request' = request { reqBody = body }
 
-    liftIO $ print request'
+    payload <- runConnection env request
+
+    liftIO $ print payload
+
 
     return undefined
