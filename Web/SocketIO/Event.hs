@@ -18,7 +18,7 @@ import qualified    Data.ByteString.Lazy                as BL
 -- | This function is deprecated; use 'msg' instead
 reply :: CallbackM [Aeson.Value]
 reply = do
-    Payload p <- callbackEnvPayload <$> ask
+    Payload_ p <- callbackEnvPayload <$> ask
     return p
 
 --------------------------------------------------------------------------------
@@ -32,14 +32,14 @@ reply = do
 -- @
 msg :: CallbackM [Aeson.Value]
 msg = do
-    Payload p <- callbackEnvPayload <$> ask
+    Payload_ p <- callbackEnvPayload <$> ask
     return p
 
 --------------------------------------------------------------------------------
 -- | Lazy ByteString version of `msg`, convenient for Aeson decoding.
 msg' :: CallbackM [BL.ByteString]
 msg' = do
-    Payload p <- callbackEnvPayload <$> ask
+    Payload_ p <- callbackEnvPayload <$> ask
     return (map serialize p)
 
 --------------------------------------------------------------------------------

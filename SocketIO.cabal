@@ -56,6 +56,7 @@ library
         Web.SocketIO.Types.Log
         Web.SocketIO.Types.Request
         Web.SocketIO.Types.String
+        Web.SocketIO.Transport.Polling
         Web.SocketIO.Connection
         Web.SocketIO.Channel
         Web.SocketIO.Event

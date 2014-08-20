@@ -11,6 +11,7 @@ module Web.SocketIO.Server
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Channel
 import              Web.SocketIO.Connection
+import              Web.SocketIO.Transport.Polling
 import              Web.SocketIO.Request
 import              Web.SocketIO.Types
 
@@ -41,43 +42,43 @@ serverConfig config port handler = do
     globalChannel   <- newGlobalChannel
     streamToHandle (logTo config) logChannel
 
-    let responseHeaders = header config
     let env = Env tableRef handler config logChannel globalChannel
 
     -- run it with Warp
-    Warp.run port (httpApp responseHeaders (runConnection env))
+    --Warp.run port (httpApp config (runConnection env))
+    Warp.run port (httpApp env)
 
 
---------------------------------------------------------------------------------
--- | Wrapped as a HTTP app
-httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
-httpApp responseHeaders runConnection' httpRequest respond = do
+----------------------------------------------------------------------------------
+---- | Wrapped as a HTTP app
+--httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
+--httpApp responseHeaders runConnection' httpRequest respond = do
     
-    -- http response body
-    message <- extractHTTPRequest httpRequest >>= runConnection'
+--    -- http response body
+--    message <- extractHTTPRequest httpRequest >>= runConnection'
     
-    let body = serialize message
-    let origin = lookupOrigin httpRequest
+--    let body = serialize message
+--    let origin = lookupOrigin httpRequest
 
-    let contentLength = B.length body
+--    let contentLength = B.length body
 
-    -- http response headers
-    let responseHeaders' = responseHeaders  -==|- ("Access-Control-Allow-Origin", origin) 
-                                            -==|- ("Connection", "keep-alive")
-                                            -==|- ("Set-Cookie", "io=tDbNkKKtAahP1yFkAAAC")
-                                            -==|- ("Content-Length", serialize contentLength)
-                                            -==|- ("Content-Type", "application/octet-stream")
+--    -- http response headers
+--    let responseHeaders' = responseHeaders  -==|- ("Access-Control-Allow-Origin", origin) 
+--                                            -==|- ("Connection", "keep-alive")
+--                                            -==|- ("Set-Cookie", "io=tDbNkKKtAahP1yFkAAAC")
+--                                            -==|- ("Content-Length", serialize contentLength)
+--                                            -==|- ("Content-Type", "application/octet-stream")
 
-    respond (Wai.responseLBS status200 responseHeaders' (serialize body))
+--    respond (Wai.responseLBS status200 responseHeaders' (serialize body))
 
-    where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
-                Just origin -> origin
-                Nothing     -> "*"
+--    where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
+--                Just origin -> origin
+--                Nothing     -> "*"
 
-            -- inject header only when absent
-            headers -==|- (name, value) = case lookup name headers of
-                Just _ -> headers -- already in headers
-                Nothing -> (name, value) : headers
+--            -- inject header only when absent
+--            headers -==|- (name, value) = case lookup name headers of
+--                Just _ -> headers -- already in headers
+--                Nothing -> (name, value) : headers
 --------------------------------------------------------------------------------
 -- | Default configuration.
         --

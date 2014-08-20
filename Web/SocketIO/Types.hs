@@ -9,6 +9,7 @@ module Web.SocketIO.Types
     ,   module Web.SocketIO.Types.Event
     ,   module Web.SocketIO.Types.Layer
     ,   module Web.SocketIO.Types.Log
+    ,   module Web.SocketIO.Types.Protocol
     ,   module Web.SocketIO.Types.Request
     ,   module Web.SocketIO.Types.String
     ) where
@@ -16,7 +17,8 @@ module Web.SocketIO.Types
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types.Base
 import              Web.SocketIO.Types.Event
-import              Web.SocketIO.Types.Request
 import              Web.SocketIO.Types.Layer
 import              Web.SocketIO.Types.Log
+import              Web.SocketIO.Types.Protocol
+import              Web.SocketIO.Types.Request
 import              Web.SocketIO.Types.String

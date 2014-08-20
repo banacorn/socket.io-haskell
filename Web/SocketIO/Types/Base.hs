@@ -11,6 +11,7 @@ module Web.SocketIO.Types.Base where
 import              Web.SocketIO.Types.Log
 import              Web.SocketIO.Types.String
 import              Web.SocketIO.Types.Event
+import              Web.SocketIO.Types.Protocol
 
 --------------------------------------------------------------------------------
 import              Control.Applicative
@@ -39,10 +40,6 @@ instance Show Session where
     show (Session i s _ _ _) = "Session " 
                             ++ fromByteString i 
                             ++ " [" ++ show s ++ "]"
-
---------------------------------------------------------------------------------
--- | Session ID
-type SessionID = ByteString 
 
 --------------------------------------------------------------------------------
 -- | Session table, consists of `SessionID`, `Session` pairs.
@@ -201,11 +198,3 @@ instance Subscriber HandlerM where
     on event callback = do
         HandlerM . lift . tell $ [(event, callback)]
   
---------------------------------------------------------------------------------
--- | Now only xhr-polling is supported. <https://github.com/LearnBoost/socket.io-spec#transport-id socket.io-spec#transport-id>
-data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
-
-instance Serializable Transport where
-    serialize WebSocket = "websocket" 
-    serialize XHRPolling = "xhr-polling" 
-    serialize NoTransport = "unknown" 

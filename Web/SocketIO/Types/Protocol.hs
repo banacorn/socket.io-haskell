@@ -1,13 +1,26 @@
 --------------------------------------------------------------------------------
--- | Engine.IO Protocol, please refer to https://github.com/Automattic/engine.io-protocol
+-- | Engine.IO Protocol, please refer to <https://github.com/Automattic/engine.io-protocol>
 {-# LANGUAGE OverloadedStrings #-}
 
 module Web.SocketIO.Types.Protocol where
 
+--------------------------------------------------------------------------------
 import              Data.ByteString     
+import              Web.SocketIO.Types.String
 
 --------------------------------------------------------------------------------
--- | Encoding, https://github.com/Automattic/engine.io-protocol#encoding
+-- | URLs, see <https://github.com/Automattic/engine.io-protocol#urls>
+
+data Req = Req  {   reqTransport :: Transport
+                ,   reqJ :: Int
+                ,   reqSID :: SessionID
+                ,   reqB64 :: Bool
+                }
+
+type SessionID = ByteString 
+
+--------------------------------------------------------------------------------
+-- | Encoding, see <https://github.com/Automattic/engine.io-protocol#encoding>
 
 data Packet = Packet PacketType Data
 data PacketType = Open      -- 0
@@ -20,3 +33,13 @@ data PacketType = Open      -- 0
 data Data = ByteString
 
 type Payload = [Packet]
+
+
+--------------------------------------------------------------------------------
+-- | Now only xhr-polling is supported. <https://github.com/Automattic/engine.io-protocol#urls>
+data Transport = WebSocket | XHRPolling | NoTransport deriving (Eq, Show)
+
+instance Serializable Transport where
+    serialize WebSocket = "websocket" 
+    serialize XHRPolling = "polling" 
+    serialize NoTransport = "unknown" 
