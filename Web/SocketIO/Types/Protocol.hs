@@ -11,11 +11,13 @@ import              Web.SocketIO.Types.String
 --------------------------------------------------------------------------------
 -- | URLs, see <https://github.com/Automattic/engine.io-protocol#urls>
 
-data Req = Req  {   reqTransport :: Transport
-                ,   reqJ :: Int
-                ,   reqSID :: SessionID
+data Req = Req  {   reqBody :: ByteString
+                ,   reqTransport :: Transport
+                ,   reqJ :: Maybe ByteString
+                ,   reqSID :: Maybe SessionID
                 ,   reqB64 :: Bool
                 }
+                deriving (Eq, Show)
 
 type SessionID = ByteString 
 

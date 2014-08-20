@@ -125,11 +125,3 @@ queryString = pair `sepBy1` word8 38
                 take 1
                 v <- value
                 return (f, v)
-
-transportParser :: Parser Transport
-transportParser = choice
-    [   string "websocket"      >> return WebSocket
-    ,   string "polling"    >> return XHRPolling
-    ,   string "unknown"        >> return NoTransport
-    ,   skipWhile (/= 47)       >> return NoTransport
-    ]
