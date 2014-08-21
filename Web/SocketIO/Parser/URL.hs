@@ -29,7 +29,7 @@ queryStringP = pair `sepBy1` word8 38
 
 --------------------------------------------------------------------------------
 -- | Parse query string and build a Req
-requestP :: Parser Req
+requestP :: Parser Request
 requestP = do
 
     pairs <- queryStringP
@@ -43,9 +43,9 @@ requestP = do
             Just "1" -> True
             _        -> False
 
-    return Req  { reqTransport  = transport
-                , reqJ          = lookup "j" pairs
-                , reqSID        = lookup "sid" pairs
-                , reqB64        = b64
-                , reqBody       = ""
-                }
+    return Request  { reqTransport  = transport
+                    , reqJ          = lookup "j" pairs
+                    , reqSID        = lookup "sid" pairs
+                    , reqB64        = b64
+                    , reqBody       = ""
+                    }
