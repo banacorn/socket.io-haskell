@@ -10,6 +10,7 @@ module Web.SocketIO.Types.Protocol where
 import              Prelude                                     hiding (length)
 import qualified    Data.ByteString                             as B
 import              Data.ByteString                             (ByteString)
+import              Data.Monoid                                 (mconcat)
 import              Web.SocketIO.Types.String
 
 --------------------------------------------------------------------------------
@@ -46,12 +47,12 @@ instance Serializable Packet where
     serialize (Packet t d)  =   serialize (toByteString $ [0] ++ len ++ [255])
                             <>  serialize t
                             <>  serialize d
-        where   len = toDecimal (B.length d)
+        where   len = toDecimal (B.length d + 1)
                 toDecimal n | n < 10 = [n]
                             | otherwise = toDecimal (n `div` 10) ++ [n `mod` 10]
                 toByteString = B.pack . map toEnum
 
-data PacketType = Open     -- 0
+data PacketType = Open      -- 0
                 | Close     -- 1
                 | Ping      -- 2
                 | Pong      -- 3
@@ -72,8 +73,8 @@ instance Serializable PacketType where
 type Data = ByteString
 data Payload = Payload [Packet] deriving (Eq, Show)
 
---instance Serializable Payload where
-    --serialize packets = concat $ map serialize packets
+instance Serializable Payload where
+    serialize (Payload packets) = mconcat $ map serialize packets
 
 
 --------------------------------------------------------------------------------
