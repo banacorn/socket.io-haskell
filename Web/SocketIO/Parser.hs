@@ -5,11 +5,13 @@
 module Web.SocketIO.Parser 
     (   parse
     ,   module Web.SocketIO.Parser.URL
+    ,   module Web.SocketIO.Parser.Payload
     ) where
 
 --------------------------------------------------------------------------------
 import              Web.SocketIO.Types
 import              Web.SocketIO.Parser.URL
+import              Web.SocketIO.Parser.Payload
 
 
 --------------------------------------------------------------------------------

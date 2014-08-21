@@ -1,11 +1,15 @@
 --------------------------------------------------------------------------------
 -- | Engine.IO Protocol, please refer to <https://github.com/Automattic/engine.io-protocol>
 {-# LANGUAGE OverloadedStrings #-}
+-- {-# LANGUAGE TypeSynonymInstances #-}
+-- {-# LANGUAGE FlexibleInstances #-}
 
 module Web.SocketIO.Types.Protocol where
 
 --------------------------------------------------------------------------------
-import              Data.ByteString     
+import              Prelude                                     hiding (length)
+import qualified    Data.ByteString                             as B
+import              Data.ByteString                             (ByteString)
 import              Web.SocketIO.Types.String
 
 --------------------------------------------------------------------------------
@@ -36,6 +40,17 @@ viewRequest (Request "" t j Nothing b) = Connect t j b
 
 data Packet = Packet PacketType Data
                 deriving (Eq, Show)
+
+
+instance Serializable Packet where
+    serialize (Packet t d)  =   serialize (toByteString $ [0] ++ len ++ [255])
+                            <>  serialize t
+                            <>  serialize d
+        where   len = toDecimal (B.length d)
+                toDecimal n | n < 10 = [n]
+                            | otherwise = toDecimal (n `div` 10) ++ [n `mod` 10]
+                toByteString = B.pack . map toEnum
+
 data PacketType = Open     -- 0
                 | Close     -- 1
                 | Ping      -- 2
@@ -45,8 +60,20 @@ data PacketType = Open     -- 0
                 | Noop      -- 6
                 deriving (Eq, Show)
 
+instance Serializable PacketType where
+    serialize Open = "0"
+    serialize Close = "1"
+    serialize Ping = "2"
+    serialize Pong = "3"
+    serialize Message = "4"
+    serialize Upgrade = "5"
+    serialize Noop = "6"
+
 type Data = ByteString
-type Payload = [Packet]
+data Payload = Payload [Packet] deriving (Eq, Show)
+
+--instance Serializable Payload where
+    --serialize packets = concat $ map serialize packets
 
 
 --------------------------------------------------------------------------------

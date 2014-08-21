@@ -10,14 +10,14 @@ import              Web.SocketIO.Types.Protocol
 
 
 --------------------------------------------------------------------------------
-import              Prelude                         hiding (take, takeWhile, map)
+import              Prelude                         hiding (take, takeWhile, map, foldl)
 import              Data.ByteString                 hiding (take, takeWhile)
 import              Data.Attoparsec.ByteString
 
 
 --------------------------------------------------------------------------------
 -- | 
-packetTypeP :: Parser packetTypeP
+packetTypeP :: Parser PacketType
 packetTypeP = do
     t <- take 1
     case t of
@@ -38,10 +38,10 @@ packetP len = do
 encodedPacketP :: Parser Packet
 encodedPacketP = do
     take 1
-    contentLenRaw <- takeTill 255
+    contentLenRaw <- takeTill (== 255)
     take 1
-    let contentLen = foldl (\ acc c -> ord c + acc * 10) 0 contentLenRaw
+    let contentLen = foldl (\ acc c -> fromEnum c + acc * 10) 0 contentLenRaw
     packetP contentLen
 
 payloadP :: Parser Payload
-payloadP = many encodedPacketP
+payloadP = many' encodedPacketP

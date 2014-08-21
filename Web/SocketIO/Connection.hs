@@ -100,7 +100,7 @@ handleConnection (viewRequest -> Connect transport j b64) = do
 
     -- next stage
     --runSession SessionHandshake session
-    return undefined
+    return [Packet Open "{\"sid\":\"dCyYwuTv_fJbZkg4AAAH\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":60000}"]
 
     where   genSessionID = liftIO $ serialize <$> randomRIO (100000000000, 999999999999 :: Integer)
             makeSession = do
