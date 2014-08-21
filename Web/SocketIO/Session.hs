@@ -13,21 +13,24 @@ import Control.Monad.Writer
 import Control.Concurrent.Chan.Lifted
 import Control.Concurrent.Lifted        (fork)
 import System.Timeout.Lifted
-
+import Data.HashMap.Strict (fromList)
+import Data.Vector (empty)
+import Data.Aeson (Value(..), encode)
 --------------------------------------------------------------------------------
 -- | The final stage
 handleSession :: SessionAction -> SessionM Packet
-handleSession SessionHandshake = do
+handleSession SessionOpen = do
     sessionID <- getSessionID
     configuration <- getConfiguration
 
-    --let packetType = Open 
-    --            sessionID                       -- session ID
-    --            []                              -- upgrade transports
-    --            (pingInterval configuration)    -- ping interval
-    --            (pingTimeout configuration)     -- ping timeout
-                
-    return (Packet Open "")
+    let value = Object $ fromList 
+            [   ("sid"          , String $ serialize sessionID)
+            ,   ("upgrades"     , Array  $ empty)
+            ,   ("pingInterval" , Number $ fromInteger 25000)
+            ,   ("pingTimeout"  , Number $ fromInteger 60000)
+            ]
+
+    return (Packet Open (serialize $ encode value))
 
 --handleSession SessionConnect = do
 --    logWithSession Info $ "Connected"

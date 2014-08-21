@@ -81,11 +81,11 @@ runConnection env req = do
 --------------------------------------------------------------------------------
 -- | Big time
 handleConnection :: Request -> ConnectionM Payload
-handleConnection (viewRequest -> Connect transport j b64) = do
+handleConnection (viewRequest -> ConnectionOpen transport j b64) = do
 
 
 
-    liftIO $ print $ Connect transport j b64
+    --liftIO $ print $ Connect transport j b64
 
     -- establish a session
     session@(Session sessionID _ _ _ _) <- makeSession
@@ -99,8 +99,8 @@ handleConnection (viewRequest -> Connect transport j b64) = do
     --setTimeout session
 
     -- next stage
-    --runSession SessionHandshake session
-    return [Packet Open "{\"sid\":\"dCyYwuTv_fJbZkg4AAAH\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":60000}"]
+    packet <- runSession SessionOpen session
+    return (Payload sessionID [packet])
 
     where   genSessionID = liftIO $ serialize <$> randomRIO (100000000000, 999999999999 :: Integer)
             makeSession = do

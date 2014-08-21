@@ -29,11 +29,11 @@ type SessionID = ByteString
 --------------------------------------------------------------------------------
 -- view pattern of incoming requests
 
-data RequestView =  Connect Transport (Maybe ByteString) Bool
+data RequestView =  ConnectionOpen Transport (Maybe ByteString) Bool
                     deriving (Eq, Show)
 
 viewRequest :: Request -> RequestView
-viewRequest (Request "" t j Nothing b) = Connect t j b
+viewRequest (Request "" t j Nothing b) = ConnectionOpen t j b
 
 
 --------------------------------------------------------------------------------
@@ -71,10 +71,10 @@ instance Serializable PacketType where
     serialize Noop = "6"
 
 type Data = ByteString
-data Payload = Payload [Packet] deriving (Eq, Show)
+data Payload = Payload SessionID [Packet] deriving (Eq, Show)
 
 instance Serializable Payload where
-    serialize (Payload packets) = mconcat $ map serialize packets
+    serialize (Payload _ packets) = mconcat $ map serialize packets
 
 
 --------------------------------------------------------------------------------

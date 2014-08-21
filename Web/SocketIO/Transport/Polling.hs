@@ -16,7 +16,7 @@ import qualified    Network.Wai                     as Wai
 import              Control.Monad.Trans             (liftIO)
 import              Network.HTTP.Types              (status200)
 
-import qualified    Data.ByteString                 as B
+import qualified    Data.ByteString.Lazy                 as LB
 
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
@@ -28,22 +28,23 @@ httpApp env httpRequest continuation = do
     let request = parse requestP (Wai.rawQueryString httpRequest)
     let request' = request { reqBody = body }
 
-    payload <- runConnection env request'
+    payload@(Payload sessionID _) <- runConnection env request'
+
+    let serializedPayload = serialize payload
+    let contentLength = serialize (fromEnum $ LB.length serializedPayload)
 
     liftIO $ print request'
-    liftIO $ print (parse payloadP body)
-
-    let b = 0 `B.cons` 8 `B.cons` 6 `B.cons` "{\"sid\":\"tDbNkKKtAahP1yFkAAAC\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":60000}" :: ByteString
-    liftIO $ print b
+    liftIO $ print serializedPayload
+    liftIO $ print contentLength
 
     let origin = lookupOrigin httpRequest
     let responseHeaders = (header $ envConfiguration env)  -==|- ("Access-Control-Allow-Origin", origin) 
                                             -==|- ("Connection", "keep-alive")
-                                            -==|- ("Set-Cookie", "io=tDbNkKKtAahP1yFkAAAC")
-                                            -==|- ("Content-Length", "86")
+                                            -==|- ("Set-Cookie", "io=" <> sessionID)
+                                            -==|- ("Content-Length", contentLength)
                                             -==|- ("Content-Type", "application/octet-stream")
 
-    continuation (Wai.responseLBS status200 responseHeaders (serialize b))
+    continuation (Wai.responseLBS status200 responseHeaders serializedPayload)
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin

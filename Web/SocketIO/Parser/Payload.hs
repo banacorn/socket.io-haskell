@@ -16,7 +16,6 @@ import              Data.Attoparsec.ByteString
 
 
 --------------------------------------------------------------------------------
--- | 
 packetTypeP :: Parser PacketType
 packetTypeP = do
     t <- take 1
@@ -27,7 +26,7 @@ packetTypeP = do
         "3" -> return Pong
         "4" -> return Message
         "5" -> return Upgrade
-        "6" -> return Noop
+        _ -> return Noop
 
 packetP :: Int -> Parser Packet
 packetP len = do
@@ -43,5 +42,5 @@ encodedPacketP = do
     let contentLen = foldl (\ acc c -> fromEnum c + acc * 10) 0 contentLenRaw
     packetP contentLen
 
-payloadP :: Parser Payload
-payloadP = many' encodedPacketP
+payloadP :: SessionID -> Parser Payload
+payloadP sid = fmap (Payload sid) (many' encodedPacketP)

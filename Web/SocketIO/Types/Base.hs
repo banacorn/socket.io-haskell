@@ -53,12 +53,12 @@ data SessionState = Connecting  -- ^ after `Web.SocketIO.Types.Request.Handshake
 
 --------------------------------------------------------------------------------
 -- | Fine-grained session layer requests
-data SessionAction   = SessionHandshake
-                     | SessionConnect
-                     | SessionPolling
-                     | SessionEmit Event
-                     | SessionDisconnectByClient
-                     | SessionDisconnectByServer
+data SessionAction   = SessionOpen
+                     -- | SessionConnect
+                     -- | SessionPolling
+                     -- | SessionEmit Event
+                     -- | SessionDisconnectByClient
+                     -- | SessionDisconnectByServer
 
 --------------------------------------------------------------------------------
 -- | Server-wide configurations
