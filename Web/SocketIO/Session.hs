@@ -16,66 +16,64 @@ import System.Timeout.Lifted
 
 --------------------------------------------------------------------------------
 -- | The final stage
-handleSession :: SessionAction -> SessionM Message
+handleSession :: SessionAction -> SessionM Packet
 handleSession SessionHandshake = do
     sessionID <- getSessionID
     configuration <- getConfiguration
 
-    let heartbeatTimeout' = if heartbeats configuration
-            then heartbeatTimeout configuration
-            else 0
+    --let packetType = Open 
+    --            sessionID                       -- session ID
+    --            []                              -- upgrade transports
+    --            (pingInterval configuration)    -- ping interval
+    --            (pingTimeout configuration)     -- ping timeout
+                
+    return (Packet Open "")
 
-    return $ MsgHandshake
-                sessionID
-                heartbeatTimeout'
-                (closeTimeout configuration)
-                (transports configuration)
+--handleSession SessionConnect = do
+--    logWithSession Info $ "Connected"
+--    triggerEvent (Event "connection" (Payload_ []))
+--    return $ MsgConnect NoEndpoint
 
-handleSession SessionConnect = do
-    logWithSession Info $ "Connected"
-    triggerEvent (Event "connection" (Payload_ []))
-    return $ MsgConnect NoEndpoint
-
-handleSession SessionPolling = do
-    configuration <- getConfiguration
-    ChannelHub _ _ outputChannel _ <- getChannelHub
+--handleSession SessionPolling = do
+--    configuration <- getConfiguration
+--    ChannelHub _ _ outputChannel _ <- getChannelHub
   
-    result <- timeout (pollingDuration configuration * 1000000) (readChan outputChannel)
+--    result <- timeout (pollingDuration configuration * 1000000) (readChan outputChannel)
 
-    case result of
-        -- private
-        Just (Private, Event eventName payloads) -> do
-            logWithSession Info $ "Emit: " <> serialize eventName
-            return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
-        -- broadcast
-        Just (Broadcast _, Event eventName payloads) -> do
-            -- this log will cause massive overhead, need to be removed
-            logWithSession Info $ "Broadcast: " <> serialize eventName
-            return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
-        -- wtf
-        Just (_, NoEvent) -> do
-            logWithSession Error $ "Event malformed"
-            return $ MsgEvent NoID NoEndpoint NoEvent
-        -- no output, keep polling
-        Nothing -> do
-            return MsgNoop
+--    case result of
+--        -- private
+--        Just (Private, Event eventName payloads) -> do
+--            logWithSession Info $ "Emit: " <> serialize eventName
+--            return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
+--        -- broadcast
+--        Just (Broadcast _, Event eventName payloads) -> do
+--            -- this log will cause massive overhead, need to be removed
+--            logWithSession Info $ "Broadcast: " <> serialize eventName
+--            return $ MsgEvent NoID NoEndpoint (Event eventName payloads)
+--        -- wtf
+--        Just (_, NoEvent) -> do
+--            logWithSession Error $ "Event malformed"
+--            return $ MsgEvent NoID NoEndpoint NoEvent
+--        -- no output, keep polling
+--        Nothing -> do
+--            return MsgNoop
 
-handleSession (SessionEmit event) = do
-    case event of
-        Event eventName _ -> logWithSession Info $ "On: " <> serialize eventName
-        NoEvent           -> logWithSession Error $ "Event malformed"
-    triggerEvent event
-    return $ MsgConnect NoEndpoint
+--handleSession (SessionEmit event) = do
+--    case event of
+--        Event eventName _ -> logWithSession Info $ "On: " <> serialize eventName
+--        NoEvent           -> logWithSession Error $ "Event malformed"
+--    triggerEvent event
+--    return $ MsgConnect NoEndpoint
 
-handleSession SessionDisconnectByClient = do
-    logWithSession Info $ "Disconnected by client"
-    triggerEvent (Event "disconnect" (Payload_ []))
-    return $ MsgNoop
+--handleSession SessionDisconnectByClient = do
+--    logWithSession Info $ "Disconnected by client"
+--    triggerEvent (Event "disconnect" (Payload_ []))
+--    return $ MsgNoop
 
-handleSession SessionDisconnectByServer = do
-    logWithSession Info $ "Disconnected by server"
-    triggerEvent (Event "disconnect" (Payload_ []))
-    return $ MsgNoop
+--handleSession SessionDisconnectByServer = do
+--    logWithSession Info $ "Disconnected by server"
+--    triggerEvent (Event "disconnect" (Payload_ []))
+--    return $ MsgNoop
 
 --------------------------------------------------------------------------------
 -- | Trigger corresponding listeners
@@ -97,5 +95,5 @@ triggerEvent NoEvent = error "triggering malformed event"
 
 --------------------------------------------------------------------------------
 -- | Wrapper
-runSession :: SessionAction -> Session -> ConnectionM Message
+runSession :: SessionAction -> Session -> ConnectionM Packet
 runSession action session = runReaderT (runSessionM (handleSession action)) session

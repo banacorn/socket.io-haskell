@@ -13,7 +13,7 @@ import qualified    Network.Wai                     as Wai
 
 --------------------------------------------------------------------------------
 -- | Extracts HTTP requests
-extractHTTPRequest :: Wai.Request -> IO Request
+extractHTTPRequest :: Wai.Request -> IO Request_
 extractHTTPRequest request = do
 
     let path = parsePath (Wai.rawQueryString request)
@@ -21,7 +21,7 @@ extractHTTPRequest request = do
 
     case (method, path) of
         ("GET", (Path _ Nothing)) -> return Handshake
-        ("GET", (Path _ (Just sessionID))) -> return (Connect sessionID)
-        ("POST", (Path _ (Just sessionID))) -> Wai.requestBody request >>= return . Request sessionID . parseMessage
+        ("GET", (Path _ (Just sessionID))) -> return (Connect_ sessionID)
+        ("POST", (Path _ (Just sessionID))) -> Wai.requestBody request >>= return . Request_ sessionID . parseMessage
         (_, (Path _ (Just sessionID))) -> return (Disconnect sessionID)
         _ -> error "error handling http request"

@@ -25,8 +25,9 @@ httpApp env httpHequest continuation = do
     let request = parse requestP (Wai.rawQueryString httpHequest)
     let request' = request { reqBody = body }
 
-    payload <- runConnection env request
+    payload <- runConnection env request'
 
+    liftIO $ print request'
     liftIO $ print payload
 
 

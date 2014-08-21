@@ -39,10 +39,10 @@ instance Serializable Path where
 
 --------------------------------------------------------------------------------
 -- | Incoming request
-data Request    = Handshake
+data Request_    = Handshake
                 | Disconnect SessionID
-                | Connect SessionID 
-                | Request SessionID Message
+                | Connect_ SessionID 
+                | Request_ SessionID Message
                 deriving (Show)
 
 

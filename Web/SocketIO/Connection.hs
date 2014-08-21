@@ -1,6 +1,7 @@
 --------------------------------------------------------------------------------
 -- | Requests are comsumed and sessions are invoked at this stage.
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Web.SocketIO.Connection
     (   runConnection
@@ -23,19 +24,8 @@ import qualified    Data.HashMap.Strict                     as H
 import              Data.IORef.Lifted
 import              System.Random                           (randomRIO)
 
---------------------------------------------------------------------------------
---
---  # State transitions after handshake
---
---                  Connect     Disconnect      Emit            Timeout
---  ----------------------------------------------------------------------------
---
---  Connecting      Connected   Disconnected    Disconnected    Disconnected
---                  (OK)        (OK)            (Error)         (OK)
---                              x               
---  Connected       Connected   Disconnected    Connected       Disconnected
---                  (OK)        (OK)            (OK)            (OK)
---                  Noop        x
+
+
 --------------------------------------------------------------------------------
 -- | Initialize session table
 newSessionTableRef :: IO (IORef SessionTable)
@@ -63,65 +53,65 @@ executeHandler handler channelHub sessionID = liftIO $ execWriterT (runReaderT (
 
 --------------------------------------------------------------------------------
 -- | Consumes request, hand it to the next stage, and returns its result.
-runConnection :: Env -> Req -> IO Message
+runConnection :: Env -> Request -> IO Payload
 runConnection env req = do
     runReaderT (runConnectionM (handleConnection req)) env
 
 --------------------------------------------------------------------------------
 -- | Explicitly exposes `Web.SocketIO.Types.Base.SessionState` and make use of totality checker.
-split :: Maybe Session -> Maybe (Session, SessionState)
-split (Just session@(Session _ state _ _ _)) = Just (session, state)
-split Nothing = Nothing
+--split :: Maybe Session -> Maybe (Session, SessionState)
+--split (Just session@(Session _ state _ _ _)) = Just (session, state)
+--split Nothing = Nothing
 
 --------------------------------------------------------------------------------
 -- | Accesses the session table and makes session explicit
-retrieveSession :: Request -> ConnectionM (Request, Maybe (Session, SessionState))
-retrieveSession Handshake = do
-    return (Handshake, Nothing)
-retrieveSession (Connect sessionID) = do
-    result <- lookupSession sessionID
-    return (Connect sessionID, split result)
-retrieveSession (Disconnect sessionID) = do
-    result <- lookupSession sessionID
-    return (Disconnect sessionID, split result)
-retrieveSession (Request sessionID e) = do
-    result <- lookupSession sessionID
-    return (Request sessionID e, split result)
+--retrieveSession :: Request -> ConnectionM (Request, Maybe (Session, SessionState))
+--retrieveSession Handshake = do
+--    return (Handshake, Nothing)
+--retrieveSession (Connect sessionID) = do
+--    result <- lookupSession sessionID
+--    return (Connect sessionID, split result)
+--retrieveSession (Disconnect sessionID) = do
+--    result <- lookupSession sessionID
+--    return (Disconnect sessionID, split result)
+--retrieveSession (Request sessionID e) = do
+--    result <- lookupSession sessionID
+--    return (Request sessionID e, split result)
 
 --------------------------------------------------------------------------------
 -- | Big time
-handleConnection :: Req -> ConnectionM Message
-handleConnection req = do
+handleConnection :: Request -> ConnectionM Payload
+handleConnection (viewRequest -> Connect transport j b64) = do
 
 
 
+    liftIO $ print $ Connect transport j b64
+
+    -- establish a session
+    session@(Session sessionID _ _ _ _) <- makeSession
+
+    -- session table management
+    updateSession (H.insert sessionID session)
+    logWithSessionID Debug sessionID "[Session] Created"
+    logWithSessionID Debug sessionID "[Request] Connect"
+    
+    -- timeout
+    --setTimeout session
+
+    -- next stage
+    --runSession SessionHandshake session
     return undefined
 
---    -- establish a session
---    session@(Session sessionID _ _ _ _) <- makeSession
+    where   genSessionID = liftIO $ serialize <$> randomRIO (100000000000, 999999999999 :: Integer)
+            makeSession = do
 
---    -- session table management
---    updateSession (H.insert sessionID session)
---    logWithSessionID Debug sessionID "[Session] Created"
---    logWithSessionID Debug sessionID "[Request] Handshake"
-    
---    -- timeout
---    setTimeout session
+                sessionID <- genSessionID
+                channelHub <- makeChannelHub sessionID
+                handler <- getHandler
+                listeners <- executeHandler handler channelHub sessionID
+                timeoutVar <- newEmptyMVar
 
---    -- next stage
---    runSession SessionHandshake session
-
-
---    where   genSessionID = liftIO $ serialize <$> randomRIO (100000000000, 999999999999 :: Integer)
---            makeSession = do
-
---                sessionID <- genSessionID
---                channelHub <- makeChannelHub sessionID
---                handler <- getHandler
---                listeners <- executeHandler handler channelHub sessionID
---                timeoutVar <- newEmptyMVar
-
---                return $ Session sessionID Connecting channelHub listeners timeoutVar
+                return $ Session sessionID Connecting channelHub listeners timeoutVar
 
 --handleConnection (Connect sessionID, Just (session, Connecting)) = do
 --    logWithSessionID Debug sessionID "[Request] Connect: ACK"

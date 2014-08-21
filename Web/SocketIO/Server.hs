@@ -111,9 +111,9 @@ defaultConfig = Configuration
     ,   logLevel = 2
     ,   logTo = stderr
     ,   header = [("Access-Control-Allow-Credentials", "true")]
-    ,   heartbeats = True
-    ,   closeTimeout = 60
-    ,   heartbeatTimeout = 60
-    ,   heartbeatInterval = 25
-    ,   pollingDuration = 20
+    ,   pingTimeout = 60000
+    ,   pingInterval = 25000
+    ,   maxHttpBufferSize = 10000000
+    ,   allowUpgrades = True
+    ,   cookie = Just "io"
 }

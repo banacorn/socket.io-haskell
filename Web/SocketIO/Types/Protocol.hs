@@ -11,29 +11,41 @@ import              Web.SocketIO.Types.String
 --------------------------------------------------------------------------------
 -- | URLs, see <https://github.com/Automattic/engine.io-protocol#urls>
 
-data Req = Req  {   reqBody :: ByteString
-                ,   reqTransport :: Transport
-                ,   reqJ :: Maybe ByteString
-                ,   reqSID :: Maybe SessionID
-                ,   reqB64 :: Bool
-                }
-                deriving (Eq, Show)
+data Request = Request  {   reqBody :: ByteString
+                        ,   reqTransport :: Transport
+                        ,   reqJ :: Maybe ByteString
+                        ,   reqSID :: Maybe SessionID
+                        ,   reqB64 :: Bool
+                        }
+                        deriving (Eq, Show)
 
 type SessionID = ByteString 
+
+--------------------------------------------------------------------------------
+-- view pattern of incoming requests
+
+data RequestView =  Connect Transport (Maybe ByteString) Bool
+                    deriving (Eq, Show)
+
+viewRequest :: Request -> RequestView
+viewRequest (Request "" t j Nothing b) = Connect t j b
+
 
 --------------------------------------------------------------------------------
 -- | Encoding, see <https://github.com/Automattic/engine.io-protocol#encoding>
 
 data Packet = Packet PacketType Data
-data PacketType = Open      -- 0
+                deriving (Eq, Show)
+data PacketType = Open     -- 0
                 | Close     -- 1
                 | Ping      -- 2
                 | Pong      -- 3
                 | Message   -- 4
                 | Upgrade   -- 5
                 | Noop      -- 6
-data Data = ByteString
+                deriving (Eq, Show)
 
+type Data = ByteString
 type Payload = [Packet]
 
 

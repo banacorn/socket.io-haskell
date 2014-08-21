@@ -85,12 +85,12 @@ data Configuration = Configuration
     {   transports :: [Transport]
     ,   logLevel :: Int             -- ^ there are 4 levels, from 0 to 3: Error, Warn, Info, Debug
     ,   logTo :: Handle
-    ,   heartbeats :: Bool
     ,   header :: ResponseHeaders
-    ,   closeTimeout :: Int
-    ,   heartbeatTimeout :: Int
-    ,   heartbeatInterval :: Int
-    ,   pollingDuration :: Int
+    ,   pingTimeout :: Int
+    ,   pingInterval :: Int
+    ,   maxHttpBufferSize :: Int
+    ,   allowUpgrades :: Bool
+    ,   cookie :: Maybe ByteString
     } deriving Show
     
 --------------------------------------------------------------------------------
