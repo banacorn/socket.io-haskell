@@ -15,6 +15,7 @@ import qualified    Data.ByteString                 as B
 import              Data.Conduit
 import qualified    Data.Conduit.List               as CL
 import qualified    Network.Wai                     as Wai
+import qualified    Network.Wai.Conduit             as Wai
 
 --------------------------------------------------------------------------------
 -- | Run!
@@ -31,7 +32,9 @@ sourceHTTPRequest request = do
     case (method, path) of
         ("GET", (WithoutSession _ _)) -> yield Handshake
         ("GET", (WithSession _ _ _ sessionID)) -> yield (Connect sessionID)
-        ("POST", (WithSession _ _ _ sessionID)) -> Wai.requestBody request $= demultiplexMessage =$= awaitForever (yield . Request sessionID)
+        ("POST", (WithSession _ _ _ sessionID)) -> do
+           let reqSource = Wai.sourceRequestBody request
+           reqSource $= demultiplexMessage =$= awaitForever (yield . Request sessionID)
         (_, (WithSession _ _ _ sessionID)) -> yield (Disconnect sessionID)
         _ -> error "error handling http request"
 
