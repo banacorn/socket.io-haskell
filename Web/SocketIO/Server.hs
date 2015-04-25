@@ -20,6 +20,7 @@ import              Data.Conduit
 import              Network.HTTP.Types              (status200)
 import              Network.HTTP.Types.Header       (ResponseHeaders)
 import qualified    Network.Wai                     as Wai
+import qualified    Network.Wai.Conduit             as Wai
 import qualified    Network.Wai.Handler.Warp        as Warp
 
 --------------------------------------------------------------------------------
@@ -50,14 +51,13 @@ serverConfig port config handler = do
 --------------------------------------------------------------------------------
 -- | Wrapped as a HTTP app
 httpApp :: ResponseHeaders -> (Request -> IO Message) -> Wai.Application
-httpApp headerFields runConnection' httpRequest = liftIO $ do
+httpApp headerFields runConnection' httpRequest respond = do
     
     let origin = lookupOrigin httpRequest
     let headerFields' = insertOrigin headerFields origin
-
     let sourceBody = sourceHTTPRequest httpRequest $= runRequest runConnection'
 
-    return $ Wai.responseSource status200 headerFields' sourceBody
+    respond $ Wai.responseSource status200 headerFields' sourceBody
 
     where   lookupOrigin req = case lookup "Origin" (Wai.requestHeaders req) of
                 Just origin -> origin
